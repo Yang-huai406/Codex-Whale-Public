@@ -1,0 +1,99 @@
+name: 问题反馈 / Bug report
+description: 报告 api-balance-whale（Codex 桌面版小鲸鱼）的故障或异常行为
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！提交前请先确认：
+        1. 你装的是本分支 **For-Codex** 的 `api-balance-whale`（Codex 桌面插件），不是上游的 DSH 网页版 `dsh-whale-widget`；
+        2. 已按 `docs/INSTALL-AND-ROLLBACK-0.2.0.md` 完成安装与验证；
+        3. 已查看 `docs/VERIFICATION-0.2.0.md` 的"未验证 / 不承诺"一节，确认不是已知限制。
+
+        ⚠️ **请勿粘贴 API 密钥、`auth.json`、`config.toml` 原文或完整账本。** 需要贴日志时请先脱敏。
+  - type: dropdown
+    id: edition
+    attributes:
+      label: 你装的是哪一个？
+      options:
+        - Codex 桌面版 api-balance-whale（本分支，跟随 Codex 窗口）
+        - DSH 网页版 dsh-whale-widget（上游主分支）
+        - 不确定
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 出问题的部分
+      options:
+        - 安装 / 启动（计划任务、启动器、无窗口启动）
+        - 鲸鱼不出现 / 消失 / 位置与跟随
+        - 最小化或另存为之后消失
+        - 余额查询（接口、provider、密钥来源）
+        - 汇率与显示币种（含"刷新汇率"与 ! 说明）
+        - 气泡与每轮消耗提示（含失败 / 暂停取消提示）
+        - 菜单 / 设置 / 角色 / 音效 / 素材管理
+        - 用量记录与账本口径
+        - 其他
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 插件版本
+      description: 取 `.codex-plugin/plugin.json` 的 version 字段
+      placeholder: 0.2.0+codex.20260917
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 你期望发生什么
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际发生了什么
+      description: 尽量写清步骤、出现频率（必现 / 偶发）、时间点
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 Codex ...
+        2. 点击 ☰ → ...
+        3. 看到 ...
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 诊断文件（脱敏后粘贴或作为附件）
+      description: |
+        数据目录 `%USERPROFILE%\.codex\whale-widget` 下这几个文件通常足够定位：
+        `follow-state.json`、`runtime.json`、`startup-timings.json`；
+        崩溃类问题再加 `renderer-gone.json` / `desktop-error.json` / `supervisor-error.json` / `launcher-error.json`。
+        可用 `node scripts/control.mjs status` 直接输出状态。
+      render: text
+    validations:
+      required: false
+  - type: input
+    id: environment
+    attributes:
+      label: 环境
+      placeholder: Windows 11 24H2 x64 / Codex 桌面版版本 / Node.js v24.21 / Electron 44.3.0
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我没有在内容里包含任何真实密钥或凭据
+          required: true
+        - label: 我已搜索过现有 issue，未发现重复
+          required: true

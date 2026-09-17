@@ -107,3 +107,9 @@ vendor/smol-toml            内置 TOML 解析（BSD-3-Clause）
 ## 来源与致谢
 
 本分支改编自 **MeteorNOX** 的 [DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)（`dsh-whale-widget`），沿用其 MIT 许可与角色/气泡/音效素材；改造范围与许可边界见 [PROVENANCE.md](PROVENANCE.md) 与 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，原版文档备份在 [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md)。
+
+## 反馈与安全
+
+- **提问 / 报 Bug**：用仓库的 [issue 模板](.github/ISSUE_TEMPLATE/)（"问题反馈"里已列出需要附上的诊断文件，多数情况不需要贴日志正文）。
+- **安全漏洞**：**不要开公开 issue**，请按 [SECURITY.md](SECURITY.md) 走 GitHub 私密漏洞报告或邮件；那里也写清了本插件的安全边界（哪些算漏洞、哪些是已知设计）。
+- 报告里请勿包含真实 API 密钥、`auth.json`、`config.toml` 原文或完整账本。
