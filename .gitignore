@@ -1,0 +1,4 @@
+node_modules/
+qa-output/
+*.log
+*.tmp

@@ -1,0 +1,38 @@
+{
+  "name": "api-balance-whale",
+  "version": "0.2.0",
+  "description": "Codex desktop companion whale: follows the Codex window, shows API balance without any standalone webpage (Codex-adapted build of dsh-whale-widget). Homepage and issues: https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget (branch For-Codex).",
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    ".codex-plugin",
+    ".mcp.json",
+    "assets",
+    "desktop",
+    "docs",
+    "lib",
+    "runtime",
+    "scripts",
+    "skills",
+    "vendor",
+    "README.md",
+    "PROVENANCE.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget.git",
+    "directory": "."
+  },
+  "bugs": {
+    "url": "https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/issues"
+  },
+  "homepage": "https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/For-Codex#readme",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node scripts/control.mjs open",
+    "desktop": "node scripts/control.mjs desktop"
+  }
+}
