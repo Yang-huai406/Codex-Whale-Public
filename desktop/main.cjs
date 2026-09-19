@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, screen, ipcMain, globalShortcut, shell, protocol, session, net } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, screen, ipcMain, globalShortcut, shell, protocol, session, net, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { UiStateStore } = require('./ui-state-store.cjs');
@@ -65,6 +65,31 @@ function visibility() {
 }
 function show() { manuallyHidden = false; visibility(); }
 function toggle() { manuallyHidden = !manuallyHidden; visibility(); }
+function sendCommand(command) {
+  if (!window || window.isDestroyed() || !command) return false;
+  show();
+  window.webContents.send('whale-command', command);
+  return true;
+}
+async function showStatusDialog() {
+  let provider = {};
+  try { provider = dispatcher?.whale?.config?.publicInfo() || {}; } catch {}
+  const lines = [
+    '平台：' + process.platform,
+    '跟随模式：' + (lastHost?.followMode || (lastHost?.nativeFollowing ? 'native' : '等待 Codex')),
+    'Codex PID：' + (lastHost?.hostPid || '未检测到'),
+    '挂件窗口：' + (window?.isVisible?.() ? '显示' : '隐藏'),
+    '服务商：' + (provider.providerName || '未配置'),
+    'API 地址：' + (provider.baseUrl || '未配置'),
+  ];
+  await dialog.showMessageBox({
+    type: 'info',
+    title: '挂件运行状态',
+    message: 'API 余额小鲸鱼',
+    detail: lines.join('\n'),
+    buttons: ['关闭'],
+  });
+}
 // 0.2.0: re-assert the decision instead of relying on a single IPC message. The
 // host heartbeat already arrives every second and visibility() is idempotent, so
 // this repairs any dropped, out-of-order or zero-handle state without changing
@@ -211,6 +236,13 @@ else {
     ipcMain.on('whale-save-storage', (event, input) => { if (event.sender === window.webContents) storeValues(input); });
     ipcMain.on('whale-user-gesture', event => { if (isMainFrame(event)) trustedGestureAt = Date.now(); });
     ipcMain.handle('whale-open-external', (event, url) => isMainFrame(event) ? openWebLink(url) : false);
+    ipcMain.handle('whale-command', async (event, command) => {
+      if (!isMainFrame(event)) return false;
+      if (command === 'status') { await showStatusDialog(); return true; }
+      if (command === 'stop') { pauseAndQuit(); return true; }
+      if (['balance', 'usage', 'settings'].includes(command)) return sendCommand(command);
+      return false;
+    });
     ipcMain.on('whale-ready', event => {
       if (event.sender !== window.webContents) return;
       markStartup('imageAndInputReady');
@@ -233,7 +265,14 @@ else {
     tray = new Tray(icon); tray.setToolTip('API 余额小鲸鱼 · 跟随 Codex');
     tray.setContextMenu(Menu.buildFromTemplate([
       { label: '显示 / 隐藏小鲸鱼', click: toggle },
-      { label: 'API 设置', click: () => { show(); window.webContents.send('whale-settings'); } },
+      { label: '命令', submenu: [
+        { label: '刷新余额', accelerator: isMac ? 'Command+R' : 'Control+R', click: () => sendCommand('balance') },
+        { label: '查看用量记录', click: () => sendCommand('usage') },
+        { label: '查看运行状态', click: () => { void showStatusDialog(); } },
+        { type: 'separator' },
+        { label: 'API 设置', click: () => sendCommand('settings') },
+        { label: '停止当前挂件', click: pauseAndQuit },
+      ] },
       { type: 'separator' }, { label: '本次退出挂件（下次打开 Codex 恢复）', click: pauseAndQuit },
     ]));
     tray.on('double-click', toggle); globalShortcut.register(isMac ? 'Command+Option+W' : 'Control+Alt+W', toggle);
