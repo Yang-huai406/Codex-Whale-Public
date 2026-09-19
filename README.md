@@ -11,9 +11,9 @@
 
 **安装与回滚**：另一台电脑请照 [安装与回滚说明](docs/INSTALL-AND-ROLLBACK-0.2.0.md) 操作。计划任务使用 Windows GUI 启动器；安装必须验证任务和进程，失败不会假报成功。验证过程与已知限制见 [0.2.0 验证报告](docs/VERIFICATION-0.2.0.md)。
 
-**运行平台**：Windows 10/11 x64，或 Apple Silicon / Intel Mac；需要 Codex 桌面应用和 Node.js 24+。macOS 默认跟随 `com.openai.codex`（本机显示为 ChatGPT/Codex），可使用 `WHALE_CODEX_BUNDLE_ID` 覆盖。详细步骤见 [macOS 安装说明](docs/MACOS.md)。
+**运行平台**：Windows 10/11 x64 的 Microsoft Store 版 Codex 安装布局，或 Apple Silicon / Intel Mac；需要 Codex 桌面应用和 Node.js 24+。macOS 默认跟随 `com.openai.codex`（本机显示为 ChatGPT/Codex），可使用 `WHALE_CODEX_BUNDLE_ID` 覆盖。其他 Windows 安装渠道尚未适配。详细步骤见 [macOS 安装说明](docs/MACOS.md)。
 
-**安全说明**：挂件只从本机 Codex 配置或指定环境变量读取密钥，不读取也不输出原始 `config.toml` / `auth.json`；不发送聊天内容；除公开汇率接口外不主动联网。
+**安全说明**：挂件只从本机 Codex 配置或指定环境变量读取密钥；本地解析配置但不会返回或记录原始 `config.toml` / `auth.json` 内容。密钥只会发送给用户配置的 API provider；挂件还会访问公开汇率接口，不发送聊天内容。
 
 余额跟随 Codex 当前 API 配置；密钥留在本机，界面不读取密钥。ChatGPT 订阅额度不属于 API 余额。
 

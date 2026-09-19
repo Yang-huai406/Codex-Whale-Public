@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { DATA_HOME, ROOT } from '../runtime/paths.mjs';
 
@@ -21,6 +22,7 @@ const supervisorPath = path.join(ROOT, 'desktop', 'macos', 'supervisor.mjs');
 const probeSource = path.join(ROOT, 'desktop', 'macos', 'window-probe.swift');
 const homebrewNode = ['/opt/homebrew/bin/node', '/usr/local/bin/node'].find(file => fs.existsSync(file));
 const nodePath = homebrewNode || process.execPath;
+const installId = randomUUID();
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { stdio: 'inherit', ...options });
@@ -121,15 +123,17 @@ async function reloadLaunchAgent() {
   const service = domain + '/' + label;
   const loaded = () => launchctl(['print', service], { allowFailure: true }).status === 0;
   if (loaded()) {
-    launchctl(['bootout', service], { allowFailure: true });
-    for (let attempt = 0; attempt < 25 && loaded(); attempt++) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+    const bootout = launchctl(['bootout', service], { allowFailure: true });
+    if (bootout.status !== 0 && loaded()) {
+      throw new Error((bootout.stderr || bootout.stdout || 'launchctl bootout failed').trim());
     }
+    for (let attempt = 0; attempt < 25 && loaded(); attempt++) await new Promise(resolve => setTimeout(resolve, 200));
+    if (loaded()) throw new Error('The previous LaunchAgent did not stop; refusing to report a successful install.');
   }
-  launchctl(['enable', domain + '/' + label], { allowFailure: true });
+  launchctl(['enable', domain + '/' + label]);
   if (!loaded()) {
     const bootstrap = launchctl(['bootstrap', domain, plistPath], { allowFailure: true });
-    if (bootstrap.status !== 0 && !loaded()) {
+    if (bootstrap.status !== 0) {
       throw new Error((bootstrap.stderr || bootstrap.stdout || 'launchctl bootstrap failed').trim());
     }
   }
@@ -146,6 +150,7 @@ const config = {
   enabled: true,
   mode: 'follow-codex',
   revision: 'macos-v1',
+  installId,
   label,
   pluginRoot: ROOT,
   nodePath,
@@ -161,6 +166,7 @@ fs.writeFileSync(path.join(DATA_HOME, 'follow-install.json'), JSON.stringify({
 }, null, 2));
 
 try { fs.unlinkSync(path.join(DATA_HOME, 'pause-until-host-exit.json')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+try { fs.unlinkSync(path.join(DATA_HOME, 'supervisor-state.json')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
 await reloadLaunchAgent();
 
 let verified = false;
@@ -168,7 +174,13 @@ for (let attempt = 0; attempt < 30; attempt++) {
   const state = (() => {
     try { return JSON.parse(fs.readFileSync(path.join(DATA_HOME, 'supervisor-state.json'), 'utf8')); } catch { return null; }
   })();
-  if (state?.pid && state.platform === 'darwin') { verified = true; break; }
+  const heartbeatAt = Date.parse(state?.heartbeatAt || '');
+  let alive = false;
+  try { process.kill(Number(state?.pid), 0); alive = true; } catch {}
+  if (state?.installId === installId && alive && Number.isFinite(heartbeatAt) && Date.now() - heartbeatAt < 5000 && state.platform === 'darwin') {
+    verified = true;
+    break;
+  }
   await new Promise(resolve => setTimeout(resolve, 200));
 }
 if (!verified) {

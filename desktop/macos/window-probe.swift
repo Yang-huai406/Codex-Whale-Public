@@ -138,10 +138,16 @@ var lastOwnerPID: pid_t = 0
 var lastBounds = CGRect.zero
 var lastEncoded = ""
 var lastHeartbeat = Date.distantPast
+var cachedProcessIDs: [pid_t] = []
+var lastProcessScan = Date.distantPast
 
 while true {
     autoreleasepool {
-        let processIDs = matchingProcessIDs(options)
+        if Date().timeIntervalSince(lastProcessScan) >= 0.25 {
+            cachedProcessIDs = matchingProcessIDs(options)
+            lastProcessScan = Date()
+        }
+        let processIDs = cachedProcessIDs
         let window = hostWindow(for: processIDs)
         if let window {
             lastWindowNumber = window.windowNumber

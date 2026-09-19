@@ -11,7 +11,7 @@ export async function runningService(dataDir = DATA_HOME) {
 export async function startSupervisor(dataDir = DATA_HOME) {
   const config = readJson(path.join(dataDir, 'follow-config.json'), {});
   if (process.platform === 'darwin') {
-    if (config.platform !== 'darwin' || config.mode !== 'follow-codex' || !config.label) {
+    if (config.platform !== 'darwin' || config.mode !== 'follow-codex' || config.enabled !== true || !config.label) {
       throw new Error('请先运行 scripts/install-macos.mjs 安装 macOS 自动跟随');
     }
     const pause = path.join(dataDir, 'pause-until-host-exit.json');

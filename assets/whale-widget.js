@@ -936,7 +936,8 @@
     });
     menuBox.appendChild(apiSettingsBtn);
     var commandTitle = document.createElement('div');
-    commandTitle.className = 'dshwv-menu-sep';
+    commandTitle.className = 'dshwv-usage-hint';
+    commandTitle.textContent = '命令';
     menuBox.appendChild(commandTitle);
     function appendCommandButton(label, action) {
       var button = document.createElement('button');
@@ -959,6 +960,9 @@
     appendCommandButton('查看运行状态', function () {
       if (window.whaleDesktop && window.whaleDesktop.command) window.whaleDesktop.command('status').catch(function () {});
     });
+    var commandStopSep = document.createElement('div');
+    commandStopSep.className = 'dshwv-menu-sep';
+    menuBox.appendChild(commandStopSep);
     appendCommandButton('停止当前挂件', function () {
       if (window.whaleDesktop && window.whaleDesktop.command) window.whaleDesktop.command('stop').catch(function () {});
     });

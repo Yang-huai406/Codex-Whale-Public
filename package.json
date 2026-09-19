@@ -17,7 +17,10 @@
     "vendor",
     "README.md",
     "PROVENANCE.md",
-    "THIRD_PARTY_NOTICES.md"
+    "THIRD_PARTY_NOTICES.md",
+    "SECURITY.md",
+    "*.cmd",
+    "*.command"
   ],
   "repository": {
     "type": "git",

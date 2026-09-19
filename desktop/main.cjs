@@ -34,6 +34,7 @@ const uiStore = new UiStateStore(stateFile);
 const values = () => uiStore.get();
 const storeValues = input => uiStore.set(input);
 let gpuStatus = null, inputEnabled = false, keyboardFocus = false, testCursor = null, lastCursor = '', presents = 0;
+const pendingCommands = [];
 let trustedGestureAt = 0;
 app.on('gpu-info-update', () => {
   gpuStatus = { hardwareAcceleration: app.isHardwareAccelerationEnabled(), features: app.getGPUFeatureStatus(), electron: process.versions.electron, chromium: process.versions.chrome };
@@ -68,8 +69,13 @@ function toggle() { manuallyHidden = !manuallyHidden; visibility(); }
 function sendCommand(command) {
   if (!window || window.isDestroyed() || !command) return false;
   show();
-  window.webContents.send('whale-command', command);
+  if (rendererReady) window.webContents.send('whale-command', command);
+  else if (!pendingCommands.includes(command)) pendingCommands.push(command);
   return true;
+}
+function flushCommands() {
+  if (!rendererReady || !window || window.isDestroyed()) return;
+  for (const command of pendingCommands.splice(0)) window.webContents.send('whale-command', command);
 }
 async function showStatusDialog() {
   let provider = {};
@@ -98,7 +104,15 @@ function assertVisibility() {
   if (!lastHost || lastHost.hostAlive === false) return;
   visibility();
 }
-function pauseAndQuit() { if (lastHost?.hostPid) save(path.join(dataDir, 'pause-until-host-exit.json'), { hostPid: lastHost.hostPid }); app.quit(); }
+function pauseAndQuit() {
+  save(path.join(dataDir, 'pause-until-host-exit.json'), {
+    pauseAll: true,
+    hostPid: lastHost?.hostPid || 0,
+    hostSession: lastHost?.hostSession || '',
+    hostWindow: lastHost?.window || '0',
+  });
+  app.quit();
+}
 function isMainFrame(event) { return event.sender === window?.webContents && event.senderFrame === window.webContents.mainFrame; }
 async function openWebLink(value, gestureRequired = true) {
   if (gestureRequired && (!trustedGestureAt || Date.now() - trustedGestureAt > 1000)) return false;
@@ -198,7 +212,7 @@ else {
     // native occlusion calculation even while its opaque pixels accept clicks.
     // Keep normal activation: Chromium's non-client handler consumes the first
     // mouse down (MA_NOACTIVATEANDEAT) when CanActivate/focusable is false.
-    window = new BrowserWindow({ ...area, ...(isMac ? {} : { type: 'toolbar' }), transparent: true, frame: false, thickFrame: false, resizable: false, maximizable: false, fullscreenable: false, backgroundColor: '#00000000', hasShadow: false, skipTaskbar: true, show: false, title: 'API 余额小鲸鱼', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required', additionalArguments: fixture ? ['--whale-render-test'] : [] } });
+    window = new BrowserWindow({ ...area, ...(isMac ? { acceptFirstMouse: true } : { type: 'toolbar' }), transparent: true, frame: false, thickFrame: false, resizable: false, maximizable: false, fullscreenable: false, backgroundColor: '#00000000', hasShadow: false, skipTaskbar: true, show: false, title: 'API 余额小鲸鱼', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required', additionalArguments: fixture ? ['--whale-render-test'] : [] } });
     if (isMac) {
       if (app.dock) app.dock.hide();
       window.setAlwaysOnTop(true, 'floating', 1);
@@ -247,7 +261,7 @@ else {
       if (event.sender !== window.webContents) return;
       markStartup('imageAndInputReady');
       try { fs.rmSync(path.join(dataDir, 'desktop-error.json'), { force: true }); } catch {}
-      rendererReady = true; visibility(); invalidate(); sendCursor(true);
+      rendererReady = true; visibility(); flushCommands(); invalidate(); sendCursor(true);
     });
     ipcMain.on('whale-interactive', (event, enabled) => {
       if (event.sender !== window.webContents || typeof enabled !== 'boolean' || enabled === inputEnabled) return;
