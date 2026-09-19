@@ -13,6 +13,8 @@ const startupAt = Date.now();
 const startup = { revision: 'codex-0.2.0', requestedAt: Number(process.env.WHALE_LAUNCH_TIME) || startupAt, mainAt: startupAt, phases: {} };
 const markStartup = phase => { if (startup.phases[phase] == null) startup.phases[phase] = Date.now() - startup.requestedAt; };
 markStartup('main');
+const isMac = process.platform === 'darwin';
+const toDipRect = rect => isMac ? rect : screen.screenToDipRect(null, rect);
 // Leave device/driver safety checks to Chromium; do not bypass the GPU blocklist.
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 if (!dataDir || !path.isAbsolute(dataDir) || (!fixture && !process.argv.includes('--supervised'))) app.exit(1);
@@ -121,7 +123,7 @@ async function setHost(host) {
   if (!host.nativeFollowing) appliedNativeSize = '';
   // Stale coordinates never go through setBounds while native following runs.
   if (!host.nativeFollowing && host.visible && host.bounds && [host.bounds.x, host.bounds.y, host.bounds.width, host.bounds.height].every(Number.isFinite)) {
-    const rect = screen.screenToDipRect(null, host.bounds);
+    const rect = toDipRect(host.bounds);
     const key = JSON.stringify(rect);
     if (rect.width > 10 && rect.height > 10 && appliedBounds !== key) {
       const current = window.getBounds();
@@ -155,7 +157,7 @@ else {
     const { startBridge } = await import(pathToFileURL(path.join(root, 'runtime', 'bridge.mjs')));
     let testOptions = {};
     if (fixture) { const { makeFixture } = await import(pathToFileURL(path.join(root, 'tests', 'desktop-fixture.mjs'))); testOptions = await makeFixture(dataDir); }
-    dispatcher = createDispatcher({ dataDir, fetchImpl: (url, options) => net.fetch(url, options), onStop: pauseAndQuit, onShow: show, statusInfo: () => ({ followCodex: true, hostPid: lastHost?.hostPid || null, visible: !!window?.isVisible(), nativeFollowing: !!lastHost?.nativeFollowing, startup, rendering: gpuStatus }), ...testOptions });
+    dispatcher = createDispatcher({ dataDir, fetchImpl: (url, options) => net.fetch(url, options), onStop: pauseAndQuit, onShow: show, statusInfo: () => ({ followCodex: true, platform: process.platform, followMode: lastHost?.followMode || null, hostPid: lastHost?.hostPid || null, visible: !!window?.isVisible(), nativeFollowing: !!lastHost?.nativeFollowing, startup, rendering: gpuStatus }), ...testOptions });
     markStartup('dispatcherReady');
     await importLegacyStorage();
     session.defaultSession.protocol.handle('whale', async request => {
@@ -166,12 +168,17 @@ else {
     });
     const firstBounds = initialHost?.bounds;
     const area = firstBounds && ['x','y','width','height'].every(k => Number.isFinite(firstBounds[k])) && firstBounds.width > 10 && firstBounds.height > 10
-      ? screen.screenToDipRect(null, firstBounds) : screen.getPrimaryDisplay().workArea;
+      ? toDipRect(firstBounds) : screen.getPrimaryDisplay().workArea;
     // WS_EX_TOOLWINDOW keeps the large transparent overlay out of Chromium's
     // native occlusion calculation even while its opaque pixels accept clicks.
     // Keep normal activation: Chromium's non-client handler consumes the first
     // mouse down (MA_NOACTIVATEANDEAT) when CanActivate/focusable is false.
-    window = new BrowserWindow({ ...area, type: 'toolbar', transparent: true, frame: false, thickFrame: false, resizable: false, maximizable: false, fullscreenable: false, backgroundColor: '#00000000', hasShadow: false, skipTaskbar: true, show: false, title: 'API 余额小鲸鱼', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required', additionalArguments: fixture ? ['--whale-render-test'] : [] } });
+    window = new BrowserWindow({ ...area, ...(isMac ? {} : { type: 'toolbar' }), transparent: true, frame: false, thickFrame: false, resizable: false, maximizable: false, fullscreenable: false, backgroundColor: '#00000000', hasShadow: false, skipTaskbar: true, show: false, title: 'API 余额小鲸鱼', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required', additionalArguments: fixture ? ['--whale-render-test'] : [] } });
+    if (isMac) {
+      if (app.dock) app.dock.hide();
+      window.setAlwaysOnTop(true, 'floating', 1);
+      window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+    }
     markStartup('windowCreated');
     window.once('ready-to-show', () => markStartup('frameReady'));
     if (fixture) window.webContents.on('console-message', (_event, ...args) => { const d = args[0]; if (typeof d === 'object' ? d.level === 'error' : d === 3) rendererErrors.push(typeof d === 'object' ? d.message : args[1]); });
@@ -207,6 +214,7 @@ else {
     ipcMain.on('whale-ready', event => {
       if (event.sender !== window.webContents) return;
       markStartup('imageAndInputReady');
+      try { fs.rmSync(path.join(dataDir, 'desktop-error.json'), { force: true }); } catch {}
       rendererReady = true; visibility(); invalidate(); sendCursor(true);
     });
     ipcMain.on('whale-interactive', (event, enabled) => {
@@ -228,7 +236,7 @@ else {
       { label: 'API 设置', click: () => { show(); window.webContents.send('whale-settings'); } },
       { type: 'separator' }, { label: '本次退出挂件（下次打开 Codex 恢复）', click: pauseAndQuit },
     ]));
-    tray.on('double-click', toggle); globalShortcut.register('Control+Alt+W', toggle);
+    tray.on('double-click', toggle); globalShortcut.register(isMac ? 'Command+Option+W' : 'Control+Alt+W', toggle);
     bridge = await startBridge(dispatcher, { dataDir, onHost: setHost });
     markStartup('bridgeReady');
     await window.loadURL(UI_ORIGIN + '/widget.html');

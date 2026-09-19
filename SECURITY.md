@@ -2,7 +2,7 @@
 
 ## 支持范围
 
-本分支（**For-Codex**）是为 **Windows x64 + Codex 桌面应用**适配的 `api-balance-whale` 插件。安全修复只针对本分支的最新版本（当前 `0.2.0`），不回溯旧版本。
+本分支（**For-Codex**）是为 **Windows x64 / macOS + Codex 桌面应用**适配的 `api-balance-whale` 插件。安全修复只针对本分支的最新版本（当前 `0.2.0`），不回溯旧版本。
 
 上游主分支（DSH Web 版 `dsh-whale-widget`）的问题请提到上游 issue；如果是**两者共有的代码**（例如 `assets/` 素材、前端渲染逻辑），也欢迎在本仓库提出，我们会与上游对齐。
 
@@ -15,7 +15,7 @@
 
 请尽量包含：
 
-- 受影响的版本（`.codex-plugin/plugin.json` 里的 `version`）与 Windows 版本；
+- 受影响的版本（`.codex-plugin/plugin.json` 里的 `version`）与操作系统版本；
 - 复现步骤或最小样例（PoC）；若涉及密钥/账本，请**脱敏**后再贴；
 - 影响评估：能读到什么、能改到什么、是否需要本地代码执行权限；
 - 是否已在别处公开（我们会据此调整披露节奏）。
@@ -48,6 +48,6 @@
 
 ## 加固建议（使用者）
 
-- 只从本仓库或可信来源获取插件；升级前备份插件目录与 `%USERPROFILE%\.codex\whale-widget`；
+- 只从本仓库或可信来源获取插件；升级前备份插件目录与 `~/.codex/whale-widget`（Windows 为 `%USERPROFILE%\.codex\whale-widget`）；
 - 不要把密钥写进插件设置：本插件只保存**密钥环境变量名**，密钥请放在 Codex 配置或系统环境变量里；
 - 若在多用户或共享机器上使用，注意本插件的本地 IPC 面向当前用户会话。

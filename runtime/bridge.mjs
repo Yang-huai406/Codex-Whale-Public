@@ -14,6 +14,19 @@ const ALLOWED = new Map([
 
 export async function startBridge(dispatcher, { dataDir = DATA_HOME, onHost = null } = {}) {
   const pipe = pipeName(dataDir), token = crypto.randomBytes(32).toString('hex'), instanceId = crypto.randomUUID();
+  if (process.platform !== 'win32' && fs.existsSync(pipe)) {
+    let stale = true;
+    try {
+      const previous = readJson(path.join(dataDir, 'runtime.json'), {});
+      if (Number.isSafeInteger(previous.pid) && previous.pid > 0) process.kill(previous.pid, 0);
+      stale = false;
+    } catch (error) {
+      stale = error.code !== 'EPERM';
+    }
+    if (stale) {
+      try { fs.unlinkSync(pipe); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
+  }
   const connections = new Set();
   const server = net.createServer(socket => {
     connections.add(socket); socket.on('close', () => connections.delete(socket)); socket.on('error', () => {});
