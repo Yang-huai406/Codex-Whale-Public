@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import Darwin
 import Foundation
 
 struct Options {
@@ -43,14 +44,46 @@ func parseOptions() -> Options {
     )
 }
 
-func matchingApplications(_ options: Options) -> [NSRunningApplication] {
-    let expectedPath = options.appPath.map { URL(fileURLWithPath: $0).standardizedFileURL.path }
-    return NSWorkspace.shared.runningApplications.filter { application in
-        if let bundleID = application.bundleIdentifier, options.bundleIDs.contains(bundleID) {
+func expectedApplicationPaths(_ options: Options) -> Set<String> {
+    var paths = Set<String>()
+    if let appPath = options.appPath {
+        paths.insert(URL(fileURLWithPath: appPath).standardizedFileURL.path)
+    }
+    for bundleID in options.bundleIDs {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            paths.insert(url.standardizedFileURL.path)
+        }
+    }
+    if options.bundleIDs.contains("com.openai.codex") {
+        paths.insert("/Applications/ChatGPT.app")
+    }
+    return paths
+}
+
+func executablePath(_ pid: pid_t) -> String? {
+    var buffer = [CChar](repeating: 0, count: 4096)
+    let length = proc_pidpath(pid, &buffer, UInt32(buffer.count))
+    guard length > 0 else { return nil }
+    return String(cString: buffer)
+}
+
+func matchingProcessIDs(_ options: Options) -> [pid_t] {
+    let expectedPaths = expectedApplicationPaths(options)
+    let estimatedBytes = proc_listpids(UInt32(PROC_ALL_PIDS), 0, nil, 0)
+    let capacity = max(64, Int(estimatedBytes) / MemoryLayout<pid_t>.size + 32)
+    var pids = [pid_t](repeating: 0, count: capacity)
+    let bytes = pids.withUnsafeMutableBytes { buffer in
+        proc_listpids(UInt32(PROC_ALL_PIDS), 0, buffer.baseAddress, Int32(buffer.count))
+    }
+    guard bytes > 0 else { return [] }
+    let count = Int(bytes) / MemoryLayout<pid_t>.size
+    return pids.prefix(count).filter { pid in
+        guard pid > 0, let executable = executablePath(pid) else { return false }
+        if expectedPaths.contains(where: { executable.hasPrefix($0 + "/Contents/MacOS/") }) {
             return true
         }
-        guard let expectedPath, let bundleURL = application.bundleURL else { return false }
-        return bundleURL.standardizedFileURL.path == expectedPath
+        return options.bundleIDs.contains("com.openai.codex")
+            && executable.contains("/ChatGPT.app/Contents/MacOS/")
     }
 }
 
@@ -60,8 +93,8 @@ struct HostWindow {
     let bounds: CGRect
 }
 
-func hostWindow(for applications: [NSRunningApplication]) -> HostWindow? {
-    let processIDs = Set(applications.map(\.processIdentifier))
+func hostWindow(for processIDs: [pid_t]) -> HostWindow? {
+    let processIDs = Set(processIDs)
     guard !processIDs.isEmpty,
           let rawWindows = CGWindowListCopyWindowInfo(
               [.optionOnScreenOnly, .excludeDesktopElements],
@@ -108,19 +141,19 @@ var lastHeartbeat = Date.distantPast
 
 while true {
     autoreleasepool {
-        let applications = matchingApplications(options)
-        let window = hostWindow(for: applications)
+        let processIDs = matchingProcessIDs(options)
+        let window = hostWindow(for: processIDs)
         if let window {
             lastWindowNumber = window.windowNumber
             lastOwnerPID = window.ownerPID
             lastBounds = window.bounds
         }
 
-        let hostAlive = !applications.isEmpty
+        let hostAlive = !processIDs.isEmpty
         let visible = hostAlive && window != nil
         let bounds = window?.bounds ?? lastBounds
         let scale = window.flatMap { _ in NSScreen.main?.backingScaleFactor } ?? NSScreen.main?.backingScaleFactor ?? 1
-        let state: [String: Any] = [
+        var state: [String: Any] = [
             "hostAlive": hostAlive,
             "hostPid": window?.ownerPID ?? lastOwnerPID,
             "window": String(window?.windowNumber ?? lastWindowNumber),
@@ -135,8 +168,11 @@ while true {
                 "width": Double(bounds.width),
                 "height": Double(bounds.height)
             ],
-            "bundleId": applications.first?.bundleIdentifier ?? NSNull()
+            "bundleId": hostAlive ? (options.bundleIDs.first ?? "unknown") : NSNull()
         ]
+        if ProcessInfo.processInfo.environment["WHALE_PROBE_DEBUG"] == "1" {
+            state["processIds"] = processIDs
+        }
 
         do {
             let data = try JSONSerialization.data(withJSONObject: state, options: [.sortedKeys])
