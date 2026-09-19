@@ -105,12 +105,16 @@ function assertVisibility() {
   visibility();
 }
 function pauseAndQuit() {
-  save(path.join(dataDir, 'pause-until-host-exit.json'), {
-    pauseAll: true,
-    hostPid: lastHost?.hostPid || 0,
-    hostSession: lastHost?.hostSession || '',
-    hostWindow: lastHost?.window || '0',
-  });
+  if (isMac) {
+    save(path.join(dataDir, 'pause-until-host-exit.json'), {
+      pauseAll: true,
+      hostPid: lastHost?.hostPid || 0,
+      hostSession: lastHost?.hostSession || '',
+      hostWindow: lastHost?.window || '0',
+    });
+  } else if (lastHost?.hostPid) {
+    save(path.join(dataDir, 'pause-until-host-exit.json'), { hostPid: lastHost.hostPid });
+  }
   app.quit();
 }
 function isMainFrame(event) { return event.sender === window?.webContents && event.senderFrame === window.webContents.mainFrame; }
@@ -277,18 +281,21 @@ else {
     app.once('will-quit', () => { clearInterval(cursorPoll); clearInterval(visibilityWatchdog); visibilityWatchdog = null; });
     const icon = nativeImage.createFromPath(path.join(root, 'assets', 'DSniang1.png')).resize({ width: 24, height: 24 });
     tray = new Tray(icon); tray.setToolTip('API 余额小鲸鱼 · 跟随 Codex');
-    tray.setContextMenu(Menu.buildFromTemplate([
-      { label: '显示 / 隐藏小鲸鱼', click: toggle },
-      { label: '命令', submenu: [
-        { label: '刷新余额', accelerator: isMac ? 'Command+R' : 'Control+R', click: () => sendCommand('balance') },
+    const trayTemplate = [{ label: '显示 / 隐藏小鲸鱼', click: toggle }];
+    if (isMac) {
+      trayTemplate.push({ label: '命令', submenu: [
+        { label: '刷新余额', accelerator: 'Command+R', click: () => sendCommand('balance') },
         { label: '查看用量记录', click: () => sendCommand('usage') },
         { label: '查看运行状态', click: () => { void showStatusDialog(); } },
         { type: 'separator' },
         { label: 'API 设置', click: () => sendCommand('settings') },
         { label: '停止当前挂件', click: pauseAndQuit },
-      ] },
-      { type: 'separator' }, { label: '本次退出挂件（下次打开 Codex 恢复）', click: pauseAndQuit },
-    ]));
+      ] });
+    } else {
+      trayTemplate.push({ label: 'API 设置', click: () => { show(); window.webContents.send('whale-settings'); } });
+    }
+    trayTemplate.push({ type: 'separator' }, { label: '本次退出挂件（下次打开 Codex 恢复）', click: pauseAndQuit });
+    tray.setContextMenu(Menu.buildFromTemplate(trayTemplate));
     tray.on('double-click', toggle); globalShortcut.register(isMac ? 'Command+Option+W' : 'Control+Alt+W', toggle);
     bridge = await startBridge(dispatcher, { dataDir, onHost: setHost });
     markStartup('bridgeReady');

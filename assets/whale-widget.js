@@ -942,7 +942,7 @@
     function appendCommandButton(label, action) {
       var button = document.createElement('button');
       button.type = 'button';
-      button.className = 'dshwv-api-open';
+      button.className = 'dshwv-api-open dshwv-command';
       button.textContent = label;
       button.style.cssText = 'width:100%;margin:4px 0;padding:6px;border:1px solid #d8e4e0;border-radius:7px;background:#fff;color:#356a6c;cursor:pointer';
       button.addEventListener('click', function (e) {
@@ -966,6 +966,14 @@
     appendCommandButton('停止当前挂件', function () {
       if (window.whaleDesktop && window.whaleDesktop.command) window.whaleDesktop.command('stop').catch(function () {});
     });
+    var macCommandButtons = Array.prototype.slice.call(menuBox.querySelectorAll('.dshwv-command'));
+    if (!window.whaleDesktop || window.whaleDesktop.platform !== 'darwin') {
+      for (var commandButtonIndex = 0; commandButtonIndex < macCommandButtons.length; commandButtonIndex++) {
+        macCommandButtons[commandButtonIndex].remove();
+      }
+      if (commandTitle.parentNode) commandTitle.remove();
+      if (commandStopSep.parentNode) commandStopSep.remove();
+    }
     var menuRootView = document.createElement('div');
     menuRootView.className = 'dshwv-menuview';
     while (menuBox.firstChild) menuRootView.appendChild(menuBox.firstChild);

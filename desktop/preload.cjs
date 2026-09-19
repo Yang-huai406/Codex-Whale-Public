@@ -7,6 +7,7 @@ for (const eventName of ['click', 'auxclick']) document.addEventListener(eventNa
   trustedClickAt = Date.now(); ipcRenderer.send('whale-user-gesture');
 }, true);
 contextBridge.exposeInMainWorld('whaleDesktop', {
+  platform: process.platform,
   ready: () => ipcRenderer.send('whale-ready'),
   keyboardFocus: value => ipcRenderer.send('whale-keyboard-focus', !!value),
   interactive: value => ipcRenderer.send('whale-interactive', !!value),
