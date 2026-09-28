@@ -4,7 +4,7 @@
 
 **本分支当前交付 Windows v0.2(fixed)**，内部版本为 `0.2.0`。本次由项目协作者 [Yang-huai406](https://github.com/Yang-huai406) 整理上传，仓库所属账号仍为 [MeteorNOX](https://github.com/MeteorNOX)。上传前分支已有的 0.2.4/macOS 文件保留在[后续整合资料](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/For-Codex/archive/for-codex-0.2.4)，完整历史没有改写。
 
-[下载本次测试包](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/raw/refs/heads/For-Codex/packages/v0.2-fixed/api-balance-whale-v0.2-fixed.zip) · [SHA-256](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/blob/For-Codex/packages/v0.2-fixed/api-balance-whale-v0.2-fixed.zip.sha256) · [上传说明](docs/GITHUB_PUBLISHING.md)
+[下载 v0.2(fixed)](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/download/v0.2.0-fixed/api-balance-whale-v0.2-fixed.zip) · [SHA-256](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/download/v0.2.0-fixed/api-balance-whale-v0.2-fixed.zip.sha256) · [Release](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/tag/v0.2.0-fixed) · [上传说明](docs/GITHUB_PUBLISHING.md)
 
 ## 功能
 

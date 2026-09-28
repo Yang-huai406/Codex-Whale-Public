@@ -1,8 +1,8 @@
 # 变更记录
 
-## v0.2(fixed) — 本地测试候选
+## v0.2(fixed) — Windows / Codex
 
-内部版本 `0.2.0`。按项目协作者确认，作为 For-Codex 当前 Windows 分支版本上传；未创建仓库级 Release 或 tag。
+内部版本 `0.2.0`，Git tag `v0.2.0-fixed`。按项目协作者的追加授权创建独立的 Windows/Codex Release；不替换主线 Latest。
 
 ### 修复基线
 
