@@ -5,7 +5,7 @@
 - 仓库：[MeteorNOX/DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)
 - 目标分支：For-Codex
 - 发布协作者：[Yang-huai406](https://github.com/Yang-huai406)，不代表仓库所有者。
-- 独立标签：codex-v0.3.0；标题：Codex-v0.3.0。
+- 独立标签：codex-v0.3.0-fixed；标题：Codex-v0.3.0。
 - 不覆盖主线已有 v0.3.0 标签，不设置为整个仓库的 Latest。
 
 用户已明确授权代码、tag 和 Release 上传。此前的本地候选流程已完成；Mac 实机、真实订阅账号和长期显示稳定性的未验证项仍保留，不因发布而改成“已通过”。
@@ -21,9 +21,11 @@ README 为首页，RELEASE_NOTES 为发布正文；DEVELOPMENT_SUMMARY 为本轮
 在仓库根目录使用 Python 3.10+：
 
 ```sh
-python scripts/build-release.py --release-tag codex-v0.3.0
+python scripts/build-release.py --release-tag codex-v0.3.0-fixed
 ```
 
 默认写入根目录 dist，排除 archive/packages 历史包、Git 元数据和本机数据。vendor/smol-toml/dist 是必要运行依赖，必须保留。源码包与安装包经过隐私检查、非必要媒体元数据处理和 ZIP 校验。
 
 后续更新应先读取目标分支最新提交，以普通快进推送保留其他协作者工作。若仓库策略要求 PR，改走 PR，不改写分支历史。tag 和 Release 不覆盖已有同名对象。
+
+光标复发后曾按用户要求保留 Release 草稿；本机候选修复得到用户确认后恢复发布。保留已推送的 codex-v0.3.0 旧 tag，不改写它；草稿改为指向含修复提交的新标签 codex-v0.3.0-fixed。

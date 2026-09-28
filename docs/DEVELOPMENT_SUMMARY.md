@@ -29,4 +29,4 @@
 
 ## 交付状态
 
-准备安装 ZIP、源码 ZIP、SHA-256、README、更新日志、Release 草稿、测试清单、来源说明和上传步骤。本地交付后收到明确上传与发布指令：目标为 MeteorNOX 仓库的 For-Codex 分支，发布者 Yang-huai406 为协作者；使用 codex-v0.3.0 标签，不改变仓库所有权。验收限制仍如实保留。
+准备安装 ZIP、源码 ZIP、SHA-256、README、更新日志、Release 草稿、测试清单、来源说明和上传步骤。本地交付后收到明确上传与发布指令：目标为 MeteorNOX 仓库的 For-Codex 分支，发布者 Yang-huai406 为协作者；使用 codex-v0.3.0-fixed 标签，不改变仓库所有权。验收限制仍如实保留。

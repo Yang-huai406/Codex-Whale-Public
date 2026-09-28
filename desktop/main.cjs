@@ -74,7 +74,7 @@ function applyWindowShape(rects) {
     diagnose('window-shape-failed');
     // Keep the last successful region. If even the initial shape failed, stay
     // hidden instead of exposing a full-client-area surface or reload looping.
-    if (!windowShape) { inputEnabled = false; window.setIgnoreMouseEvents(true, { forward: true }); window.hide(); }
+    if (!windowShape) { inputEnabled = false; window.setIgnoreMouseEvents(true, { forward: !usesWindowShape }); window.hide(); }
     return false;
   }
 }
@@ -221,7 +221,7 @@ else {
     const { startBridge } = await import(pathToFileURL(path.join(root, 'runtime', 'bridge.mjs')));
     let testOptions = {};
     if (fixture) { const { makeFixture } = await import(pathToFileURL(path.join(root, 'tests', 'desktop-fixture.mjs'))); testOptions = await makeFixture(dataDir); }
-    dispatcher = createDispatcher({ dataDir, fetchImpl: (url, options) => net.fetch(url, options), onStop: pauseAndQuit, onShow: show, statusInfo: () => ({ followCodex: desktopMode !== 'standalone', desktopMode, rendererReady, recoveryAttempts, manuallyHidden, platform: process.platform, followMode: lastHost?.followMode || null, hostPid: lastHost?.hostPid || null, visible: !!window?.isVisible(), modePending, windowShape, windowShapeError, windowBounds: window?.getBounds(), visibility: visibilityController.snapshot(), nativeFollowing: !!lastHost?.nativeFollowing, startup, rendering: gpuStatus }), ...testOptions });
+    dispatcher = createDispatcher({ dataDir, fetchImpl: (url, options) => net.fetch(url, options), onStop: pauseAndQuit, onShow: show, statusInfo: () => ({ followCodex: desktopMode !== 'standalone', desktopMode, rendererReady, recoveryAttempts, manuallyHidden, platform: process.platform, followMode: lastHost?.followMode || null, hostPid: lastHost?.hostPid || null, visible: !!window?.isVisible(), modePending, windowShape, windowShapeError, windowBounds: window?.getBounds(), visibility: visibilityController.snapshot(), nativeFollowing: !!lastHost?.nativeFollowing, mouseRouting: { forwardedMouseMoves: !usesWindowShape, cursorPollMs: usesWindowShape ? 16 : 50 }, startup, rendering: gpuStatus }), ...testOptions });
     markStartup('dispatcherReady');
     await importLegacyStorage();
     session.defaultSession.protocol.handle('whale', async request => {
@@ -252,7 +252,7 @@ else {
     window.once('ready-to-show', () => markStartup('frameReady'));
     if (fixture) window.webContents.on('console-message', (_event, ...args) => { const d = args[0]; if (typeof d === 'object' ? d.level === 'error' : d === 3) rendererErrors.push(typeof d === 'object' ? d.message : args[1]); });
     if (!fixture) process.stdout.write(JSON.stringify({ overlayHandle: window.getNativeWindowHandle().readBigUInt64LE().toString() }) + '\n');
-    window.setIgnoreMouseEvents(true, { forward: true });
+    window.setIgnoreMouseEvents(true, { forward: !usesWindowShape });
     window.on('show', () => { diagnose('window-shown'); invalidate(); sendCursor(true); });
     window.on('hide', () => diagnose('window-hidden'));
     window.on('resize', () => {
@@ -266,7 +266,7 @@ else {
       if (usesWindowShape) applyWindowShape(EMPTY_SHAPE);
       visibility();
       setKeyboardFocus(false);
-      window.setIgnoreMouseEvents(true, { forward: true });
+      window.setIgnoreMouseEvents(true, { forward: !usesWindowShape });
     });
     window.webContents.setWindowOpenHandler(({ url }) => { openWebLink(url).catch(() => {}); return { action: 'deny' }; });
     window.webContents.on('will-navigate', (event, url) => { if (!url.startsWith(UI_ORIGIN + '/')) event.preventDefault(); });
@@ -299,12 +299,14 @@ else {
     ipcMain.on('whale-interactive', (event, enabled) => {
       if (!acceptsWindowMessage(window,event,quitting) || (usesWindowShape && !windowShape) || typeof enabled !== 'boolean' || enabled === inputEnabled) return;
       inputEnabled = enabled;
-      window.setIgnoreMouseEvents(!enabled, { forward: true });
+      window.setIgnoreMouseEvents(!enabled, { forward: !usesWindowShape });
     });
     ipcMain.on('whale-keyboard-focus', (event, editing) => {
       if (acceptsWindowMessage(window,event,quitting) && typeof editing === 'boolean') setKeyboardFocus(editing);
     });
-    const cursorPoll = setInterval(sendCursor, 50);
+    // Windows uses the native cursor sampler instead of forwarding ignored mouse
+    // messages into Chromium, which must not arbitrate the host cursor.
+    const cursorPoll = setInterval(sendCursor, usesWindowShape ? 16 : 50);
     app.once('will-quit', () => clearInterval(cursorPoll));
     const icon = nativeImage.createFromPath(path.join(root, 'assets', 'DSniang1.png')).resize({ width: 24, height: 24 });
     tray = new Tray(icon); tray.setToolTip('API 余额小鲸鱼 · 跟随 Codex');

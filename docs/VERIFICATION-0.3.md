@@ -35,3 +35,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-packag
 ```
 
 预检不是在另一台设备上的全新安装证明。完整验收按 [用户测试清单](USER_TEST_CHECKLIST.md) 执行。
+
+## 光标修复发布前复验
+
+用户已确认构建 0.3.0+codex.20260928191328 在本机修复光标异常。Windows 停用穿透区域的鼠标移动转发，以16ms原生位置采样处理悬停。原生首次点击、宿主输入、72步跟随及完整界面回归通过。系统光标对照的两组360次采样均保持 I-beam，未直接复现旧版偶发现象，因此用户确认与自动测试分别记录，不宣称已证明所有设备的唯一根因。

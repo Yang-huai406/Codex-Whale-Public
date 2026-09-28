@@ -64,6 +64,18 @@ export async function verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint,
     const hostInput = (await request('snapshot')).inputRect;
     const hostDip = screen.screenToDipRect(null, fixture.bounds);
     const hostPoint = screen.dipToScreenPoint({ x: hostDip.x + hostInput.left + 12, y: hostDip.y + hostInput.top + hostInput.height / 2 });
+    if(process.env.WHALE_CURSOR_ROUTING_TEST==='1'){
+      setTestCursor(null);
+      const sample=async()=>{
+        const result=await promisify(execFile)(process.env.WHALE_TEST_PYTHON||'python',[path.join(ROOT,'tests','cursor-routing.py'),fixture.handle,String(fixture.pid),String(Math.round(hostPoint.x)),String(Math.round(hostPoint.y))],{windowsHide:true,timeout:10000});return JSON.parse(result.stdout);
+      };
+      window.setIgnoreMouseEvents(true,{forward:true});await delay(100);details.forwardedCursor=await sample();
+      window.setIgnoreMouseEvents(true,{forward:false});await delay(100);details.unforwardedCursor=await sample();
+      fs.writeFileSync(path.join(output,'cursor-routing.json'),JSON.stringify(details,null,2));
+      assert.equal(details.unforwardedCursor.counts.arrow,0,'host I-beam must not be replaced by the ignored overlay');
+      assert.ok(details.unforwardedCursor.counts.ibeam>300,'native cursor stays an I-beam while moving within host input');
+      checks.push('real Windows cursor sampling keeps host text cursor stable without forwarded mouse moves');
+    }
     details.hostNative = await probe(fixture.handle);
     move(5, 5); await delay(120);
     await promisify(execFile)(process.env.WHALE_TEST_PYTHON || 'python', [path.join(ROOT, 'tests', 'native-click.py'), fixture.handle, String(fixture.pid), String(Math.round(hostPoint.x)), String(Math.round(hostPoint.y))], { windowsHide: true, timeout: 10000 });

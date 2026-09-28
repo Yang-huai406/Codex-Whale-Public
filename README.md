@@ -2,7 +2,7 @@
 
 **Codex v0.3.0 · For-Codex 分支**
 
-仓库所有者为 [MeteorNOX](https://github.com/MeteorNOX)；本次由协作者 Yang-huai406 发布，不涉及所有权变更。长期显示稳定性、Mac 实机及真实订阅账号仍有待验证项，见下方限制。
+仓库所有者为 [MeteorNOX](https://github.com/MeteorNOX)；本次由协作者 Yang-huai406 发布，不涉及所有权变更。本机用户已确认本次光标修复生效；长期显示稳定性、Mac 实机及真实订阅账号仍有待验证项，见下方限制。
 
 Codex 适配维护：[Yang-huai406](https://github.com/Yang-huai406)。上游及 macOS 贡献者见文末致谢。
 
@@ -78,7 +78,7 @@ macOS 运行 `回滚 Mac 更新.command`（如该平台包提供），或 `node 
 
 ## 已知限制
 
-- 偶发消失、白块和光标问题仍需用户日常验收。Windows 挂件默认软件合成；这是兼容措施，短时测试通过不代表所有设备已根治。
+- 本次通过关闭 Windows 鼠标移动转发修复光标干扰，用户已确认生效；偶发显示与多设备兼容性仍需持续验证。Windows 挂件默认软件合成；这是兼容措施，短时测试通过不代表所有设备已根治。
 - Mac 脚本目前安装桌面组件和 LaunchAgent，不自动完成 Codex 插件市场的技能/MCP 注册；相关平台流程仍待实机补充验证。
 
 - macOS Apple Silicon/Intel、Spaces、多屏、睡眠唤醒仍需实机验收。
@@ -94,4 +94,4 @@ macOS 运行 `回滚 Mac 更新.command`（如该平台包提供），或 `node 
 
 ## 发布材料
 
-[本轮开发总结](docs/DEVELOPMENT_SUMMARY.md) · [用户验收清单](docs/USER_TEST_CHECKLIST.md) · [发布草稿](RELEASE_NOTES.md) · [GitHub 发布准备](docs/GITHUB_PUBLISHING.md)。本次发布目标为本仓库 For-Codex 分支，独立标签 `codex-v0.3.0`。
+[本轮开发总结](docs/DEVELOPMENT_SUMMARY.md) · [用户验收清单](docs/USER_TEST_CHECKLIST.md) · [发布草稿](RELEASE_NOTES.md) · [GitHub 发布准备](docs/GITHUB_PUBLISHING.md)。本次发布目标为本仓库 For-Codex 分支，独立标签 `codex-v0.3.0-fixed`。

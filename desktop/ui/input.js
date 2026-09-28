@@ -36,7 +36,8 @@
     if (next !== keyboardFocus) { keyboardFocus = next; bridge.keyboardFocus(next); }
   }
   function track(e) { pointerEventAt=Date.now(); point = { x: e.clientX, y: e.clientY }; externalDrag = heldPointer === null && Number(e.buttons) > 0; update(); }
-  // Electron forwards mousemove while ignoring input on Windows; pointermove alone is insufficient.
+  // Real movement events are handled while interactive. Ignored Windows areas
+  // use bridge.onCursor below and do not forward host mouse events to Chromium.
   document.addEventListener('mousemove', track, true);
   document.addEventListener('pointermove', track, true);
   document.addEventListener('pointerdown', e => {
