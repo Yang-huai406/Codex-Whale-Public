@@ -1,6 +1,8 @@
+> 历史上游说明：以下记录原框架，不是当前 Codex 适配的安装或费用说明。旧安装命令、峰谷功能及“精确 usage”等描述不适用于当前版本；请以[当前 README](../README.md)为准。
+
 # DSH 小鲸鱼余额挂件（DeepSeek Balance Whale Widget）
 
-![DSH 小鲸鱼余额挂件](assets/DSH2.png)
+![DSH 小鲸鱼余额挂件](../assets/DSH2.png)
 
 DeepSeek Harness（DSH）Web 界面右下角的常驻余额挂件：小鲸鱼气泡图 + DeepSeek API 余额 + 今日已用 + 每轮对话消耗统计，每次打开界面自动启用。本项目是标准 DSH 插件包，可通过 `dsh plugin` 安装/卸载。
 
@@ -100,7 +102,7 @@ dsh plugin --profile web add dsh-whale-widget
    或从本地仓库链接安装（例如本地克隆的仓库根目录）：
      dsh plugin --profile web add link:.<仓库绝对路径>
    （注意：仓库根目录就是插件包，不要写成 link:.\dsh-whale-widget 这种带子目录的路径）
-3. 如果报 pnpm 阻止构建脚本（allowBuilds 相关），在 C:\Users\<用户名>\.dsh\profiles\web\pnpm-workspace.yaml 的 allowBuilds 下加对应的包 key，然后重跑
+3. 如果报 pnpm 阻止构建脚本（allowBuilds 相关），在 %USERPROFILE%\.dsh\profiles\web\pnpm-workspace.yaml 的 allowBuilds 下加对应的包 key，然后重跑
 4. 重启 dsh web，然后 F5 刷新浏览器
 
 安装后验证：
@@ -229,4 +231,4 @@ curl http://127.0.0.1:3080/dsh-whale/last-turn.json
 
 ## 许可证
 
-本项目基于 **MIT License** 开源，详见 [LICENSE](LICENSE)。
+本项目基于 **MIT License** 开源，详见 [LICENSE](../LICENSE)。

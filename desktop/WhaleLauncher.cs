@@ -68,7 +68,7 @@ internal static class WhaleLauncher {
                 try {
                     var start = new ProcessStartInfo {
                         FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe"),
-                        Arguments = "-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -File " + Argument(script) + " -DataDir " + Argument(dataDir),
+                        Arguments = "-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File " + Argument(script) + " -DataDir " + Argument(dataDir),
                         WorkingDirectory = dataDir,
                         UseShellExecute = false,
                         CreateNoWindow = true,

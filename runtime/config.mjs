@@ -12,6 +12,10 @@ export const DEFAULT_CONFIG = {
   models: {},
 };
 
+// These values remain local to the service. The settings editor receives only
+// presence flags and submits a value only when the user explicitly changes it.
+export const PRIVATE_SETTING_FIELDS = Object.freeze(['baseUrl', 'keyEnv', 'profile', 'projectDir', 'dashboardUrl', 'balancePath', 'balanceField', 'usedField', 'models']);
+
 function cleanUrl(value, { allowEmpty = false } = {}) {
   if (!value && allowEmpty) return '';
   let u;
@@ -73,9 +77,26 @@ export class ConfigStore {
   }
   load() { return validateConfig(readJson(this.file, DEFAULT_CONFIG)); }
   save(patch) {
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('设置必须是 JSON 对象');
     if (Object.keys(patch).some(k => /secret|token|api.?key|password/i.test(k) && k !== 'keyEnv')) throw new Error('请填写密钥环境变量名；插件设置中不保存密钥');
-    const c = validateConfig({ ...this.load(), ...patch });
+    const current = this.load(), input = { ...current, ...patch };
+    if (Object.hasOwn(patch, 'pricingUpdate')) {
+      const update = patch.pricingUpdate;
+      if (!update || typeof update !== 'object' || Array.isArray(update) || typeof update.model !== 'string' || !update.model.trim() || update.model.length > 150 || ['__proto__', 'prototype', 'constructor'].includes(update.model)) throw new Error('模型名称无效');
+      input.models = { ...current.models };
+      if (update.prices === null) delete input.models[update.model];
+      else input.models[update.model] = update.prices;
+    }
+    const c = validateConfig(input);
     writeJson(this.file, c); return c;
+  }
+  settingsInfo() {
+    const current = this.load(), settings = {}, configured = {};
+    for (const key of Object.keys(DEFAULT_CONFIG)) {
+      if (PRIVATE_SETTING_FIELDS.includes(key)) configured[key] = key === 'models' ? Object.keys(current.models).length > 0 : !!current[key];
+      else settings[key] = current[key];
+    }
+    return { settings, configured };
   }
   resolve() {
     const setting = this.load();
@@ -126,15 +147,12 @@ export class ConfigStore {
     if (/[\r\n]/.test(key)) throw new Error('API 密钥格式无效');
     const accountId = crypto.createHash('sha256').update(baseUrl + '\0' + key).digest('hex').slice(0, 24);
     const host = new URL(baseUrl).hostname;
-    // 0.2.0: no service-specific label. The display name comes from the user's
-    // own Codex provider entry, the provider id, or the hostname of the endpoint
-    // they configured; the package itself names no vendor.
-    const providerName = provider.name || id || host;
+    const providerName = '当前 API';
     const dashboardUrl = setting.dashboardUrl || (host === 'api.openai.com' ? 'https://platform.openai.com/settings/organization/billing/overview' : new URL(baseUrl).origin);
     return { setting, id, model: effective.model || '', profileName, providerName, baseUrl, key, keySource, accountId, dashboardUrl };
   }
   publicInfo() {
     const c = this.resolve();
-    return { id: c.id, providerName: c.providerName, baseUrl: c.baseUrl, model: c.model, profile: c.profileName, hasKey: !!c.key, keySource: c.keySource, accountId: c.accountId, dashboardUrl: c.dashboardUrl, settings: c.setting };
+    return { providerName: '当前 API', hasKey: !!c.key, ...this.settingsInfo() };
   }
 }

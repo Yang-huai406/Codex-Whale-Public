@@ -2,11 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
 import { Worker } from 'node:worker_threads';
+import { failureKind } from './failure-kind.mjs';
 
 const fields = ['input_tokens', 'cached_input_tokens', 'cache_write_input_tokens', 'output_tokens', 'reasoning_output_tokens'];
 const normalize = value => Object.fromEntries(fields.map(key => [key, Math.max(0, Number(value?.[key]) || 0)]));
 const zero = () => normalize({});
-const relevant = /"(?:session_meta|token_count|turn_context|task_started|task_complete|turn_started|turn_completed|turn_aborted|task_aborted)"/;
+const relevant = /"(?:session_meta|token_count|turn_context|task_started|task_complete|turn_started|turn_completed|turn_aborted|task_aborted|error|stream_error)"/;
 const timestamp = value => typeof value === 'number' ? (value < 1e12 ? value * 1000 : value) : Date.parse(value);
 
 export class SessionParser {
@@ -15,6 +16,7 @@ export class SessionParser {
     this.onStart = onStart; this.onEnd = onEnd; this.onUpdate = onUpdate;
     this.total = null; this.active = null; this.priming = false;
     this.identity = null; this.skipHistory = 0; this.completed = new Set();
+    this.recentEnds = new Map();
     this.recoverIds = new Set(recoverIds); this.recoverySeen = new Set();
   }
   identify(meta) {
@@ -52,6 +54,15 @@ export class SessionParser {
     }
     if (d.type !== 'event_msg') return;
     const turnId = p.turn_id || p.turnId;
+    if (['error', 'stream_error'].includes(p.type)) {
+      // Retry diagnostics are not completion events. An explicit terminal error
+      // can close a turn; otherwise wait for its matching terminal record.
+      if (!this.active || turnId && turnId !== this.active.turnId) return;
+      this.active.failureKind = failureKind(p);
+      if (!this.priming) this.onUpdate({ ...this.active });
+      if (p.will_retry === false || p.fatal === true) this.end(timestamp(d.timestamp) || Date.now(), 'failed');
+      return;
+    }
     if (['task_started', 'turn_started'].includes(p.type)) {
       if (typeof turnId !== 'string' || !turnId || this.completed.has(turnId) || this.active?.turnId === turnId) return;
       const startedAt = timestamp(p.started_at);
@@ -84,8 +95,16 @@ export class SessionParser {
       return;
     }
     if (['task_complete', 'turn_completed', 'turn_aborted', 'task_aborted'].includes(p.type)) {
+      const previous = this.recentEnds.get(turnId);
+      if (/aborted$/.test(p.type) && previous?.outcome === 'failed') {
+        const corrected = { ...previous, outcome: 'aborted', failureKind: null, notify: false, statusNotify: true, statusCorrection: true };
+        this.recentEnds.set(turnId, corrected);
+        if (!this.priming && !previous.historical) this.onEnd(corrected);
+        return;
+      }
       if (!this.active || !turnId || turnId !== this.active.turnId) return;
-      const outcome = p.error ? 'failed' : /aborted$/.test(p.type) ? 'aborted' : 'completed';
+      const outcome = /aborted$/.test(p.type) ? 'aborted' : p.error || p.status === 'failed' ? 'failed' : 'completed';
+      this.active.failureKind = outcome === 'failed' ? (p.error ? failureKind(p.error) : failureKind(p) || this.active.failureKind) : null;
       this.end(timestamp(d.timestamp) || Date.now(), outcome);
     }
   }
@@ -93,8 +112,11 @@ export class SessionParser {
     if (!this.active) return;
     const completed = { ...this.active, ts, outcome, historical: this.priming,
       notify: !this.priming && outcome === 'completed' && !this.active.isSubagent,
-      statusNotify: !this.priming && ['failed', 'aborted'].includes(outcome) && !this.active.isSubagent };
+      failureKind: outcome === 'failed' && this.active.failureKind === 'high-demand' ? 'high-demand' : null,
+      statusNotify: !this.priming && (outcome === 'aborted' || outcome === 'failed' && this.active.failureKind === 'high-demand') && !this.active.isSubagent };
     this.active = null; this.completed.add(completed.turnId);
+    this.recentEnds.set(completed.turnId, completed);
+    if (this.recentEnds.size > 128) this.recentEnds.delete(this.recentEnds.keys().next().value);
     if (this.completed.size > 8192) this.completed.delete(this.completed.values().next().value);
     if (!this.priming || completed.recoverable) this.onEnd(completed);
   }

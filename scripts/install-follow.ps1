@@ -1,4 +1,4 @@
-param([string]$DataDir, [switch]$NoStart, [switch]$NoStartup)
+﻿param([string]$DataDir, [switch]$NoStart, [switch]$NoStartup)
 $ErrorActionPreference = 'Stop'
 # The Windows ScheduledTasks provider is native to Windows PowerShell. Running
 # registration through PowerShell 7's compatibility path can return E_FAIL for
@@ -11,7 +11,7 @@ if ($PSVersionTable.PSEdition -ne 'Desktop') {
     $whaleInstallerStart.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
     $whaleInstallerStart.RedirectStandardOutput = $true
     $whaleInstallerStart.RedirectStandardError = $true
-    foreach ($whaleArgument in @('-NoLogo','-NoProfile','-NonInteractive','-File',$PSCommandPath)) { $whaleInstallerStart.ArgumentList.Add($whaleArgument) }
+    foreach ($whaleArgument in @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$PSCommandPath)) { $whaleInstallerStart.ArgumentList.Add($whaleArgument) }
     if ($DataDir) { $whaleInstallerStart.ArgumentList.Add('-DataDir'); $whaleInstallerStart.ArgumentList.Add($DataDir) }
     if ($NoStart) { $whaleInstallerStart.ArgumentList.Add('-NoStart') }
     if ($NoStartup) { $whaleInstallerStart.ArgumentList.Add('-NoStartup') }

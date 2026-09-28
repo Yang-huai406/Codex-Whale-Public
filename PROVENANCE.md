@@ -1,47 +1,34 @@
-# 来源、改编范围与许可（PROVENANCE）
+# 来源、改编范围与许可
 
-本目录是 **MeteorNOX** 的 [DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)（包名 `dsh-whale-widget`）在 **For-Codex** 分支上的改造版本：把原本住在 DSH Web 界面右下角的挂件，改造成跟随 **Codex 桌面应用**窗口的伴随挂件（包名 `api-balance-whale`，Codex 插件名同为 `api-balance-whale`）。
+本分支将 MeteorNOX 的 dsh-whale-widget 0.3.0-beta 从 DSH Web 挂件适配为 Codex 桌面伴随挂件，插件名称为 api-balance-whale。
 
-## 一、上游与本分支的关系
+## 本次范围和协作关系
 
-| | 上游主分支 | 本分支 For-Codex |
-|---|---|---|
-| 运行位置 | DSH（DeepSeek Harness）Web 界面 | Codex 桌面应用（Windows x64 / macOS） |
-| 安装方式 | `dsh plugin --profile web add …` | 解压为插件目录 + 注册 Windows 计划任务或 macOS LaunchAgent（见 `docs/INSTALL-AND-ROLLBACK-0.2.4.md`、`docs/MACOS.md`） |
-| 界面宿主 | DSH 页面内的 cordis bundle | 透明 Electron 工具窗口 + 自绘菜单 |
-| 与 Codex 的关系 | 仅把 Codex 当数据来源 | 自身即 Codex 插件，读取本机 Codex 配置与会话用量 |
-| 数据目录 | `%USERPROFILE%\.dsh\…` | `~/.codex/whale-widget`（Windows 为 `%USERPROFILE%\.codex\whale-widget`） |
+- 当前交付：Windows v0.2(fixed)，内部版本 0.2.0；没有独立网页，不修改或注入 Codex 安装文件。
+- 仓库所属账号及上游作者：[@MeteorNOX](https://github.com/MeteorNOX)。
+- 本次上传协作者：[@Yang-huai406](https://github.com/Yang-huai406)，不代表仓库所有权变更。
+- 上传前的 0.2.4/macOS 成果保留于 [原始提交](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/8de181abf5593247f32d57995567dd9f4063e049) 和 [归档目录](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/For-Codex/archive/for-codex-0.2.4)，后续再整合。
+- 感谢 [@1llysviel](https://github.com/1llysviel) 的 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128)。本次不会把其工作改称为新原创。
 
-两者**互不兼容**：本分支不能用 `dsh plugin add` 装进 DSH 页面；上游包也不能在 Codex 里运行。若你只想在 DSH 网页里用小鲸鱼，请装上游主分支。
+## 保留与改造
 
-## 二、保留自上游的部分
+保留原框架的角色、图片、动图、音效和主要交互。适配层提供 Electron 透明工具窗口、Windows 原生跟随、GUI 启动器、本地 IPC、当前 API 余额/用量、汇率、账本、恢复日志及安装回滚。
 
-- 角色与素材：`assets/DSniang1.png`、`assets/DSniang02.png`、`assets/DSH2.png`、`assets/*.gif`、`assets/*.mp3`（按上游 `PROVENANCE` 说明，这些美术素材由维护者提供，随插件 as-is 分发）。
-- 挂件前端的大部分交互与视觉实现：`assets/whale-widget.js` 中的气泡渲染、菜单、角色/音效/素材管理、拖动吸附与翻转等。
+本次修复包括设置脱敏、灰色感叹号汇率说明、中性取消结算、主轮去重、可见性状态机，以及显式显示和返回 Codex 的恢复。详情见 [README](README.md) 和 [变更记录](CHANGELOG.md)。
 
-## 三、本分支的改造（0.2.4）
+## 许可边界
 
-- **宿主改造**：新增 `desktop/`（Electron 主进程、透明工具窗口、预加载、页面脚本、原生窗口跟随 `WindowApi.cs`、无窗口启动器 `WhaleLauncher.cs`、`supervisor.ps1`）与 `runtime/`（配置解析、余额 provider、账本、汇率、会话监视、MCP 工具、本地命名管道 IPC）。没有独立网页，也没有任何本地网页端口。
-- **余额与用量**：支持兼容账单接口、New API/One API、自定义 JSON 接口与 DeepSeek；账本按账户与币种隔离；金额统一两位小数；失败/暂停轮次仍保留已观测消耗。
-- **汇率显示**：USD/CNY 显示换算，报价说明收在“刷新汇率”右侧的灰色 **!** 按钮中，按北京时间每日 00:15 检查。
-- **0.2.0 的界面与稳定性改动**：汇率说明改为点击展开；失败／暂停取消只显示中性扣费提示；显示判定加入周期重断言与还原事件重断言，窗口句柄变化后可自行恢复；移除硬编码的服务商名称与文档中的本机路径痕迹。
-- **上游已移除项**：峰谷/时段定价相关模块（上游 0.3.x 起也已移除），保留迁移兼容。
+| 范围 | 许可与分发方式 |
+| --- | --- |
+| 代码和文档 | MIT，保留 [LICENSE](LICENSE) 中的上游版权 |
+| assets 中的图片、动图、音频 | 按上游条款 as-is 随挂件分发；本仓库不授予再许可，不声明为本次原创，不因代码 MIT 而扩大素材权利 |
+| vendor/smol-toml | BSD-3-Clause，保留原包许可证 |
+| Electron 与 Chromium | 安装时另外下载，保留其自带许可证和第三方声明 |
 
-详细逐条说明见 [`docs/CHANGELOG-0.2.4.md`](docs/CHANGELOG-0.2.4.md)；0.2.0 基线的逐条说明见 [`docs/CHANGELOG-0.2.0.md`](docs/CHANGELOG-0.2.0.md)。
+见 [第三方声明](THIRD_PARTY_NOTICES.md)。截图只使用合成测试数据；其中角色素材仍遵循上述素材边界。
 
-## 四、许可边界
+## 隐私和历史
 
-| 范围 | 许可 |
-|---|---|
-| 代码（`desktop/`、`runtime/`、`lib/`、`scripts/`、`.codex-plugin/`、`skills/`、文档） | **MIT**（见 [`LICENSE`](LICENSE)，沿用上游署名） |
-| `assets/**`（图片 / 动图 / 音效） | **不在 MIT 覆盖范围**：随插件 as-is 分发，仅用于运行本挂件；不授予再许可，也不声明为原创作品 |
-| `vendor/smol-toml/**` | **BSD-3-Clause**，Cynthia Rey 及贡献者，见 `vendor/smol-toml/LICENSE` |
-| Electron | **MIT**（含 Chromium 与第三方声明），由可选安装脚本单独下载，不随本仓库分发 |
+分享包不包含个人密钥、账号、账本、运行日志、真实账户截图、缓存或本机备份。完整旧实现可通过 Git 历史恢复。本次是普通提交，不改写历史，不变更仓库设置或所有者。
 
-完整第三方清单见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)；上游原版说明备份在 [`docs/UPSTREAM-README.md`](docs/UPSTREAM-README.md)。
-
-## 五、权利主张与致谢
-
-- 本项目的一切改动都建立在上游作者 **MeteorNOX** 的工作之上，特此致谢。
-- 若你认为 `assets/` 中有素材侵犯了你的权利，请在本仓库开 issue 说明**文件名**与**依据**，我们会在核实后立即替换或移除，不附加其它条件；也欢迎直接提供可自由再分发的替代素材。
-- 使用者需自行确保其配置的第三方 API 服务条款允许本挂件读取余额接口；本挂件不代任何服务商作出承诺。
+如果认为某个素材侵犯权利，请沿用仓库既有反馈渠道说明文件名和依据；核实后由维护者处理。安全问题按 [SECURITY.md](SECURITY.md) 私下报告，不提交凭据或完整日志。

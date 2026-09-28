@@ -20,6 +20,7 @@ export class WhaleService {
     this.jobs = new Set(); this.noticeTimers = new Map(); this.latestStarts = new Map(); this.pendingCosts = new Map();
     this.noticeDelayMs = options.noticeDelayMs ?? 2500; this.pendingCostMs = options.pendingCostMs ?? 30000;
     this.closed = false; this.restored = false; this.recoveryActive = new Set();
+    this.cancelledOutcomes = new Set();
     this.recoveryError = '';
   }
   scope(c, currency) { return c.accountId + '-' + currency; }
@@ -116,6 +117,7 @@ export class WhaleService {
     const defaults = usageDefaults();
     defaults.alert.lines.find(line => line.type === 'link').url = this.config.resolve().dashboardUrl;
     for (const key of Object.keys(defaults)) defaults[key] = { ...defaults[key], ...saved[key] };
+    delete defaults.outcomeNotice;
     return defaults;
   }
   writeUsageSettings(patch) {
@@ -130,6 +132,7 @@ export class WhaleService {
     const last = readJson(this.lastFile, { ok: true, seq: 0, turn: null, amount: null, tokens: null, ts: null });
     const c = this.config.resolve();
     if (last.accountId && last.accountId !== c.accountId) return { ok: true, seq: last.seq, turn: null, amount: null, tokens: null, ts: null };
+    if (last.completionKind === 'failed' && last.failureKind !== 'high-demand') return { ...last, notify: false };
     return last;
   }
   beginTurn(meta) {
@@ -162,6 +165,7 @@ export class WhaleService {
     turn.byModel = safeUsage(meta.byModel || turn.byModel);
     if (meta.rootTurnId) turn.rootTurnId = meta.rootTurnId;
     if (meta.ts) turn.ts = meta.ts;
+    turn.failureKind = meta.failureKind === 'high-demand' ? 'high-demand' : null;
     this.persistTurn(turn, 'active');
   }
   persistTurn(turn, stage, meta = turn, extra = {}) {
@@ -206,6 +210,7 @@ export class WhaleService {
   }
   finishTurn(meta) {
     if (this.closed) return Promise.resolve();
+    if (meta.statusCorrection === true && meta.outcome === 'aborted') { this.cancelOutcomeNotice(meta); return Promise.resolve(); }
     const turn = this.turns.get(meta.id);
     if (!turn) return Promise.resolve();
     this.turns.delete(meta.id);
@@ -216,11 +221,12 @@ export class WhaleService {
   }
   async settleTurn(meta, turn) {
     const context = turn.context;
-    const outcome = meta.outcome || 'completed';
+    let outcome = meta.outcome || 'completed';
     const ownUsage = safeUsage(meta.byModel || turn.byModel);
     const base = { id: meta.id, sessionId: meta.sessionId || turn.sessionId, turnId: meta.turnId,
       rootTurnId: meta.rootTurnId || turn.rootTurnId || meta.turnId, ts: meta.ts || Date.now(), outcome,
-      partial: !!turn.partial, historical: !!meta.historical, accountId: context.accountId };
+      partial: !!turn.partial, historical: !!meta.historical, accountId: context.accountId,
+      failureKind: outcome === 'failed' && meta.failureKind === 'high-demand' ? 'high-demand' : null };
     if (turn.isSubagent || meta.isSubagent) {
       const estimate = !turn.partial ? estimateUsage(ownUsage, context.setting, base.ts) : null;
       const scope = this.scope(context, context.setting.currency);
@@ -259,9 +265,10 @@ export class WhaleService {
     if (meta.historical && amount === null) note = '已恢复任务状态及可用 token 记录；任务结束时没有可靠余额采样，不能把停机期间其他扣费归入本轮。';
     const label = source === 'configured-pricing-estimate' ? '上一轮消耗（估算）:' : source === 'shared-key-interval' ? (turn.partial ? '本轮已观测期间扣费:' : '上一轮期间 API 扣费:') : '上一轮 token 用量:';
     const tokens = tokenTotal(combined);
+    if(this.cancelledOutcomes.has(meta.id)){outcome='aborted';base.outcome='aborted';base.failureKind=null;}
     const completionKind = outcome === 'completed' ? 'success' : outcome === 'failed' ? 'failed' : outcome === 'aborted' ? 'cancelled' : null;
     const event = { ...base, ok: true, turn: meta.turnId || meta.id, amount, cost: amount, costState, tokens, currency, source, label, note,
-      completionKind, notify: !meta.historical && !!completionKind && (outcome === 'completed' ? meta.notify !== false : meta.statusNotify === true),
+      completionKind, notify: !meta.historical && !!completionKind && (outcome === 'completed' ? meta.notify !== false : outcome === 'aborted' && (meta.statusNotify === true || this.cancelledOutcomes.has(meta.id)) || outcome === 'failed' && base.failureKind === 'high-demand' && meta.statusNotify === true),
       concurrent: !!turn.concurrent, childTurns: children.length, ownByModel: ownUsage, byModel: combined,
       pricing: context.setting.models };
     const scope = this.scope(context, currency);
@@ -332,9 +339,24 @@ export class WhaleService {
       this.scheduleCostCheck();
     }, Math.max(1, soonest - Date.now())); this.costTimer.unref();
   }
+  cancelOutcomeNotice(meta) {
+    this.cancelledOutcomes.add(meta.id);
+    if(this.cancelledOutcomes.size>256)this.cancelledOutcomes.delete(this.cancelledOutcomes.values().next().value);
+    const session=meta.sessionId||meta.id, waiting=this.noticeTimers.get(session);
+    if(waiting?.id===meta.id){clearTimeout(waiting.timer);this.noticeTimers.delete(session);}
+    let c;try{c=this.config.resolve();}catch{return;}
+    const patch={outcome:'aborted',completionKind:'cancelled',failureKind:null,notify:!meta.historical&&!meta.isSubagent};
+    for(const scope of new Set([this.activeScope,this.scope(c,c.setting.currency)])){
+      if(!scope?.startsWith(c.accountId+'-'))continue;
+      const found=this.ledger.find(scope,{id:meta.id});
+      if(found?.outcome==='failed'){this.ledger.revise(scope,meta.id,patch);this.queueNotice(scope,{...found,...patch});}
+    }
+    const last=readJson(this.lastFile,{});
+    if(last.id===meta.id&&last.outcome==='failed')writeJson(this.lastFile,{...last,...patch});
+  }
   queueNotice(scope, event) {
     if (!event.notify || this.closed) return;
-    if (event.completionKind === 'success') { this.publishNotice(scope, event.id); return; }
+    if (['success','cancelled'].includes(event.completionKind)) { this.publishNotice(scope, event.id); return; }
     const session = event.sessionId || event.id;
     if (this.latestStarts.get(session) && this.latestStarts.get(session) !== event.id) return;
     const old = this.noticeTimers.get(session); if (old) clearTimeout(old.timer);
@@ -353,8 +375,7 @@ export class WhaleService {
     let config;
     try { config = this.config.resolve(); } catch { return; }
     if (config.accountId !== event.accountId) return;
-    const settings = this.readUsageSettings().outcomeNotice;
-    if (event.completionKind === 'failed' && !settings.failed || event.completionKind === 'cancelled' && !settings.cancelled) return;
+    if (!['success','cancelled'].includes(event.completionKind) && !(event.completionKind === 'failed' && event.failureKind === 'high-demand')) return;
     const seq = Number(readJson(this.lastFile, { seq: 0 }).seq || 0) + 1;
     this.ledger.revise(scope, id, { noticePublished: true });
     writeJson(this.lastFile, { ...event, seq, amount: event.cost, notificationAt: Date.now() });

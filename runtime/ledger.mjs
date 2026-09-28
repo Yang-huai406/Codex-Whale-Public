@@ -92,7 +92,6 @@ export class UsageLedger {
 export function usageDefaults() {
   return {
     taskEnd: { on: false, sel: '' },
-    outcomeNotice: { failed: true, cancelled: true },
     alert: { on: true, below: 5, msg: '余额已低于 {currency}{below}', lines: [
       { type: 'text', text: '老大～你的 API 余额', size: 5, bold: true },
       { type: 'text', text: '已经不足 {currency}{below} 啦', size: 6, bold: true, rgb: 'rouge' },

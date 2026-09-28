@@ -24,8 +24,8 @@ public static class WhaleWindows {
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc callback, IntPtr p);
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
     [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+    [DllImport("user32.dll")] static extern bool IsWindowEnabled(IntPtr h);
     [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
-    [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
     [DllImport("user32.dll")] static extern uint GetDpiForWindow(IntPtr h);
     [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr h, out Rect r);
     [DllImport("user32.dll")] static extern bool ClientToScreen(IntPtr h, ref Point p);
@@ -78,6 +78,7 @@ public static class WhaleWindows {
         return new Dictionary<string, object> {
             { "hostAlive", roots.Length > 0 }, { "hostPid", ownerPid != 0 ? (int)ownerPid : roots.FirstOrDefault() },
             { "window", chosen.ToInt64().ToString() }, { "visible", visible }, { "dpi", chosen == IntPtr.Zero ? 96 : GetDpiForWindow(chosen) },
+            { "modal", chosen != IntPtr.Zero && !IsWindowEnabled(chosen) },
             { "bounds", new { x = point.X, y = point.Y, width = Math.Max(1, rect.Right), height = Math.Max(1, rect.Bottom) } }
         };
     }
@@ -95,12 +96,6 @@ public static class WhaleWindows {
         var overlay = new IntPtr(overlayValue); var owner = new IntPtr(ownerValue); uint overlayPid, ownerPid;
         GetWindowThreadProcessId(overlay, out overlayPid); GetWindowThreadProcessId(owner, out ownerPid);
         if (!Image((int)overlayPid).EndsWith(@"\electron\dist\electron.exe", StringComparison.OrdinalIgnoreCase) || !CodexImage(Image((int)ownerPid))) return false;
-        // Only ever bind the overlay to the tracked top-level Codex window. A
-        // one-way rebind to a dialog, a hidden helper window or an already dead
-        // handle is unrecoverable, so validate ownership and liveness first.
-        if (!IsWindow(owner) || !IsWindowVisible(owner) || IsIconic(owner)) return false;
-        if (GetWindow(owner, 4) != IntPtr.Zero) return false;
-        if ((GetWindowLongPtr(owner, -20).ToInt64() & 0x80) != 0) return false;
         SetWindowLongPtr(overlay, -8, owner);
         if (GetWindow(overlay, 4) != owner) return false;
         StopFollowing();
@@ -109,6 +104,10 @@ public static class WhaleWindows {
         return true;
     }
     static NativeFollower follower;
+    // A process-wide monotonic epoch survives reattachment. A short minimize /
+    // restore, dialog cycle or return to Codex stays observable between polls.
+    static long visibilityRevision;
+    public static long VisibilityRevision() { return Interlocked.Read(ref visibilityRevision); }
     public static bool IsFollowing() { var f = follower; return f != null && f.Running; }
     public static object FollowMetrics() {
         var f = follower;
@@ -139,6 +138,7 @@ public static class WhaleWindows {
         [DllImport("user32.dll", SetLastError = true)] static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int width, int height, uint flags);
         [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
         readonly IntPtr overlay, host;
+        readonly uint hostPid;
         readonly ManualResetEvent initialized = new ManualResetEvent(false);
         readonly Thread thread;
         uint threadId; int posted;
@@ -149,6 +149,7 @@ public static class WhaleWindows {
         WinEvent callback;
         public NativeFollower(IntPtr overlay, IntPtr host) {
             this.overlay = overlay; this.host = host;
+            GetWindowThreadProcessId(host, out hostPid);
             thread = new Thread(Pump) { IsBackground = true, Name = "Whale native window follow" };
         }
         public void Start() { thread.Start(); initialized.WaitOne(1000); }
@@ -163,6 +164,14 @@ public static class WhaleWindows {
         }
         void OnEvent(IntPtr hook, uint ev, IntPtr hwnd, int obj, int child, uint sourceThread, uint time) {
             if ((hwnd == host || hwnd == overlay) && obj == 0 && child == 0) { Interlocked.Increment(ref Events); QueueSync(); }
+        }
+        void OnLifecycle(IntPtr hook, uint ev, IntPtr hwnd, int obj, int child, uint sourceThread, uint time) {
+            if (stopping || hwnd == IntPtr.Zero || hwnd == overlay || obj != 0 || child != 0) return;
+            if (ev != 0x0003 && ev != 0x0010 && ev != 0x0011 && ev != 0x0016 && ev != 0x0017 && ev != 0x8002 && ev != 0x8003) return;
+            uint pid; GetWindowThreadProcessId(hwnd, out pid);
+            if (pid != hostPid || (hwnd != host && GetAncestor(hwnd, 3) != host)) return;
+            Interlocked.Increment(ref visibilityRevision);
+            Interlocked.Increment(ref Events); QueueSync();
         }
         void SyncBounds() {
             if (stopping || !IsWindow(host) || !IsWindow(overlay) || IsIconic(host)) return;
@@ -179,7 +188,8 @@ public static class WhaleWindows {
             else Error = "Window move failed: " + Marshal.GetLastWin32Error();
         }
         void Pump() {
-            IntPtr locationHook = IntPtr.Zero, moveHook = IntPtr.Zero, previous = IntPtr.Zero;
+            IntPtr locationHook = IntPtr.Zero, moveHook = IntPtr.Zero, lifecycleHook = IntPtr.Zero, showHook = IntPtr.Zero, foregroundHook = IntPtr.Zero, previous = IntPtr.Zero;
+            WinEvent lifecycleCallback = OnLifecycle;
             try {
                 previous = SetThreadDpiAwarenessContext(new IntPtr(-4));
                 threadId = GetCurrentThreadId(); Message message;
@@ -187,7 +197,13 @@ public static class WhaleWindows {
                 callback = OnEvent;
                 locationHook = SetWinEventHook(0x800B, 0x800B, IntPtr.Zero, callback, 0, 0, 2);
                 moveHook = SetWinEventHook(0x000A, 0x000B, IntPtr.Zero, callback, 0, 0, 2);
-                Running = locationHook != IntPtr.Zero && moveHook != IntPtr.Zero;
+                lifecycleHook = SetWinEventHook(0x0010, 0x0017, IntPtr.Zero, lifecycleCallback, hostPid, 0, 2);
+                showHook = SetWinEventHook(0x8002, 0x8003, IntPtr.Zero, lifecycleCallback, hostPid, 0, 2);
+                // A visible host can regain focus without a minimize/show event.
+                // Only this host's activation advances recovery; showInactive()
+                // on the separate overlay process cannot feed back into the hook.
+                foregroundHook = SetWinEventHook(0x0003, 0x0003, IntPtr.Zero, lifecycleCallback, hostPid, 0, 2);
+                Running = locationHook != IntPtr.Zero && moveHook != IntPtr.Zero && lifecycleHook != IntPtr.Zero && showHook != IntPtr.Zero && foregroundHook != IntPtr.Zero;
                 if (!Running) { Error = "Window event hooks unavailable"; return; }
                 initialized.Set(); QueueSync();
                 while (!stopping && GetMessage(out message, IntPtr.Zero, 0, 0) > 0) {
@@ -199,8 +215,12 @@ public static class WhaleWindows {
                 Running = false; initialized.Set();
                 if (locationHook != IntPtr.Zero) UnhookWinEvent(locationHook);
                 if (moveHook != IntPtr.Zero) UnhookWinEvent(moveHook);
+                if (lifecycleHook != IntPtr.Zero) UnhookWinEvent(lifecycleHook);
+                if (showHook != IntPtr.Zero) UnhookWinEvent(showHook);
+                if (foregroundHook != IntPtr.Zero) UnhookWinEvent(foregroundHook);
                 if (previous != IntPtr.Zero) SetThreadDpiAwarenessContext(previous);
                 GC.KeepAlive(callback);
+                GC.KeepAlive(lifecycleCallback);
             }
         }
     }

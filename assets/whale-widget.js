@@ -51,11 +51,6 @@
     // Extra settings must remain reachable in a small Codex window. Popovers
     // are mounted on document.body, so scrolling this panel does not clip them.
     styleEl.textContent += '\n.dshwv-menu{max-height:calc(100vh - 16px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}';
-    // 0.2.0 additions: the gray "!" button that reveals the FX explanation.
-    styleEl.textContent += '\n.dshwv-fxicon{flex:0 0 auto;width:18px;height:18px;border-radius:50%;border:1px solid rgba(32,49,112,.25);background:rgba(32,49,112,.10);color:#4a5c95;font-size:11px;font-weight:700;line-height:1;padding:0;cursor:pointer;margin-right:2px}';
-    styleEl.textContent += '\n.dshwv-fxicon:hover{background:rgba(32,49,112,.20);color:#203170}';
-    styleEl.textContent += '\n.dshwv-fxicon:focus-visible{outline:2px solid rgba(32,49,112,.55);outline-offset:1px}';
-    styleEl.textContent += '\n.dshwv-fxinfo{position:fixed;z-index:27000;max-width:min(320px,calc(100vw - 16px));box-sizing:border-box;background:#fff;border:1px solid rgba(32,49,112,.35);border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,.16);padding:8px 10px;color:#203170;font-size:11px;line-height:1.5;text-align:left;white-space:pre-line;pointer-events:auto;color-scheme:light}';
     document.head.appendChild(styleEl);
     var root = document.createElement('div');
     root.className = 'dshwv-root';
@@ -84,8 +79,7 @@
     var menuBox = document.createElement('div');
     menuBox.className = 'dshwv-menu';
     menuBox.addEventListener('scroll', function () {
-      dshwCustSelClose(); closeRolePanel(); closeAudioGroupPanel();
-      closeFxInfo();
+      dshwCustSelClose(); closeRolePanel(); closeAudioGroupPanel(); closeFxInfo();
     });
     function menuLabel(text) {
       var s = document.createElement('span');
@@ -668,22 +662,6 @@
     menuBox.appendChild(row3);
     menuBox.appendChild(row6);
     menuBox.appendChild(row7);
-    var outcomeRow = menuRow();
-    var failedNoticeToggle = document.createElement('input');
-    failedNoticeToggle.type = 'checkbox'; failedNoticeToggle.className = 'dshwv-check';
-    failedNoticeToggle.id = 'dshw-failed-notice'; failedNoticeToggle.checked = true;
-    var cancelledNoticeToggle = document.createElement('input');
-    cancelledNoticeToggle.type = 'checkbox'; cancelledNoticeToggle.className = 'dshwv-check';
-    cancelledNoticeToggle.id = 'dshw-cancelled-notice'; cancelledNoticeToggle.checked = true;
-    outcomeRow.appendChild(failedNoticeToggle); outcomeRow.appendChild(menuLabel('失败后显示扣费'));
-    outcomeRow.appendChild(cancelledNoticeToggle); outcomeRow.appendChild(menuLabel('暂停／取消后显示扣费'));
-    outcomeRow.title = '失败或暂停／取消时显示中性扣费提示（不播放成功音、不影响记账）；关闭后不再弹出这类气泡';
-    function saveOutcomeNotice() {
-      saveUsageSettings({ outcomeNotice: { failed: failedNoticeToggle.checked, cancelled: cancelledNoticeToggle.checked } });
-    }
-    failedNoticeToggle.addEventListener('change', saveOutcomeNotice);
-    cancelledNoticeToggle.addEventListener('change', saveOutcomeNotice);
-    menuBox.appendChild(outcomeRow);
     var rowTaskEnd = menuRow();
     rowTaskEnd.appendChild(menuLabel('任务结束音效'));
     rowTaskEnd.appendChild(taskEndToggle);
@@ -718,89 +696,52 @@
     currencySel.parentNode.style.width = '120px';
     menuBox.appendChild(currencyRow);
     var currencyNote = document.createElement('div');
-    currencyNote.className = 'dshwv-usage-hint';
-    // 0.2.0: the long FX explanation moved behind the click-to-open "!" button on
-    // the 参考汇率 row. Keep the node so currency text and existing automation
-    // still resolve, but hide it from the panel.
+    currencyNote.className = 'dshwv-fx-info';
     currencyNote.id = 'dshw-currency-note';
-    currencyNote.style.whiteSpace = 'pre-line';
-    currencyNote.hidden = true;
-    currencyNote.style.display = 'none';
-    menuBox.appendChild(currencyNote);
+    currencyNote.hidden = true; currencyNote.tabIndex = -1;
+    currencyNote.setAttribute('role', 'region'); currencyNote.setAttribute('aria-label', '参考汇率说明');
+    document.body.appendChild(currencyNote);
     var fxRefreshRow = menuRow();
-    var fxInfoBtn = document.createElement('button');
-    fxInfoBtn.type = 'button'; fxInfoBtn.className = 'dshwv-fxicon';
-    fxInfoBtn.id = 'dshw-fx-info';
-    fxInfoBtn.textContent = '!';
-    fxInfoBtn.setAttribute('aria-label', '汇率说明');
-    fxInfoBtn.setAttribute('aria-expanded', 'false');
-    fxInfoBtn.title = '汇率说明';
-    var fxInfoPanel = document.createElement('div');
-    fxInfoPanel.className = 'dshwv-fxinfo';
-    fxInfoPanel.id = 'dshw-fx-info-panel';
-    fxInfoPanel.setAttribute('role', 'note');
-    fxInfoPanel.style.whiteSpace = 'pre-line';
-    fxInfoPanel.hidden = true;
-    var fxInfoText = '';
-    var fxInfoOpen = false;
-    function placeFxInfo() {
-      if (!fxInfoOpen) return;
-      var r = fxInfoBtn.getBoundingClientRect();
-      var vp = viewport();
-      var w = fxInfoPanel.offsetWidth || 260;
-      var h = fxInfoPanel.offsetHeight || 96;
-      var left = Math.max(4, Math.min(r.right - w, vp.w - w - 4));
-      var top = r.bottom + 4;
-      if (top + h > vp.h - 4) top = Math.max(4, r.top - h - 4);
-      fxInfoPanel.style.left = left + 'px';
-      fxInfoPanel.style.top = top + 'px';
-    }
-    function positionFxInfo() {
-      try { placeFxInfo(); } catch (err) {}
-    }
-    function setFxInfoOpen(open) {
-      fxInfoOpen = !!open;
-      if (open) {
-        fxInfoPanel.hidden = false;
-        if (fxInfoPanel.parentNode !== document.body) document.body.appendChild(fxInfoPanel);
-        fxInfoPanel.textContent = fxInfoText || '正在获取参考汇率…';
-        positionFxInfo();
-      } else {
-        fxInfoPanel.hidden = true;
-        if (fxInfoPanel.parentNode === document.body) document.body.removeChild(fxInfoPanel);
-      }
-      fxInfoBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    }
-    function closeFxInfo() {
-      if (!fxInfoOpen) return;
-      setFxInfoOpen(false);
-    }
-    if (!window.__dshwFxInfoBound) {
-      window.__dshwFxInfoBound = true;
-      // Same dismissal contract as the other popovers: outside pointerdown or
-      // Escape closes it. Clicks inside stay inside the panel.
-      document.addEventListener('pointerdown', function (e) {
-        if (!fxInfoOpen || !e.target || !e.target.closest) return;
-        if (e.target.closest('.dshwv-fxinfo') || e.target.closest('.dshwv-fxicon')) return;
-        closeFxInfo();
-      }, true);
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeFxInfo();
-      }, true);
-      window.addEventListener('resize', closeFxInfo);
-      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(positionFxInfo);
-    }
-    fxInfoBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      setFxInfoOpen(!fxInfoOpen);
-    });
-    fxRefreshRow.appendChild(fxInfoBtn);
     fxRefreshRow.appendChild(menuLabel('参考汇率'));
     var fxRefreshBtn = document.createElement('button');
     fxRefreshBtn.type = 'button'; fxRefreshBtn.className = 'dshwv-roleimport';
     fxRefreshBtn.id = 'dshw-fx-refresh'; fxRefreshBtn.textContent = '刷新汇率';
     fxRefreshBtn.title = '立即检查 Frankfurter 汇率并更新金额文字；15 秒内避免重复请求';
-    fxRefreshRow.appendChild(fxRefreshBtn); menuBox.appendChild(fxRefreshRow);
+    fxRefreshRow.appendChild(fxRefreshBtn);
+    var fxInfoBtn = document.createElement('button');
+    fxInfoBtn.type = 'button'; fxInfoBtn.className = 'dshwv-fx-info-button';
+    fxInfoBtn.id = 'dshw-fx-info'; fxInfoBtn.textContent = '!';
+    fxInfoBtn.setAttribute('aria-label', '查看参考汇率说明');
+    fxInfoBtn.setAttribute('aria-controls', currencyNote.id); fxInfoBtn.setAttribute('aria-expanded', 'false');
+    fxRefreshRow.appendChild(fxInfoBtn); menuBox.appendChild(fxRefreshRow);
+    function closeFxInfo(restoreFocus) {
+      if (!currencyNote || currencyNote.hidden) return;
+      currencyNote.hidden = true; fxInfoBtn.setAttribute('aria-expanded', 'false');
+      if (restoreFocus) fxInfoBtn.focus({ preventScroll: true });
+    }
+    function positionFxInfo() {
+      if (currencyNote.hidden) return;
+      var anchor = fxInfoBtn.getBoundingClientRect(), width = currencyNote.offsetWidth, height = currencyNote.offsetHeight;
+      var left = Math.max(8, Math.min(anchor.right - width, window.innerWidth - width - 8));
+      var below = anchor.bottom + 7, above = anchor.top - height - 7;
+      var top = below + height <= window.innerHeight - 8 ? below : Math.max(8, above);
+      currencyNote.style.left = left + 'px';
+      currencyNote.style.top = Math.max(8, Math.min(top, window.innerHeight - height - 8)) + 'px';
+    }
+    fxInfoBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (!currencyNote.hidden) { closeFxInfo(true); return; }
+      dshwCustSelClose(); closeRolePanel(); closeAudioGroupPanel();
+      currencyNote.hidden = false; fxInfoBtn.setAttribute('aria-expanded', 'true');
+      positionFxInfo(); currencyNote.focus({ preventScroll: true });
+    });
+    document.addEventListener('pointerdown', function (e) {
+      if (!currencyNote.hidden && !currencyNote.contains(e.target) && !fxInfoBtn.contains(e.target)) closeFxInfo();
+    }, true);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !currencyNote.hidden) { e.preventDefault(); e.stopPropagation(); closeFxInfo(true); }
+    }, true);
+    window.addEventListener('resize', function () { closeFxInfo(); });
     function fxTime(value) {
       var date = new Date(value);
       return value && isFinite(date.getTime()) ? date.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '尚未成功获取';
@@ -833,18 +774,13 @@
         (moneyState.hasPendingQuote ? '\n新汇率已就绪，下次打开或切换气泡时应用' : '') +
         (moneyState.error ? '\n' + moneyState.error : '');
       currencyNote.title = latest ? (latest.source || 'Frankfurter') + '；API 原始金额和记账币种不变。手动刷新立即应用，自动刷新保留当前气泡快照。' : '';
-      fxInfoText = currencyNote.textContent;
-      if (fxInfoOpen) {
-        fxInfoPanel.textContent = fxInfoText;
-        positionFxInfo();
-      }
       updateFxButton();
+      positionFxInfo();
     });
     currencySel.addEventListener('change', function () {
       var next = currencySel.value;
       currencySel.value = WhaleMoney.state().displayCurrency;
       currencyDrop.refresh();
-      closeFxInfo();
       WhaleMoney.setDisplayCurrency(next).catch(function () {});
     });
     menuBox.appendChild(menuSep1);
@@ -935,45 +871,6 @@
       window.dispatchEvent(new Event('whale-open-settings'));
     });
     menuBox.appendChild(apiSettingsBtn);
-    var commandTitle = document.createElement('div');
-    commandTitle.className = 'dshwv-usage-hint';
-    commandTitle.textContent = '命令';
-    menuBox.appendChild(commandTitle);
-    function appendCommandButton(label, action) {
-      var button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'dshwv-api-open dshwv-command';
-      button.textContent = label;
-      button.style.cssText = 'width:100%;margin:4px 0;padding:6px;border:1px solid #d8e4e0;border-radius:7px;background:#fff;color:#356a6c;cursor:pointer';
-      button.addEventListener('click', function (e) {
-        e.stopPropagation();
-        action(button);
-      });
-      menuBox.appendChild(button);
-      return button;
-    }
-    appendCommandButton('刷新余额', function () { refresh(true); });
-    appendCommandButton('查看用量记录', function () {
-      if (!menuOpen) toggleMenu();
-      showUsageSub();
-    });
-    appendCommandButton('查看运行状态', function () {
-      if (window.whaleDesktop && window.whaleDesktop.command) window.whaleDesktop.command('status').catch(function () {});
-    });
-    var commandStopSep = document.createElement('div');
-    commandStopSep.className = 'dshwv-menu-sep';
-    menuBox.appendChild(commandStopSep);
-    appendCommandButton('停止当前挂件', function () {
-      if (window.whaleDesktop && window.whaleDesktop.command) window.whaleDesktop.command('stop').catch(function () {});
-    });
-    var macCommandButtons = Array.prototype.slice.call(menuBox.querySelectorAll('.dshwv-command'));
-    if (!window.whaleDesktop || window.whaleDesktop.platform !== 'darwin') {
-      for (var commandButtonIndex = 0; commandButtonIndex < macCommandButtons.length; commandButtonIndex++) {
-        macCommandButtons[commandButtonIndex].remove();
-      }
-      if (commandTitle.parentNode) commandTitle.remove();
-      if (commandStopSep.parentNode) commandStopSep.remove();
-    }
     var menuRootView = document.createElement('div');
     menuRootView.className = 'dshwv-menuview';
     while (menuBox.firstChild) menuRootView.appendChild(menuBox.firstChild);
@@ -8863,9 +8760,7 @@
     }
     function showCostBubble(amount, notice) {
       notice = notice || WhaleTurnNotice.snapshot({ amount: amount }, state.currency);
-      if (!bubbleOn || !WhaleTurnNotice.enabled(notice, {
-        failed: failedNoticeToggle.checked, cancelled: cancelledNoticeToggle.checked
-      }, turnCostOn)) return;
+      if (!bubbleOn || !WhaleTurnNotice.enabled(notice, {}, turnCostOn)) return;
       whaleSysPush({
         kind: 'cost',
         amount: amount,
@@ -9034,6 +8929,10 @@
       } else {
         state.top = clamp(state.top, 0, Math.max(0, vp.h - h));
       }
+      // A minimized/tiny host or an older saved anchor can have negative edge
+      // distances. Keep the pet on screen after every viewport restoration.
+      state.left = clamp(state.left, 0, Math.max(0, vp.w - w - rightGap()));
+      state.top = clamp(state.top, 0, Math.max(0, vp.h - h));
       refreshFlip();
     }
     function snapBounds(vp) {
@@ -9414,17 +9313,17 @@
       if (menuOpen) positionMenu();
       menuBox.classList.toggle('dshwv-menu-open', menuOpen);
       if (menuOpen && !menuBtnHide) menuBtn.classList.add('dshwv-menu-btn-visible');
-      if (!menuOpen) closeUsagePanel();
+      if (!menuOpen) { closeUsagePanel(); closeFxInfo(); }
     }
     function closeMenu() {
       menuOpen = false;
+      closeFxInfo();
       if (menuPositionFrame) cancelAnimationFrame(menuPositionFrame);
       menuPositionFrame = 0;
       menuBox.classList.remove('dshwv-menu-open');
       closeRolePanel();
       closeAudioGroupPanel();
       closeUsagePanel();
-      closeFxInfo();
       positioner.style.transition = '';
       snapCheck();
     }
@@ -11121,8 +11020,9 @@
     }
     function onDocPointerDown(e) {
       if (e.target && e.target.closest) {
+        if (e.target.closest('.dshwv-fx-info')) return;
         if (e.target.closest('.dshwv-pop') || e.target.closest('.dshwv-menu-btn')) return;
-        if (e.target.closest('.dshwv-rolelist') || e.target.closest('.dshwv-audiolist') || e.target.closest('.dshwv-cropmask') || e.target.closest('.dshwv-confirmmask') || e.target.closest('.dshwv-audiomask') || e.target.closest('.dshwv-snapmask') || e.target.closest('.dshwv-bubmask') || e.target.closest('.dshwv-qedit') || e.target.closest('.dshwv-usagepanel') || e.target.closest('.dshwv-usage-mask') || e.target.closest('.dshwv-resmask') || e.target.closest('.dshwv-custmenu') || e.target.closest('.dshwv-custbtn') || e.target.closest('.dshwv-fxinfo') || e.target.closest('.dshwv-fxicon')) return;
+        if (e.target.closest('.dshwv-rolelist') || e.target.closest('.dshwv-audiolist') || e.target.closest('.dshwv-cropmask') || e.target.closest('.dshwv-confirmmask') || e.target.closest('.dshwv-audiomask') || e.target.closest('.dshwv-snapmask') || e.target.closest('.dshwv-bubmask') || e.target.closest('.dshwv-qedit') || e.target.closest('.dshwv-usagepanel') || e.target.closest('.dshwv-usage-mask') || e.target.closest('.dshwv-resmask') || e.target.closest('.dshwv-custmenu') || e.target.closest('.dshwv-custbtn')) return;
         if (e.target.closest('.dshwv-rolebtn') || e.target.closest('.dshwv-audiobtn') || e.target.closest('.dshwv-roleimport') || e.target.closest('.dshwv-audioimport')) return;
         if (e.target.closest('.dshwv-menu')) {
           closeRolePanel();
@@ -11185,7 +11085,8 @@
     }
     function onDocClickStopper(e) {
       if (e.target && e.target.closest) {
-        if (e.target.closest('.dshwv-pop') || e.target.closest('.dshwv-menu') || e.target.closest('.dshwv-menu-btn') || e.target.closest('.dshwv-rolelist') || e.target.closest('.dshwv-cropmask') || e.target.closest('.dshwv-confirmmask') || e.target.closest('.dshwv-audiolist') || e.target.closest('.dshwv-audiomask') || e.target.closest('.dshwv-snapmask') || e.target.closest('.dshwv-bubmask') || e.target.closest('.dshwv-qedit') || e.target.closest('.dshwv-usagepanel') || e.target.closest('.dshwv-usage-mask') || e.target.closest('.dshwv-resmask') || e.target.closest('.dshwv-custmenu') || e.target.closest('.dshwv-custbtn') || e.target.closest('.dshwv-fxinfo') || e.target.closest('.dshwv-fxicon')) return;
+        if (e.target.closest('.dshwv-fx-info')) return;
+        if (e.target.closest('.dshwv-pop') || e.target.closest('.dshwv-menu') || e.target.closest('.dshwv-menu-btn') || e.target.closest('.dshwv-rolelist') || e.target.closest('.dshwv-cropmask') || e.target.closest('.dshwv-confirmmask') || e.target.closest('.dshwv-audiolist') || e.target.closest('.dshwv-audiomask') || e.target.closest('.dshwv-snapmask') || e.target.closest('.dshwv-bubmask') || e.target.closest('.dshwv-qedit') || e.target.closest('.dshwv-usagepanel') || e.target.closest('.dshwv-usage-mask') || e.target.closest('.dshwv-resmask') || e.target.closest('.dshwv-custmenu') || e.target.closest('.dshwv-custbtn')) return;
       }
       if (!isWhaleHit(e)) return;
       try {
@@ -11225,7 +11126,7 @@
       try {
         el = document.elementFromPoint(e.clientX, e.clientY);
       } catch (err) {}
-      if (el && el.closest && (el.closest('.dshwv-pop') || el.closest('.dshwv-menu') || el.closest('.dshwv-menu-btn') || el.closest('.dshwv-rolelist') || el.closest('.dshwv-cropmask') || el.closest('.dshwv-confirmmask') || el.closest('.dshwv-audiolist') || el.closest('.dshwv-audiomask') || el.closest('.dshwv-snapmask') || el.closest('.dshwv-bubmask') || el.closest('.dshwv-qedit') || el.closest('.dshwv-usagepanel') || el.closest('.dshwv-usage-mask') || el.closest('.dshwv-resmask') || el.closest('.dshwv-custmenu') || el.closest('.dshwv-custbtn') || el.closest('.dshwv-fxinfo') || el.closest('.dshwv-fxicon'))) {
+      if (el && el.closest && (el.closest('.dshwv-pop') || el.closest('.dshwv-menu') || el.closest('.dshwv-menu-btn') || el.closest('.dshwv-rolelist') || el.closest('.dshwv-cropmask') || el.closest('.dshwv-confirmmask') || el.closest('.dshwv-audiolist') || el.closest('.dshwv-audiomask') || el.closest('.dshwv-snapmask') || el.closest('.dshwv-bubmask') || el.closest('.dshwv-qedit') || el.closest('.dshwv-usagepanel') || el.closest('.dshwv-usage-mask') || el.closest('.dshwv-resmask') || el.closest('.dshwv-custmenu') || el.closest('.dshwv-custbtn'))) {
         setWidgetCursor('');
         if (!menuBtnHide) menuBtn.classList.add('dshwv-menu-btn-visible');
         return;
@@ -11327,10 +11228,6 @@
         if (usageSet && usageSet.taskEnd) {
           taskEndToggle.checked = !!usageSet.taskEnd.on;
           taskEndSel.disabled = !usageSet.taskEnd.on;
-        }
-        if (usageSet && usageSet.outcomeNotice) {
-          failedNoticeToggle.checked = usageSet.outcomeNotice.failed !== false;
-          cancelledNoticeToggle.checked = usageSet.outcomeNotice.cancelled !== false;
         }
         fillTaskEndOptions(usageSet && usageSet.taskEnd);
         setTimeout(function () {
@@ -11439,10 +11336,6 @@
     }, REFRESH_MS);
     window.addEventListener('whale-refresh', function () {
       refresh(true);
-    });
-    window.addEventListener('whale-open-usage', function () {
-      if (!menuOpen) toggleMenu();
-      showUsageSub();
     });
     var LAST_TURN_URL = '/dsh-whale/last-turn.json';
     var lastCostSeq = 0;

@@ -5,14 +5,6 @@
   else host.WhaleTurnNotice = api;
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
-  // 0.2.0: failure/cancellation no longer uses a separate playful status bubble.
-  // The bubble falls back to a neutral cost label, so the observed amount stays
-  // visible while the tone stays factual. Restoring the playful copy only
-  // requires filling this table again.
-  const outcomeLabels = Object.freeze({
-    failed: '上一轮期间 API 扣费（未成功）:',
-    cancelled: '上一轮期间 API 扣费（已暂停）:',
-  });
   function kind(record) {
     if (record.completionKind === 'failed' || record.outcome === 'failed') return 'failed';
     if (record.completionKind === 'cancelled' || ['aborted', 'cancelled'].includes(record.outcome)) return 'cancelled';
@@ -21,17 +13,20 @@
   function shouldNotify(record, { seq = 0, id = '', firstPoll = false, startedAt = 0 } = {}) {
     if (!record?.ok || !Number.isSafeInteger(record.seq) || record.seq <= seq || !record.id || record.id === id ||
         record.turn == null || record.notify === false || record.isSubagent) return false;
+    if (kind(record) === 'failed' && record.failureKind !== 'high-demand') return false;
     const published = record.notificationAt || record.ts;
     const at = typeof published === 'number' ? published : Date.parse(published);
     return !firstPoll || Number.isFinite(at) && at >= startedAt;
   }
-  function snapshot(record, nativeCurrency = 'USD') {
+  function snapshot(record, nativeCurrency = 'USD', random = Math.random) {
     const completionKind = kind(record);
     const known = record.amount !== null && record.amount !== undefined && Number.isFinite(Number(record.amount)) &&
       !['pending', 'unknown'].includes(record.costState);
+    const failureKind = completionKind === 'failed' && record.failureKind === 'high-demand' ? 'high-demand' : null;
     return Object.freeze({
       id: String(record.id || ''), completionKind,
-      label: String(record.label || outcomeLabels[completionKind] || '上一轮期间 API 扣费:'),
+      failureKind,
+      label: completionKind === 'cancelled' ? (record.source === 'configured-pricing-estimate' ? '本轮消耗（估算）:' : record.source === 'token-only' ? '本轮 token 用量:' : '本轮已观测消耗:') : failureKind ? '挤不进去...' : String(record.label || '上一轮期间 API 扣费:'),
       amount: known ? Number(record.amount) : null,
       currency: record.currency || nativeCurrency,
       costState: known ? record.costState || 'observed' : record.costState === 'pending' ? 'pending' : 'unknown',
@@ -40,7 +35,7 @@
     });
   }
   function enabled(notice, settings, turnCostOn) {
-    return notice.completionKind === 'success' ? !!turnCostOn : settings?.[notice.completionKind] !== false;
+    return ['success','cancelled'].includes(notice.completionKind) ? !!turnCostOn : notice.completionKind === 'failed' && notice.failureKind === 'high-demand';
   }
   return Object.freeze({ kind, shouldNotify, snapshot, enabled });
 });

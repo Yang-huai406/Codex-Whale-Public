@@ -50,8 +50,8 @@ export function createDispatcher({ dataDir = DATA_HOME, service = null, monitor 
       const parsed = () => JSON.parse(bytes.toString('utf8') || '{}');
       if (url.pathname === '/api/status' && method === 'GET') return jsonResult(200, { ok: true, version: VERSION, buildVersion, transport: 'local-ipc', webpage: false, provider: whale.config.publicInfo(), monitor: watcher?.status() || { watching: 0, activeTurns: 0 }, dataDir, ...statusInfo() });
       if (url.pathname === '/api/config') {
-        if (method === 'GET') return jsonResult(200, { ok: true, ...whale.config.publicInfo() });
-        if (method === 'PUT') return jsonResult(200, { ok: true, settings: whale.config.save(parsed()) });
+        if (method === 'GET') return jsonResult(200, { ok: true, ...whale.config.settingsInfo() });
+        if (method === 'PUT') { whale.config.save(parsed()); return jsonResult(200, { ok: true, ...whale.config.settingsInfo() }); }
         return jsonResult(405, { ok: false });
       }
       if (url.pathname === '/api/fx/usd-cny') {

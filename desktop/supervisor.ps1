@@ -72,22 +72,15 @@ try {
                 try { $whaleLine=$whaleOutput.GetAwaiter().GetResult(); if ($whaleLine) { $whaleResponse=$whaleLine | ConvertFrom-Json; if ($whaleResponse.overlayHandle) { $whaleOverlay=[string]$whaleResponse.overlayHandle } } } catch { }
                 $whaleOutput=$whaleChild.StandardOutput.ReadLineAsync()
             }
-            if ($whaleState.window -eq '0') {
-                # A minimize, a transient DWM cloak or a window-handle swap can
-                # make one probe sample choose nothing, and the owner binding is
-                # never re-derived from a zero handle. Reuse the last verified
-                # handle so the periodic state keeps a valid window; visibility
-                # still comes from this sample, so a minimized host keeps hiding
-                # the widget while the binding stays intact for the restore.
-                if ($whaleOwner -ne '0') { $whaleState['window'] = $whaleOwner }
-            } elseif ($whaleOverlay -ne '0' -and $whaleOwner -ne $whaleState.window) {
+            if ($whaleOverlay -ne '0' -and $whaleState.window -ne '0' -and $whaleOwner -ne $whaleState.window) {
                 if ([WhaleWindows]::Attach([long]$whaleOverlay, [long]$whaleState.window)) { $whaleOwner=[string]$whaleState.window }
             }
             $whaleState['attached'] = ($whaleOwner -ne '0' -and $whaleOwner -eq $whaleState.window)
             $whaleState['nativeFollowing'] = [WhaleWindows]::IsFollowing()
+            $whaleState['visibilityRevision'] = [WhaleWindows]::VisibilityRevision()
             # Bounds belong to the native follower. Only lifecycle changes and
             # a one-second heartbeat use IPC/disk; there is no per-move I/O.
-            $whaleMessage = if ($whaleState.nativeFollowing) { @($whaleState.hostAlive,$whaleState.hostPid,$whaleState.window,$whaleState.visible,$whaleState.attached,$whaleState.dpi,$whaleState.bounds.width,$whaleState.bounds.height,'native') -join '|' } else { $whaleState | ConvertTo-Json -Depth 5 -Compress }
+            $whaleMessage = if ($whaleState.nativeFollowing) { @($whaleState.hostAlive,$whaleState.hostPid,$whaleState.window,$whaleState.visible,$whaleState.modal,$whaleState.visibilityRevision,$whaleState.attached,$whaleState.dpi,$whaleState.bounds.width,$whaleState.bounds.height,'native') -join '|' } else { $whaleState | ConvertTo-Json -Depth 5 -Compress }
             if ($whaleMessage -ne $whaleLastMessage -or ($whaleNow - $whaleHeartbeat).TotalSeconds -ge 1) {
                 try {
                     $whaleSequence++; $whaleState['serial'] = $whaleSequence

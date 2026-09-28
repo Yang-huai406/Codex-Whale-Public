@@ -1,133 +1,122 @@
-# API 余额小鲸鱼 · Codex 自动跟随版
+# API 余额小鲸鱼 · Codex v0.2(fixed)
 
-> 本仓库分支 **For-Codex**：把 [DSH 网页版小鲸鱼](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)（`dsh-whale-widget`）改造成 **Codex 桌面应用**的伴随挂件。
-> ⚠️ 与主分支用途不同：**这是 Codex 桌面插件，不能用 `dsh plugin … add` 装进 DSH 网页**；反过来，主分支的 DSH 网页插件也不能在 Codex 里运行。
+跟随 Windows Codex 桌面窗口的 API 余额挂件：查看当前 API 余额、今日已观测消耗和每轮用量，保留角色、气泡、音效、拖动吸附及素材管理。
 
-版本 **0.2.4**（Codex 特化线）。基于 MeteorNOX 的 **dsh-whale-widget 0.3.0-beta** 改编。打开 Codex 桌面应用后，小鲸鱼自动出现；跟随 Codex 窗口移动和缩放，最小化时隐藏，恢复时显示，完全退出 Codex 后关闭。
+**本分支当前交付 Windows v0.2(fixed)**，内部版本为 `0.2.0`。本次由项目协作者 [Yang-huai406](https://github.com/Yang-huai406) 整理上传，仓库所属账号仍为 [MeteorNOX](https://github.com/MeteorNOX)。上传前分支已有的 0.2.4/macOS 文件保留在[后续整合资料](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/For-Codex/archive/for-codex-0.2.4)，完整历史没有改写。
 
-**本版没有独立网页、浏览器面板或本地网页端口。** 界面由透明辅助窗口承载，通过本地进程间通信读取数据。所有菜单、设置、素材和账本都在挂件中操作。它并未修改或注入 Codex 的安装文件。
+[下载本次测试包](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/raw/refs/heads/For-Codex/packages/v0.2-fixed/api-balance-whale-v0.2-fixed.zip) · [SHA-256](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/blob/For-Codex/packages/v0.2-fixed/api-balance-whale-v0.2-fixed.zip.sha256) · [上传说明](docs/GITHUB_PUBLISHING.md)
 
-**0.2.4 变更**：汇率说明改为刷新汇率右侧的灰色 **!** 按钮，点击才展开（不再常驻面板）；失败与暂停／取消只显示中性扣费提示，不再有单独的趣味文案；显示判定加入周期重断言，最小化、还原或窗口句柄变化后可自行恢复；服务商名称不再硬编码，界面与文档不含特定服务商痕迹。详见 [0.2.4 变更说明](docs/CHANGELOG-0.2.4.md)，0.2.0 基线的历史改动见 [docs/CHANGELOG-0.2.0.md](docs/CHANGELOG-0.2.0.md)。
+## 功能
 
-**安装与回滚**：另一台电脑请照 [安装与回滚说明](docs/INSTALL-AND-ROLLBACK-0.2.4.md) 操作。计划任务使用 Windows GUI 启动器；安装必须验证任务和进程，失败不会假报成功。验证过程与已知限制见 [0.2.4 验证报告](docs/VERIFICATION-0.2.4.md)。
+| 功能 | 当前行为 |
+| --- | --- |
+| 当前 API 余额 | 默认跟随本机 Codex 配置，支持兼容账单、密钥额度与同域自定义 JSON 接口 |
+| 窗口跟随 | 透明工具窗口跟随 Codex；最小化时隐藏，还原或关闭模态对话框后恢复 |
+| 自动启动 | 当前用户计划任务通过 GUI 启动器启动监视器，避免常驻空终端 |
+| 币种显示 | USD/CNY 共用显示偏好和参考汇率；余额、预警、预算同步换算，显示两位小数 |
+| 账本 | 保留日汇总、每轮观测记录和可用 token；区分已观测、估算、待记账与未知 |
+| 主轮与子任务 | 成功主轮只通知一次；子任务保留用量，不重复叠加同密钥区间费用 |
+| 交互与素材 | 角色与动图、拖动吸附、300 ms 翻转、按压效果、随机气泡、音效和自定义素材 |
+| 内容稳定 | 观看期间保持气泡快照，后台余额刷新不重建当前气泡或重抽随机语 |
+| 隐私设置 | 不回显真实服务商、地址、账号、配置方案、个人目录及密钥环境变量名 |
 
-**运行平台**：Windows 10/11 x64 的 Microsoft Store 版 Codex 安装布局，或 Apple Silicon / Intel Mac；需要 Codex 桌面应用和 Node.js 24+。macOS 默认跟随 `com.openai.codex`（本机显示为 ChatGPT/Codex），可使用 `WHALE_CODEX_BUNDLE_ID` 覆盖。其他 Windows 安装渠道尚未适配。详细步骤见 [macOS 安装说明](docs/MACOS.md)。
+本版本已按适配要求移除独立网页和峰谷功能。它是桌面覆盖式挂件，不是向 Codex 主界面注入原生组件。
 
-**安全说明**：挂件只从本机 Codex 配置或指定环境变量读取密钥；本地解析配置但不会返回或记录原始 `config.toml` / `auth.json` 内容。密钥只会发送给用户配置的 API provider；挂件还会访问公开汇率接口，不发送聊天内容。
+## 安装
 
-余额跟随 Codex 当前 API 配置；密钥留在本机，界面不读取密钥。ChatGPT 订阅额度不属于 API 余额。
+需要 **Windows x64、Codex 桌面应用、含 npm 的 Node.js 24+**。安装器需要支持 `plugin add` 的 Codex CLI，会优先探测桌面应用附带的 CLI。首次安装需要联网下载 Electron 44.3.0，本包不是离线运行时整合包。
 
-## 使用
+1. 解压 `api-balance-whale-v0.2-fixed.zip`。
+2. 进入 `api-balance-whale` 文件夹，双击 **安装插件.cmd**。
+3. 等待完成；安装器会备份旧代码和数据，注册插件及自动跟随任务，并核对启动状态。
+4. 新建 Codex 聊天以加载更新的技能与工具，检查小鲸鱼自动出现。
 
-- 正常打开 Codex，等待小鲸鱼出现，无需发消息或打开网页。
-- 点击鲸鱼：显示余额或切换气泡；按住拖动：移动位置并记忆；移到边缘：按原设置吸附、翻转。
-- 鼠标移到鲸鱼上，点击 **☰**：选择角色、大小、音效、气泡、吸附、资源管理、API 设置和用量记录。
-- **Windows：Ctrl+Alt+W；macOS：Cmd+Option+W**，也可使用系统托盘菜单：隐藏/显示。托盘和鲸鱼 `☰` 菜单中的“命令”区域可刷新余额、查看用量记录、查看运行状态或停止当前挂件。
-- 新建 Codex 任务后可说“打开小鲸鱼”“查看当前 API 余额”。更新前已打开的任务可能仍持有旧版工具，需新建任务。
+只检查安装条件：
 
-**金额统一显示两位小数**，包括余额、今日/历史用量、每轮费用和气泡。后台仍保留原始精度，小额消费不会因显示取整而丢失。音频裁剪时间和 token 整数计数不属于金额。
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-package.ps1 -CheckOnly
+```
 
-**界面与币种修复版**：工具窗口避免透明挂件被误判为遮挡 Codex；恢复原版 300 毫秒翻转，移动与按压分别合成。菜单支持美元/人民币显示换算，余额、预警和预算同步使用同一份带日期的汇率。显示中的气泡保留金额和随机语快照；后台刷新后，下次打开或切换内容才更新。慢图片准备期间保留旧画面。技术实现见 [渲染实现](docs/RENDERING.md)。
+默认代码目录为 `%USERPROFILE%\plugins\api-balance-whale`。默认个人市场只新增或更新本插件条目，保留其他插件。可用 `-CodexCli`、`-DataDir` 指定 CLI 和数据目录。脚本不永久修改系统执行策略；组织策略限制仍可能阻止执行。
 
-**失败、暂停／取消与汇率**：失败或暂停／取消仍保存可观测消耗，气泡显示中性的扣费提示，不播放成功结束音；关闭对应开关后不再弹出这类气泡。不能确认的金额显示待记账/金额未知，不把后续扣费再分配给本轮。汇率按北京时间每日 **00:15** 检查，菜单提供主动刷新，费率说明在刷新汇率右侧的 **!** 按钮里；15 秒防连点，说明含报价日期、最近成功获取与最近检查时间。周末或节假日报价可能不变，断网保留并标注旧缓存。
+## 使用与设置
 
-**素材与稳定性**：导入校验格式、尺寸和动画预算，坏角色启动时回退到内置鲸鱼；APNG 后续帧可点击。外链只接受用户点击的普通 HTTP/HTTPS 地址；退出有期限，未完成用量通过安全日志保留恢复线索。
+- 点击小鲸鱼查看气泡；菜单用于调整角色、大小、币种、音效、预警、预算和素材。
+- `Ctrl+Alt+W` 或托盘菜单可隐藏/显示挂件。
+- 若进程仍在但画面未出现，可在托盘选择“恢复显示小鲸鱼”，无需先隐藏再显示；切回 Codex 也会触发一次受控恢复。正常心跳不会反复隐藏/显示。
+- “每轮消耗提示”控制成功轮次和取消轮次的费用气泡，关闭它不会删除账本记录。
+- API 设置内，已有私有字段显示“已配置（内容隐藏）”。留空保存保留原值；填写新值才修改，点击“恢复默认”后保存才清除该项覆盖。
+- 模型价格只在主动编辑时更新，未编辑保存不会清空已有价格。
 
-**峰谷功能已移除**：无峰谷设置、状态文字、倒计时或时段倍率。升级时移除旧气泡中的峰谷模块，保留其他文本、顺序、样式、图片、音效和账本，并保留迁移前配置副本。
+![API 设置脱敏示例](docs/images/api-settings.png)
 
-## 安装、停用与回滚
+*截图来自隔离测试，不含真实账号或 API 凭据。*
 
-Windows 需要 Node.js 24+；先运行 `安装桌面组件.cmd`，再运行 `安装自动跟随.cmd`。macOS 直接双击 `安装 Mac 自动跟随.command`，它会优先使用 Homebrew 的 Node/npm，安装 Electron 44.3.0、编译窗口探针并注册当前用户的 LaunchAgent。组件安装需联网获取 Electron。逐条步骤、验证清单与回滚命令见 [安装与回滚说明](docs/INSTALL-AND-ROLLBACK-0.2.4.md) 和 [macOS 安装说明](docs/MACOS.md)。
+## 取消、失败与费用口径
 
-Windows 使用任务计划服务，macOS 使用用户级 LaunchAgent。监视器均以当前用户普通权限运行，登录后后台待命，仅在识别到当前用户的 Codex 桌面应用时启动挂件；不会把 Codex 命令行或任务后台进程当成桌面应用。Codex 退出时只关闭挂件，监视器继续待命。无需管理员权限，不保存登录密码，不调整执行策略或安全软件设置。
+| 情况 | 提示行为 |
+| --- | --- |
+| 主轮成功结束 | 按开关显示消耗、播放成功音；去重后只触发一次 |
+| 运行到一半取消 | 启用“每轮消耗提示”时报告中性消耗结算；不播放成功音 |
+| 取消时金额未确认 | 显示待记账/金额未知及已记录的 token，不把未知显示成零 |
+| 取消前曾遇到拥挤 | 取消优先，不说“挤不进去...” |
+| 普通失败 | 不使用独立趣味提示，已观测用量仍保留在账本 |
+| 指定拥挤错误造成最终失败 | 显示“挤不进去...”，避免重试期间提前或过时提示 |
 
-监视器不保留命令窗口；正常重启只需退出 Codex。计划任务名为 **Codex API Balance Whale**；异常退出会尝试恢复。停用与回滚入口：
+指定错误为 `We're currently experiencing high demand, which may cause temporary errors.`，不是把所有网络错误、限额错误或取消都归为拥挤。取消后立刻开始新一轮，也不会丢掉上一轮应显示的消耗结算。
 
-- `停用自动跟随.cmd`：停止监视器与挂件并移除开机启动项，保留设置、素材和账本。
-- `停止挂件服务.cmd` / `启动桌面挂件.cmd`：仅停止或启动当前挂件进程。
-- `scripts/rollback-0.2.0.ps1 -CheckOnly -Backup <备份目录>`：核验升级前备份；去掉 `-CheckOnly` 即覆盖回插件目录（挂件仍在运行时加 `-Force`，重启后生效）。
+![取消后的中性消耗结算](docs/images/cancelled-consumption.png)
 
-macOS 对应入口为 `安装 Mac 自动跟随.command`、`启动桌面挂件.command`、`停止挂件服务.command`、`停用自动跟随.command`；也可运行 `npm run install:mac`、`npm run uninstall:mac`。
+*金额和 token 均为合成测试示例。*
 
-发布压缩包不含作者本机的备份与密钥，另一台电脑请在做任何升级前自行备份插件目录。
+余额接口可能返回账户余额，也可能只返回 API 密钥额度；密钥不限额不等于账户余额无限。ChatGPT 订阅额度不是本插件查询的 API 余额。
 
-## 余额与用量口径
+“同密钥区间观测”可能包含同期其他任务、设备或子任务的消费，不是服务商逐请求最终账单；配置模型价格得到的结果标为估算。延迟出现且无法可靠归属的扣费不能全部补到上一轮。旧版本已经丢失的历史汇总不能凭空恢复。
 
-- 兼容账单接口：余额为 `hard_limit_usd - total_usage / 100`。账单总用量按接口单位换算；换算参数可配置。
-- New API/One API：返回密钥额度时明确标注，密钥不限额不会显示为账户无限余额。
-- 其他服务：支持同域 JSON 接口、字段和单位配置；换域名必须指定对应服务的密钥环境变量，不会把旧服务密钥发往新域名。
-- 项目级 `.codex/config.toml` 也不能自动改投全局密钥；新域名须在挂件设置中明确指定专用 `keyEnv`。余额/汇率响应分别限制为 1 MiB/64 KiB。
-- 没有可验证的余额接口时显示不可查询，不虚构官方 OpenAI 余额接口或订阅余额。
+## 汇率
 
-今日/历史金额来自同密钥累计消耗或余额差值观测，不能充当服务商正式的逐请求账单。每轮金额区分“期间扣费”和“按配置价格估算”；并行调用或延迟入账可能影响期间扣费。没有金额及价格时仅记录 token。
+- 参考汇率来自 Frankfurter；按北京时间每天 **00:15** 检查，并在启动、唤醒或恢复联网时补查。
+- “刷新汇率”支持手动检查，合并在途请求并有 15 秒防连点间隔。
+- 点击右侧灰色圆形 **!** 才展开汇率值、报价日期、最近获取/检查时间及缓存说明；再次点击、点击外部或按 Esc 收起。
+- 周末和休市日可能沿用上个交易日的报价；00:15 是插件检查时间，不是上游保证发布新报价的时间。
+- 显示换算不修改 API 原始金额或账本币种。自动更新保持当前气泡快照，手动刷新按既有规则同步金额文字。
 
-日汇总长期保留；旧版已删除的汇总显示未知，无法凭空补回。停机、跨午夜的观测间隔归入再次观测日。明细最多保留 8000 条，页面提供最近 500 条，不能把页面条数当作全部历史。
+![点击展开汇率说明](docs/images/fx-popover.png)
 
-## 数据与维护
+*截图中的汇率为测试示例，不是当前市场报价。*
 
-Windows 本机源码通常位于 `%USERPROFILE%\plugins\api-balance-whale`，挂件数据默认位于 `%USERPROFILE%\.codex\whale-widget`。macOS 本机源码通常位于 `~/plugins/api-balance-whale`，挂件数据默认位于 `~/.codex/whale-widget`。设置 `CODEX_HOME` 或 `WHALE_HOME` 时使用对应目录；插件缓存更新不会覆盖用户素材与账本。
+## 数据、停用与回滚
 
-数据目录包含角色、气泡图片、音频、设置、账本、窗口状态和自动跟随配置。`api-settings.json` 只保存接口设置和密钥环境变量名称，不保存密钥。仅处理 Codex 的用量与任务状态，不上传聊天内容。
+数据默认位于 `%USERPROFILE%\.codex\whale-widget`，支持 `CODEX_HOME`、`WHALE_HOME`。密钥由本机服务从 Codex 配置或指定环境变量读取，不需要贴到聊天或填写到插件设置。更换目标域名不能静默复用原服务密钥。
 
-素材限制、保存失败和损坏索引的保护见 [0.2.4 变更说明](docs/CHANGELOG-0.2.4.md) 与 [渲染实现](docs/RENDERING.md)。新导入受真实格式、尺寸/帧数及总量预算约束；已有素材不因超过新限制而被自动删除。
+双击 **停用自动跟随.cmd** 可停止挂件并移除其启动任务，保留数据。退出挂件只停止观察，不会停止 Codex 本身的调用。
+
+双击 **回滚本次安装.cmd** 使用本机安装回执回滚。回滚先建立当前检查点，恢复安装前代码和启动状态，保留最新账本、设置与素材。首次安装没有旧插件时，回滚移除本次注册和启动项，保留数据。
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\rollback-package.ps1 -CheckOnly
+```
+
+安装中途失败时，使用错误信息给出的私有备份内 `recovery-scripts\rollback-package.ps1` 和 `installation.json`。备份可能含个人数据，不属于分享包。
+
+## 验证状态与反馈
+
+修复基线完成了 **170 项自动测试、14 项实际界面检查、100 次独立窗口最小化/还原、50 次原生另存为打开/取消**。上传前又针对显式显示、返回宿主窗口的恢复进行了加固；本次完整自动测试为 **179 项通过**，窗口验证范围见 [验证记录](docs/VALIDATION.md)。
+
+本次已获得上传此分支的授权；没有把未提供的人工验收项目标记为通过。请按 [用户测试清单](docs/USER_TEST_CHECKLIST.md) 继续复查实际环境，尤其是偶发消失、跨屏与实际保存场景。
+
+当前边界：Windows Codex 可识别安装布局；不宣称支持 macOS/Linux；未逐一覆盖所有多屏/DPI组合或“保存成功”的业务流程。没有可靠接口的服务不能凭空显示余额。问题反馈不要附上密钥、认证文件或完整会话日志。
+
+## 开发与来源
+
+技术栈：Electron 44.3.0、JavaScript、Windows 原生 C# 跟随层及 PowerShell 安装/监视器。
 
 ```powershell
 node --test tests/*.test.mjs
-node scripts/smoke-desktop.mjs <测试输出目录>
-node tests/desktop-audit-smoke.mjs <独立专项测试输出目录>
-node scripts/control.mjs status
 ```
 
-上面三条测试命令需要完整源码树（含 `tests/` 与已安装的 Electron 桌面组件）；发布压缩包只包含运行所需文件，因此请在源码目录里执行。
+[两阶段开发摘要](docs/DEVELOPMENT_SUMMARY.md) · [变更记录](CHANGELOG.md) · [Release 文案](RELEASE_NOTES.md) · [GitHub 发布材料与步骤](docs/GITHUB_PUBLISHING.md)
 
-macOS 可用以下命令检查窗口探针、监督器与余额链路：
+基于 **dsh-whale-widget 0.3.0-beta** 适配，保留原作者 **MeteorNOX** 的代码 MIT 版权及第三方声明。图片、动图、音效按上游 as-is 条款随挂件分发，不因代码 MIT 许可而获得再许可。感谢 [1llysviel](https://github.com/1llysviel) 在 [PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 中的 macOS 工作，相关成果保留供后续整合。
 
-```bash
-npm run probe:mac
-node scripts/control.mjs status
-node scripts/control.mjs balance
-```
-
-## 仓库结构
-
-```
-.codex-plugin/plugin.json   Codex 插件清单（名称、版本、技能入口）
-.mcp.json                   MCP 服务声明（无独立网页，仅本地管道）
-package.json                包信息与快捷脚本
-assets/                     whale-widget.js（挂件前端 bundle）+ 角色/气泡/音效素材
-desktop/                    Electron 主进程、预加载、监督器、原生窗口跟随（C#）、页面脚本
-desktop/macos/              macOS 窗口探针（Swift）与 LaunchAgent 监督器
-runtime/                    余额与用量服务：配置解析、provider、账本、汇率、会话监视、MCP、IPC
-lib/                        素材校验、资源库、widget 宿主
-scripts/                    安装/启动/停止/卸载/回滚与启动器编译
-skills/                     Codex 技能说明（会话内调用 whale_* 工具）
-docs/                       变更说明、验证报告、安装与回滚、迁移记录、渲染实现、原版说明
-vendor/smol-toml            内置 TOML 解析（BSD-3-Clause）
-```
-
-## 给维护者：本分支包含什么
-
-**包含（可直接运行）**：`.codex-plugin/`、`assets/`、`desktop/`、`runtime/`、`lib/`、`scripts/`、`skills/`、`vendor/`、`docs/`、`LICENSE`、`PROVENANCE.md`、`THIRD_PARTY_NOTICES.md`、`package.json`、`.mcp.json`，以及 Windows `.cmd` 和 macOS `.command` 便捷入口。
-
-**不包含**（有意排除）：
-
-- `node_modules/`、`tests/`、`web/`、`qa-output/` 等开发与构建产物；
-- 依赖作者本机备份的旧回滚脚本、历史调试文档与含本机时间戳的 `*-VALIDATION.json`——它们描述的是作者本机的升级过程，对其他人没有意义；
-- 任何密钥、账号数据、用户账本：这些只存在于使用者本机的 `~/.codex/whale-widget`，仓库里没有也不需要。
-
-## 来源与致谢
-
-本分支改编自 **MeteorNOX** 的 [DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)（`dsh-whale-widget`），沿用其 MIT 许可与角色/气泡/音效素材；改造范围与许可边界见 [PROVENANCE.md](PROVENANCE.md) 与 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，原版文档备份在 [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md)。
-
-### 0.2.4 致谢
-
-- **[@1llysviel](https://github.com/1llysviel)**：macOS 适配（[PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128)）——窗口探针、自动跟随与常驻恢复、Electron 浮窗、安装/卸载流程与菜单命令。
-- **[@MeteorNOX](https://github.com/MeteorNOX)**：上游项目与 `dsh-whale-widget` 主线的全部基础工作。
-
-历史贡献者名单见 [`docs/CHANGELOG-0.2.4.md`](docs/CHANGELOG-0.2.4.md)。
-
-## 反馈与安全
-
-- **提问 / 报 Bug**：用仓库的 [issue 模板](.github/ISSUE_TEMPLATE/)（"问题反馈"里已列出需要附上的诊断文件，多数情况不需要贴日志正文）。
-- **安全漏洞**：**不要开公开 issue**，请按 [SECURITY.md](SECURITY.md) 走 GitHub 私密漏洞报告或邮件；那里也写清了本插件的安全边界（哪些算漏洞、哪些是已知设计）。
-- 报告里请勿包含真实 API 密钥、`auth.json`、`config.toml` 原文或完整账本。
+[LICENSE](LICENSE) · [第三方声明](THIRD_PARTY_NOTICES.md) · [来源与署名](docs/ATTRIBUTION.md) · [上游历史 README](docs/UPSTREAM-README.md)
