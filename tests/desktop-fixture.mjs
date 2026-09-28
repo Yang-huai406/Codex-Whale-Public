@@ -31,13 +31,19 @@ export async function verifyDesktop({ app, window, screen, setHost, setTestCurso
   const output = path.resolve(process.env.WHALE_DESKTOP_VERIFY_DIR);
   fs.mkdirSync(output, { recursive: true });
   const checks = [], inputTrace = [], ev = code => window.webContents.executeJavaScript(code);
+  // Synthetic renderer input must not be mixed with the user's physical mouse.
+  // Native hit/occlusion checks below restore the real OS input flags explicitly.
+  const nativeIgnore = window.setIgnoreMouseEvents.bind(window);
+  let nativePhase = false;
+  window.setIgnoreMouseEvents = (ignored, options) => nativeIgnore(nativePhase ? ignored : true, nativePhase ? options : { forward:false });
+  nativeIgnore(true, { forward:false });
   const wait = async (code, label, timeout = 6000) => {
     const start = Date.now();
     while (Date.now() - start < timeout) { if (await ev(code)) return; await delay(80); }
     throw new Error('Timed out: ' + label);
   };
   const move = (x, y) => { setTestCursor({ x, y }); window.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(x), y: Math.round(y) }); };
-  const clickAt = async p => { move(p.x, p.y); await delay(100); inputTrace.push(await ev(`(() => {const e=document.elementFromPoint(${Math.round(p.x)},${Math.round(p.y)});return {x:${Math.round(p.x)},y:${Math.round(p.y)},tag:e?.tagName,cls:e?.className,text:e?.textContent?.slice(0,70)}})()`)); window.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, x: Math.round(p.x), y: Math.round(p.y) }); await delay(45); window.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, x: Math.round(p.x), y: Math.round(p.y) }); await delay(220); };
+  const clickAt = async p => { window.focus(); await wait('document.hasFocus()', 'synthetic click fixture focus'); move(p.x, p.y); await delay(100); inputTrace.push(await ev(`(() => {const e=document.elementFromPoint(${Math.round(p.x)},${Math.round(p.y)});return {x:${Math.round(p.x)},y:${Math.round(p.y)},tag:e?.tagName,cls:e?.className,text:e?.textContent?.slice(0,70)}})()`)); window.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, x: Math.round(p.x), y: Math.round(p.y) }); await delay(45); window.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, x: Math.round(p.x), y: Math.round(p.y) }); await delay(220); };
   const hitPoint = () => ev(`(() => {
     const img = document.querySelector('.dshwv-img'), r = img.getBoundingClientRect();
     const c = document.createElement('canvas'); c.width = c.height = 610; const ctx = c.getContext('2d'); ctx.drawImage(img,0,0,610,610);
@@ -78,7 +84,8 @@ export async function verifyDesktop({ app, window, screen, setHost, setTestCurso
       await setHost({ hostAlive: false }); return;
     }
     if (process.env.WHALE_HOST_ONLY === '1') {
-      checks.push(...(await verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint, move, dispatcher, output, dataDir, setHost, host, renderInfo })).checks);
+      window.setIgnoreMouseEvents = nativeIgnore; nativeIgnore(!renderInfo().inputEnabled, {forward:true});
+      checks.push(...(await verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint, move, dispatcher, output, dataDir, setHost, setTestCursor, host, renderInfo })).checks);
       fs.writeFileSync(path.join(output, 'desktop-follow.json'), JSON.stringify({ ok: true, checks, errors, dataDir, rendering: renderInfo(), hostOnly: true }, null, 2));
       await setHost({ hostAlive: false }); return;
     }
@@ -146,9 +153,15 @@ export async function verifyDesktop({ app, window, screen, setHost, setTestCurso
     const ps = process.env.WHALE_TEST_POWERSHELL;
     if (ps) {
       const nativeHit = async p => {
+        // The user can change foreground apps while this isolated fixture runs.
+        // Re-establish its focus before supplying the synthetic cursor; blur
+        // intentionally clears hover and is not a native hit-test failure.
+        window.focus(); await wait('document.hasFocus()', 'native hit fixture focus');
         const dipPoint = screen.screenToDipPoint(p), bounds = window.getContentBounds();
         setTestCursor({ x: dipPoint.x - bounds.x, y: dipPoint.y - bounds.y }); await delay(180);
+        nativePhase = true; nativeIgnore(!renderInfo().inputEnabled, {forward:true});
         const result = await promisify(execFile)(ps, ['-NoProfile', '-NonInteractive', '-File', path.join(ROOT, 'desktop', 'supervisor.ps1'), '-Hit', '-X', String(Math.round(p.x)), '-Y', String(Math.round(p.y))], { windowsHide: true, timeout: 10000 });
+        nativePhase = false; nativeIgnore(true, {forward:false});
         return JSON.parse(result.stdout.replace(/^\uFEFF/, '').trim());
       };
       // Close any open whale menu before checking transparent regions.
@@ -182,7 +195,9 @@ export async function verifyDesktop({ app, window, screen, setHost, setTestCurso
     checks.push(...rendering.checks);
     checks.push(...(await verifyCurrency({ window, ev, wait, clickAt, hitPoint, move, dispatcher, output })).checks);
     checks.push(...(await verifyAuditUI({ window, ev, wait, clickAt, hitPoint, move, dispatcher, output, dataDir })).checks);
-    checks.push(...(await verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint, move, dispatcher, output, dataDir, setHost, host, renderInfo })).checks);
+    window.setIgnoreMouseEvents = nativeIgnore;
+    nativeIgnore(!renderInfo().inputEnabled, {forward:true});
+    checks.push(...(await verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint, move, dispatcher, output, dataDir, setHost, setTestCursor, host, renderInfo })).checks);
     assert.equal((errors || []).length, 0, JSON.stringify(errors));
     fs.writeFileSync(path.join(output, 'desktop-follow.json'), JSON.stringify({ ok: true, checks, errors, dataDir, rendering: renderInfo(), screenshot: path.join(output, 'desktop-follow.png') }, null, 2));
     await setHost({ hostAlive: false });

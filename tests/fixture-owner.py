@@ -13,5 +13,9 @@ for hwnd, expected in [(overlay, overlay_pid)] + ([(owner, owner_pid)] if owner 
     api.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
     if pid.value != expected: raise RuntimeError('Fixture identity mismatch')
 api.SetWindowLongPtrW(overlay, -8, owner)
+dwm = ctypes.WinDLL('dwmapi')
+dwm.DwmSetWindowAttribute.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
+disabled = ctypes.c_int(1)
+assert dwm.DwmSetWindowAttribute(overlay, 3, ctypes.byref(disabled), ctypes.sizeof(disabled)) == 0
 assert (api.GetWindow(overlay, 4) or 0) == owner
 print(json.dumps({'owner': str(owner), 'overlay': str(overlay)}))

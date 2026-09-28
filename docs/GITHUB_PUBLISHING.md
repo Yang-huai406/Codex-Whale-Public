@@ -1,29 +1,29 @@
-# For-Codex 分支上传说明
+# For-Codex 发布说明
 
-本次根据项目协作者的明确指示，将 Windows v0.2(fixed) 上传到 [MeteorNOX/DeepSeek-Balance-Whale-Widget 的 For-Codex 分支](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/For-Codex)。内部版本保持 0.2.0。
+## 本次发布
 
-## 权限与边界
+- 仓库：[MeteorNOX/DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)
+- 目标分支：For-Codex
+- 发布协作者：[Yang-huai406](https://github.com/Yang-huai406)，不代表仓库所有者。
+- 独立标签：codex-v0.3.0；标题：Codex-v0.3.0。
+- 不覆盖主线已有 v0.3.0 标签，不设置为整个仓库的 Latest。
 
-- 上传账号 Yang-huai406 是协作者，当前具备 WRITE 权限，不是仓库所有者。
-- 使用普通提交和 fast-forward push；不强推，不修改 main，不变更仓库设置/所有者。
-- 用户随后明确追加授权创建 Release 和 tag：`v0.2.0-fixed`，指向本次 For-Codex 提交；作为公开、非草稿的 Windows/Codex Release，不设为仓库 Latest。
-- 旧 0.2.4/macOS 工作保留历史和 archive/for-codex-0.2.4，供后续整合；没有把这些平台成果纳入本次 Windows 安装包。
-- 用户授权上传不等于所有空白的人工验收项目都已通过；测试记录按实际结果填写。
+用户已明确授权代码、tag 和 Release 上传。此前的本地候选流程已完成；Mac 实机、真实订阅账号和长期显示稳定性的未验证项仍保留，不因发布而改成“已通过”。
 
-## 分支中的材料
+## Release 附件
 
-- README.md：功能、安装、取消结算、恢复显示和平台边界。
-- CHANGELOG.md、RELEASE_NOTES.md：本次变更与分支说明。
-- docs/DEVELOPMENT_SUMMARY.md：两阶段对话的脱敏摘要及后续实机反馈。
-- docs/USER_TEST_CHECKLIST.md、docs/VALIDATION.md：人工复查清单和自动检查记录。
-- PROVENANCE.md、LICENSE、THIRD_PARTY_NOTICES.md：来源和许可边界。
-- .github/ISSUE_TEMPLATE：保留仓库既有模板配置，并使用不索取凭据的缺陷表。
-- packages/v0.2-fixed：安装 ZIP、SHA-256 和文件清单。
+api-balance-whale-v0.3.0.zip、api-balance-whale-v0.3.0-source.zip、两份 .sha256、release-manifest.json 和 verification-report.json。安装包不包含运行时，首次安装 Electron 需联网。
 
-## 后续复查或回退
+README 为首页，RELEASE_NOTES 为发布正文；DEVELOPMENT_SUMMARY 为本轮脱敏摘要，USER_TEST_CHECKLIST 用于后续验收，ATTRIBUTION/PROVENANCE/LICENSE/THIRD_PARTY_NOTICES 保留权属和来源。
 
-从分支下载安装 ZIP，核对其 SHA-256，按 README 安装。发现问题时保留最小复现步骤和已脱敏的错误类别。
+## 重建
 
-若需要回退本次分支上传，应在保留后续协作者提交的前提下使用 Git revert 创建新的撤销提交；不要强制重置远端历史。安装回滚则使用本机安装回执，二者作用范围不同。
+在仓库根目录使用 Python 3.10+：
 
-Release 和 tag 已按后续明确授权纳入本次交付；其他平台合并、main 分支和仓库设置变更仍不在范围内。
+```sh
+python scripts/build-release.py --release-tag codex-v0.3.0
+```
+
+默认写入根目录 dist，排除 archive/packages 历史包、Git 元数据和本机数据。vendor/smol-toml/dist 是必要运行依赖，必须保留。源码包与安装包经过隐私检查、非必要媒体元数据处理和 ZIP 校验。
+
+后续更新应先读取目标分支最新提交，以普通快进推送保留其他协作者工作。若仓库策略要求 PR，改走 PR，不改写分支历史。tag 和 Release 不覆盖已有同名对象。

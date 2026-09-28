@@ -8,6 +8,9 @@ import { createWidgetHost } from '../lib/widget-host.mjs';
 import { migrateData, stripRetiredModules } from './migration.mjs';
 import { createFxService } from './fx.mjs';
 import { MEDIA_POLICY } from '../lib/media-validation.mjs';
+import { createInsightsService } from './insights.mjs';
+import { pricingSchedule } from './pricing-schedule.mjs';
+import { importWorkshop, exportWorkshop } from '../lib/workshop.mjs';
 
 export const UI_ORIGIN = 'whale://widget';
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.gif': 'image/gif', '.mp3': 'audio/mpeg' };
@@ -20,14 +23,17 @@ export function createDispatcher({ dataDir = DATA_HOME, service = null, monitor 
   migrateData(dataDir);
   const whale = service || new WhaleService({ dataDir, ...(fetchImpl ? { fetchImpl } : {}) });
   const fx = createFxService({ dataDir, ...(fxFetchImpl ? { fetchImpl: fxFetchImpl } : {}) });
+  const insights = createInsightsService(whale.config);
+  const displayModeFile = path.join(dataDir, 'display-mode.json');
+  const displayMode = () => readJson(displayModeFile, {}).mode === 'subscription' ? 'subscription' : 'api';
   const routes = new Map(), effects = [];
   createWidgetHost(dataDir).apply({ whale, webServer: { register: r => { routes.set(r.path, r.handler); return () => routes.delete(r.path); }, tapIndex: () => () => {} }, effect: f => effects.push(f()) });
   const watcher = monitor ? new SessionMonitor(whale) : null;
   watcher?.start();
-  const timer = autoRefresh ? setInterval(() => whale.getBalance().catch(() => {}), 60000) : null;
+  const timer = autoRefresh ? setInterval(() => { if (displayMode() === 'api') whale.getBalance().catch(() => {}); }, 60000) : null;
   timer?.unref();
   if (autoRefresh) {
-    whale.getBalance().catch(() => {});
+    if (displayMode() === 'api') whale.getBalance().catch(() => {});
     fx.start().catch(() => {});
   }
   const stateFile = path.join(dataDir, 'ui-state.json');
@@ -48,6 +54,18 @@ export function createDispatcher({ dataDir = DATA_HOME, service = null, monitor 
       const bytes = body == null ? Buffer.alloc(0) : Buffer.isBuffer(body) ? body : Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
       if (bytes.length > 32 * 1024 * 1024) return jsonResult(413, { ok: false, error: '导入文件过大' });
       const parsed = () => JSON.parse(bytes.toString('utf8') || '{}');
+      if (url.pathname === '/api/display-mode') {
+        if (method === 'GET') return jsonResult(200, {ok:true,mode:displayMode()});
+        if (method !== 'POST') return jsonResult(405, {ok:false});
+        const input=parsed();
+        if (!['api','subscription'].includes(input.mode)) return jsonResult(400,{ok:false,error:'请选择 API 或会员订阅额度模式'});
+        writeJson(displayModeFile,{version:1,mode:input.mode});
+        return jsonResult(200,{ok:true,mode:input.mode});
+      }
+      if (url.pathname === '/api/insights' && method === 'GET') return jsonResult(200, await insights.get());
+      if (url.pathname === '/api/pricing' && method === 'GET') return jsonResult(200, {ok:true,...pricingSchedule(whale.config.resolve())});
+      if (url.pathname === '/api/workshop/export' && method === 'GET') return jsonResult(200, exportWorkshop(dataDir));
+      if (url.pathname === '/api/workshop/import' && method === 'POST') return jsonResult(200, importWorkshop(dataDir, parsed()));
       if (url.pathname === '/api/status' && method === 'GET') return jsonResult(200, { ok: true, version: VERSION, buildVersion, transport: 'local-ipc', webpage: false, provider: whale.config.publicInfo(), monitor: watcher?.status() || { watching: 0, activeTurns: 0 }, dataDir, ...statusInfo() });
       if (url.pathname === '/api/config') {
         if (method === 'GET') return jsonResult(200, { ok: true, ...whale.config.settingsInfo() });
@@ -82,7 +100,10 @@ export function createDispatcher({ dataDir = DATA_HOME, service = null, monitor 
       }
       if (url.pathname === '/api/show' && method === 'POST') { onShow(); return jsonResult(200, { ok: true, desktop: 'shown' }); }
       if (url.pathname === '/api/stop' && method === 'POST') { setTimeout(onStop, 100); return jsonResult(200, { ok: true }); }
-      const uiFiles = { '/': 'widget.html', '/widget.html': 'widget.html', '/client.js': 'client.js', '/ui.css': 'ui.css', '/render.js': 'render.js', '/input.js': 'input.js', '/alpha-worker.js': 'alpha-worker.js', '/money.js': 'money.js', '/media-guard.js': 'media-guard.js', '/turn-notice.js': 'turn-notice.js' };
+      const uiFiles = { '/': 'widget.html', '/widget.html': 'widget.html', '/client.js': 'client.js', '/ui.css': 'ui.css', '/render.js': 'render.js', '/input.js': 'input.js', '/alpha-worker.js': 'alpha-worker.js', '/money.js': 'money.js', '/media-guard.js': 'media-guard.js', '/turn-notice.js': 'turn-notice.js', '/gesture.js':'gesture.js', '/audio-engine.js':'audio-engine.js', '/preferences-v3.js':'preferences-v3.js', '/insights.js':'insights.js', '/workshop.js':'workshop.js' };
+      uiFiles['/account-view.js']='account-view.js';
+      uiFiles['/shape.js']='shape.js';
+      uiFiles['/dashboard.js']='dashboard.js';
       let file;
       if (Object.hasOwn(uiFiles, url.pathname)) file = path.join(ROOT, 'desktop', 'ui', uiFiles[url.pathname]);
       else if (url.pathname.startsWith('/assets/')) {
@@ -115,6 +136,7 @@ export function createDispatcher({ dataDir = DATA_HOME, service = null, monitor 
     closing = true; clearInterval(timer);
     closeJob = (async () => {
       const failures = [];
+      insights.close();
       try { await fx.close(); } catch (error) { failures.push(error); }
       try { await watcher?.stop({ timeoutMs: 1200 }); } catch (error) { failures.push(error); }
       try { await whale.close?.({ timeoutMs: 3000 }); } catch (error) { failures.push(error); }

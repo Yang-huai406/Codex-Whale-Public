@@ -7,11 +7,14 @@ for (const eventName of ['click', 'auxclick']) document.addEventListener(eventNa
   trustedClickAt = Date.now(); ipcRenderer.send('whale-user-gesture');
 }, true);
 contextBridge.exposeInMainWorld('whaleDesktop', {
+  platform: process.platform,
   ready: () => ipcRenderer.send('whale-ready'),
   keyboardFocus: value => ipcRenderer.send('whale-keyboard-focus', !!value),
   interactive: value => ipcRenderer.send('whale-interactive', !!value),
+  shape: rects => ipcRenderer.send('whale-shape', rects),
   onCursor: callback => ipcRenderer.on('whale-cursor', (_event, point) => callback(point)),
   save: values => ipcRenderer.send('whale-save-storage', values),
+  command: command => ipcRenderer.invoke('whale-command', command),
   openExternal: value => {
     if (!trustedClickAt || Date.now() - trustedClickAt > 1000 || !navigator.userActivation.isActive || typeof value !== 'string') return Promise.resolve(false);
     trustedClickAt = 0;
@@ -20,3 +23,16 @@ contextBridge.exposeInMainWorld('whaleDesktop', {
   testMode: process.argv.includes('--whale-render-test'),
 });
 ipcRenderer.on('whale-settings', () => window.dispatchEvent(new Event('whale-open-settings')));
+ipcRenderer.on('whale-command', (_event, command) => {
+  const events = {
+    balance: 'whale-refresh',
+    usage: 'whale-open-usage',
+    settings: 'whale-open-settings',
+    'reset-position': 'whale-reset-position',
+  };
+  if (events[command]) window.dispatchEvent(new Event(events[command]));
+});
+
+ipcRenderer.on('whale-desktop-mode', (_event, mode) => window.dispatchEvent(new CustomEvent('whale-desktop-mode', { detail: mode })));
+ipcRenderer.on('whale-desktop-mode-changing', () => window.dispatchEvent(new Event('whale-mode-changing')));
+ipcRenderer.on('whale-shape-request', () => window.dispatchEvent(new Event('whale-shape-request')));

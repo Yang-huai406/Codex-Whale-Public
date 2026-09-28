@@ -1,4 +1,4 @@
-param([string]$Source, [string]$DataDir, [string]$CodexCli, [switch]$CheckOnly)
+param([string]$Source, [string]$DataDir, [string]$CodexCli, [switch]$CheckOnly, [switch]$Resume)
 $ErrorActionPreference = 'Stop'
 if ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Run this installer with Windows PowerShell (powershell.exe), not pwsh.' }
 . (Join-Path $PSScriptRoot 'package-common.ps1')
@@ -11,8 +11,9 @@ $DataDir = Get-WhaleFullPath $DataDir
 foreach ($location in @($Source,$target,$DataDir)) { Assert-WhalePlainPath $location }
 if ($DataDir -eq $target -or $DataDir.StartsWith($target + '\',[StringComparison]::OrdinalIgnoreCase) -or $target.StartsWith($DataDir + '\',[StringComparison]::OrdinalIgnoreCase)) { throw 'Plugin code and user data must be separate directories.' }
 $manifest = Get-Content -LiteralPath (Join-Path $Source '.codex-plugin\plugin.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-if ($manifest.name -cne 'api-balance-whale' -or $manifest.version -cne '0.2.0') { throw 'This installer requires an unmodified v0.2.0 release manifest.' }
+if ($manifest.name -cne 'api-balance-whale' -or $manifest.version -notmatch '^0\.3\.0(?:\+codex\.[A-Za-z0-9.-]+)?$') { throw 'This installer requires an unmodified v0.3.0 release manifest.' }
 $node = Find-WhaleNode
+Invoke-WhaleCommand $node @((Join-Path $Source 'scripts\check-package.mjs'))
 $cli = Find-WhaleCodex $CodexCli
 $helper = Join-Path $Source 'scripts\marketplace-helper.mjs'
 $marketplaceInfo = & $node $helper inspect
@@ -26,11 +27,11 @@ if (Test-Path -LiteralPath $target) {
     if ($previousManifest.name -cne 'api-balance-whale') { throw 'Destination belongs to another plugin.' }
     $previousVersion = $previousManifest.version
 }
-if ($CheckOnly) { @{ ok=$true; version='0.2.0'; destination=$target; data=$DataDir; codexCli=$cli; marketplace=$marketplaceInfo.marketplaceName; previousVersion=$previousVersion } | ConvertTo-Json; return }
+if ($CheckOnly) { @{ ok=$true; version=$manifest.version; destination=$target; data=$DataDir; codexCli=$cli; marketplace=$marketplaceInfo.marketplaceName; previousVersion=$previousVersion } | ConvertTo-Json; return }
 $backupRoot = Get-WhaleFullPath (Join-Path $env:LOCALAPPDATA ('CodexWhale\backups\' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8)))
 Assert-WhalePlainPath $backupRoot
 $null = New-Item -ItemType Directory -Path $backupRoot
-$receipt = @{ format=1; plugin='api-balance-whale'; version='0.2.0'; installedAt=[DateTime]::UtcNow.ToString('o'); target=$target; dataDir=$DataDir; backup=$backupRoot; codexCli=$cli; previousVersion=$previousVersion; previousTask=($null -ne $task); stage='backup'; marketplace=$marketplaceInfo.marketplaceName }
+$receipt = @{ format=1; plugin='api-balance-whale'; version=$manifest.version; installedAt=[DateTime]::UtcNow.ToString('o'); target=$target; dataDir=$DataDir; backup=$backupRoot; codexCli=$cli; previousVersion=$previousVersion; previousTask=($null -ne $task); stage='backup'; marketplace=$marketplaceInfo.marketplaceName }
 if (Test-Path -LiteralPath $target) { Copy-WhaleTree $target (Join-Path $backupRoot 'plugin') @('node_modules','.git') }
 if (Test-Path -LiteralPath $DataDir) { Copy-WhaleTree $DataDir (Join-Path $backupRoot 'data') @('desktop-runtime','desktop-profile','native','npm-cache','runtime.json','service.lock','supervisor-state.json','launcher-state.json') }
 if ($task) { Export-ScheduledTask -TaskName 'Codex API Balance Whale' | Set-Content -LiteralPath (Join-Path $backupRoot 'scheduled-task.xml') -Encoding UTF8 }
@@ -65,14 +66,17 @@ try {
         $receipt.stage='plugin-registered'; Write-WhaleReceipt (Join-Path $backupRoot 'installation.json') $receipt
         $catalog = & $cli plugin list --json
         if ($LASTEXITCODE -ne 0) { throw 'Cannot verify installed plugin registration.' }
-        $installed = @((($catalog | ConvertFrom-Json).installed) | Where-Object { $_.pluginId -ceq ('api-balance-whale@' + $marketplaceInfo.marketplaceName) -and $_.version -ceq '0.2.0' -and $_.installed -eq $true -and $_.enabled -eq $true })
-        if ($installed.Count -ne 1) { throw 'Codex did not report one enabled v0.2.0 installation.' }
+        $installed = @((($catalog | ConvertFrom-Json).installed) | Where-Object { $_.pluginId -ceq ('api-balance-whale@' + $marketplaceInfo.marketplaceName) -and $_.version -ceq $manifest.version -and $_.installed -eq $true -and $_.enabled -eq $true })
+        if ($installed.Count -ne 1) { throw 'Codex did not report one enabled v0.3.0 installation.' }
+        # Explicit resume is opt-in; the original pause marker is already backed up.
+        if ($Resume) { Remove-Item -LiteralPath (Join-Path $DataDir 'pause-until-host-exit.json') -Force -ErrorAction SilentlyContinue }
         & (Join-Path $target 'scripts\install-follow.ps1') -DataDir $DataDir
+        Invoke-WhaleCommand $node @((Join-Path $target 'scripts\verify-runtime.mjs'),'--allow-idle')
     } finally { $env:WHALE_HOME = $savedWhaleHome }
     $receipt.stage='complete'; Write-WhaleReceipt (Join-Path $backupRoot 'installation.json') $receipt
     $null = New-Item -ItemType Directory -Path $DataDir -Force
-    Write-WhaleReceipt (Join-Path $DataDir 'package-installation.json') @{ receipt=(Join-Path $backupRoot 'installation.json'); version='0.2.0' }
-    Write-Output ('Installed v0.2.0. Private rollback receipt: ' + (Join-Path $backupRoot 'installation.json'))
+    Write-WhaleReceipt (Join-Path $DataDir 'package-installation.json') @{ receipt=(Join-Path $backupRoot 'installation.json'); version=$manifest.version }
+    Write-Output ('Installed v0.3.0. Private rollback receipt: ' + (Join-Path $backupRoot 'installation.json'))
     Write-Output 'Open a new Codex chat to load the updated skill and tools. User settings, media and usage records were retained.'
 } catch {
     $receipt.failure=$_.Exception.Message; Write-WhaleReceipt (Join-Path $backupRoot 'installation.json') $receipt

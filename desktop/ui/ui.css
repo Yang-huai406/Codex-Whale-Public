@@ -13,3 +13,102 @@
 .desktop .dshwv-root.dshwv-left .dshwv-frame .dshwv-gif{transform:none}
 .desktop .dshwv-menu{max-height:calc(100vh - 16px);overflow:auto}
 .private-reset{border:0;background:transparent;color:#63757c;font-size:10px;padding:4px 0;text-decoration:underline;text-underline-offset:2px}.privacy-help{padding:10px 12px;background:#f1f5f4;border-radius:8px}.dshwv-fx-info-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 19px;width:19px;height:19px;padding:0;margin:0;border:1px solid #a9adb3;border-radius:50%;background:#e8eaed;color:#5f6368;font-size:13px;font-weight:700;line-height:1;cursor:pointer}.dshwv-fx-info-button:hover{background:#dfe2e6}.dshwv-fx-info-button:focus-visible{outline:2px solid #638695;outline-offset:2px}.dshwv-fx-info{position:fixed;z-index:10003;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;margin:0;padding:11px 13px;border:1px solid #c6ccd2;border-radius:9px;background:#fff;color:#5a6574;box-shadow:0 5px 18px #0003;white-space:pre-line;overflow-wrap:anywhere;font-size:12px;line-height:1.65;pointer-events:auto;user-select:text}.dshwv-fx-info:focus{outline:2px solid #a0b8c2;outline-offset:1px}
+
+.whale-v3-dialog{width:min(560px,90vw);max-height:85vh;overflow:auto;color:#203170;background:#fff;border:1px solid #bdc9df;border-radius:14px;padding:20px;font:14px/1.5 system-ui;pointer-events:auto}.whale-v3-dialog::backdrop{background:#182a4d66}.whale-v3-dialog h2{margin-top:0}.whale-v3-dialog label{display:flex;justify-content:space-between;gap:12px}.whale-v3-dialog fieldset{display:flex;align-items:center;gap:10px;border:1px solid #dbe4f5;border-radius:8px;margin:12px 0;flex-wrap:wrap}.whale-v3-dialog fieldset input{min-width:80px;flex:1}.whale-v3-dialog button,.whale-v3-dialog select{padding:6px 10px;border-radius:6px;border:1px solid #bdc9df;background:#f3f6fc;color:#203170}.whale-v3-dialog progress{width:100%;accent-color:#536ba9}.whale-v3-dialog p{white-space:normal;overflow-wrap:anywhere}
+
+.whale-v3-dialog>label{white-space:nowrap;align-items:center}.whale-v3-dialog>label>select{width:auto;min-width:0;flex:1}.whale-v3-dialog button:disabled{opacity:.45;cursor:not-allowed}
+/* Only editable fields accept text selection; dragging the companion never selects labels. */
+.dshwv-menu,.dshwv-menu *,.whale-account-card,.whale-account-card *{user-select:none;-webkit-user-select:none}
+.dshwv-menu input:not([type=range]):not([type=checkbox]),.dshwv-menu textarea,.whale-v3-dialog input:not([type=range]),.whale-v3-dialog textarea{user-select:text;-webkit-user-select:text}
+html[data-whale-cursor=grab]{cursor:grab}html[data-whale-cursor=grabbing],html[data-whale-cursor=grabbing] *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}
+.whale-v3-dialog .dialog-actions{position:sticky;bottom:-20px;background:white;padding:12px 0;margin-top:12px;z-index:2}
+
+/* Compact native companion surfaces. No viewport-sized dimming or blur. */
+:root{--teal:#4259b0}
+html.desktop dialog::backdrop,html.desktop .whale-v3-dialog::backdrop{background:transparent;backdrop-filter:none}
+html.desktop [class*="mask"]{background:transparent!important;backdrop-filter:none!important}
+html.desktop .dshwv-menu{width:304px;min-width:0;max-width:calc(100vw - 16px);max-height:min(600px,calc(100vh - 24px));display:flex!important;flex-direction:column;overflow:hidden!important;padding:12px;background:#fff;border:1px solid #dce2ef;border-radius:16px;box-shadow:0 5px 14px #202e4b24;color:#28344d;transition:opacity .12s ease;transform:none!important}
+html.desktop .dshwv-menuview{flex:1 1 auto;min-height:0;overflow:auto;scrollbar-width:thin;overscroll-behavior:contain;padding:0 2px}
+html.desktop .whale-account-menu{flex:0 0 auto;padding:2px 0 12px;border-bottom:1px solid #e7ebf3;margin-bottom:5px;color:#273650;font:12px/1.5 'Segoe UI','Microsoft YaHei',sans-serif}
+html.desktop .whale-account-menu>strong{display:block;font-size:14px;margin-bottom:10px}
+html.desktop .whale-account-menu [role=group]{display:flex;gap:4px;background:#edf0f7;border-radius:10px;padding:4px}
+html.desktop .whale-account-menu [role=group] button{flex:1;border:0;border-radius:7px;padding:8px 3px;font-size:12px;font-weight:600;background:transparent;color:#637089}
+html.desktop .whale-account-menu button[aria-pressed=true]{background:#fff;color:#3e53a3;box-shadow:0 1px 4px #1c30551a}
+html.desktop .whale-mode-description{margin:8px 0 5px;font-size:11px;color:#67748a}
+html.desktop .whale-account-menu .whale-mode-open{width:100%;background:#4358aa;color:#fff;border:0;padding:8px;border-radius:8px;font-weight:600;text-align:center}
+html.desktop .whale-account-menu small{font-size:10px;color:#8791a4;max-width:none;margin-top:6px}
+html.desktop .whale-menu-group{border:0;border-bottom:1px solid #edf0f5;margin:0;padding:0 0 4px}
+html.desktop .whale-menu-group>summary{padding:11px 2px;color:#35425c;font-size:12px;font-weight:600}
+html.desktop .dshwv-menu-row{margin:7px 0;font-size:11px;color:#5b6980;gap:6px}
+html.desktop .dshwv-menu .dshwv-api-open{display:none!important}
+html.desktop .dshwv-menu button{font-family:inherit}
+html.desktop .dshwv-menu input{margin-top:0}
+html.desktop .dshwv-menu input[type=range]{padding:0;border:0}
+html.desktop .dshwv-menu input[type=checkbox]{width:14px;height:14px;padding:0;accent-color:#4358aa}
+html.desktop .dshwv-menu button:focus-visible,html.desktop .whale-menu-group summary:focus-visible{outline:2px solid #6384d5;outline-offset:2px}
+html.desktop dialog{background:#fff;color:#293752;border:1px solid #dce2ef;border-radius:16px;box-shadow:0 5px 14px #202e4b24;width:min(570px,calc(100vw - 24px));max-height:calc(100vh - 32px);font:13px/1.6 'Segoe UI','Microsoft YaHei',sans-serif}
+html.desktop dialog form{padding:22px}
+html.desktop .dialog-header{margin-bottom:16px}
+html.desktop .dialog-header h2{color:#283650;font-size:20px;letter-spacing:.2px}
+html.desktop .dialog-header p,html.desktop .help{font-size:12px;color:#788397;line-height:1.65}
+html.desktop dialog label{color:#536079;font-size:12px}
+html.desktop dialog input,html.desktop dialog select{background:#f8f9fc;border-color:#dfe4ee;color:#34425c;padding:9px 10px}
+html.desktop dialog details{margin-top:14px;padding-top:12px}
+html.desktop dialog summary{color:#495a83}
+html.desktop .privacy-help{background:#f4f6fb;padding:10px 12px;border-radius:9px}
+html.desktop .dialog-actions{position:sticky;bottom:-22px;background:#fff;border-top:1px solid #e8edf4;padding-top:12px;margin-top:18px}
+html.desktop .primary{background:#4358aa;border-radius:9px}
+html.desktop .dshwv-usage-card{width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 32px);border:1px solid #dce2ef;border-radius:16px;background:#fff;box-shadow:0 5px 14px #202e4b24;color:#34425c;font:13px/1.6 'Segoe UI','Microsoft YaHei',sans-serif;overflow:hidden}
+html.desktop .dshwv-usage-wintitle{padding:18px 22px 14px;font-size:19px;color:#283650;border-bottom:1px solid #edf0f5}
+html.desktop .dshwv-usage-close{top:15px;right:16px;color:#788397;font-size:22px}
+html.desktop .dshwv-usage-windowbody{padding:16px 22px 22px}
+html.desktop .dshwv-usage-oview{text-align:left;padding:16px 18px;margin-bottom:18px;background:#f3f5fc;border:1px solid #e7ebf6;border-radius:12px;color:#66738b}
+html.desktop .dshwv-usage-oview-num{font-size:32px;line-height:1.35;color:#34498a;margin:5px 0;font-variant-numeric:tabular-nums}
+html.desktop .dshwv-usage-hint{color:#7b869a;font-size:11px;line-height:1.7}
+html.desktop .dshwv-usage-collapse{padding:12px 4px;font-size:13px;color:#425477;border-color:#e8ecf3}
+html.desktop .dshwv-usage-collapse-body{padding:8px 4px}
+html.desktop .dshwv-usage-sub{background:#fff;color:#34425c}
+@media(max-height:420px){html.desktop .whale-account-menu small{display:none}html.desktop .whale-account-menu{padding-bottom:6px}html.desktop .whale-mode-description{margin:3px 0}html.desktop .whale-menu-group>summary{padding:7px 2px}}
+html.desktop #settings-form{display:flex;flex-direction:column;max-height:calc(100vh - 34px);padding:20px}
+html.desktop #settings-form>.dialog-header,html.desktop #settings-form>.dialog-actions{flex:0 0 auto}
+html.desktop .settings-content{overflow:auto;min-height:0;padding-right:5px;scrollbar-width:thin;overscroll-behavior:contain}
+html.desktop #settings-form>.dialog-actions{position:static;margin-top:12px;padding-top:12px}
+html.desktop .icon-button:focus-visible{outline:2px solid #8497d3;border-radius:6px}
+
+/* B: one stable panel with overview, usage and all existing settings. */
+html.desktop .whale-dashboard{width:400px!important;height:520px!important;max-width:calc(100vw - 16px)!important;max-height:calc(100vh - 24px)!important;padding:16px;border-radius:16px}
+html.desktop .whale-dashboard .whale-account-menu{padding:0 0 10px;margin:0;border:0}
+html.desktop .whale-dashboard .whale-account-menu>strong{font-size:17px;margin-bottom:12px}
+html.desktop .whale-dashboard .whale-account-menu>.whale-mode-description,html.desktop .whale-dashboard .whale-account-menu>small{display:none}
+html.desktop .whale-dashboard-tabs{flex:0 0 auto;display:flex;gap:24px;border-bottom:1px solid #e5eaf2;margin-bottom:14px}
+html.desktop .whale-dashboard-tabs button{border:0;background:transparent;border-radius:0;padding:8px 0 10px;font-size:13px;color:#798498}
+html.desktop .whale-dashboard-tabs button[aria-selected=true]{color:#4058a8;font-weight:600;border-bottom:2px solid #4058a8}
+html.desktop .whale-dashboard-scroll{min-height:0;flex:1 1 auto;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-right:4px}
+html.desktop .whale-dashboard-scroll>.whale-settings-page{overflow:visible;max-height:none;padding:0}
+html.desktop .whale-dashboard .dshwv-usage-area{display:block!important;overflow:visible!important;flex:none!important}
+html.desktop .whale-dashboard [hidden]{display:none!important}
+html.desktop .whale-dashboard .whale-quota-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:2px 0 14px}
+html.desktop .whale-quota-box{min-width:0;padding:8px 0;color:#576780;font-size:12px}
+html.desktop .whale-quota-box strong{display:block;font-size:23px;line-height:1.4;margin:12px 0;color:#344b94}
+html.desktop .whale-quota-box progress{display:block;width:100%;height:7px;accent-color:#4964bc;margin-bottom:10px}
+html.desktop .whale-quota-box:nth-child(2) progress{accent-color:#618b83}
+html.desktop .whale-quota-box small{display:block;font-size:11px;line-height:1.6;color:#7a879b;overflow-wrap:anywhere}
+html.desktop .whale-metric{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;border-top:1px solid #edf0f5;padding:12px 0;font-size:12px;color:#758198}
+html.desktop .whale-metric strong{font-size:14px;font-weight:600;color:#334561;font-variant-numeric:tabular-nums}
+html.desktop .whale-dashboard-note{font-size:11px;line-height:1.7;color:#7d899d;margin:10px 0}
+html.desktop .whale-dashboard-actions{display:flex;gap:8px;margin:16px 0}
+html.desktop .whale-dashboard-actions button,.whale-token-usage>button{border:1px solid #dce3ef;border-radius:8px;background:#f7f9fd;color:#465a86;font-size:12px;padding:9px 12px}
+html.desktop .whale-dashboard-actions .whale-mode-open{flex:1;background:#465dae;color:#fff;border-color:#465dae}
+html.desktop .whale-dashboard-label{display:block;color:#77839a;font-size:12px;margin-top:8px}
+html.desktop .whale-balance-number{display:block;color:#344b94;font-size:34px;font-weight:600;margin:12px 0 22px;font-variant-numeric:tabular-nums}
+html.desktop .whale-token-usage h3{font-size:14px;margin:4px 0 14px;color:#344561}
+html.desktop .whale-dashboard .dshwv-api-open{display:block!important}
+html.desktop .whale-dashboard .dshwv-usage-subtitle{display:none}
+html.desktop .whale-dashboard .dshwv-usage-sub{overflow:visible!important}
+@media(max-width:360px){html.desktop .whale-dashboard{padding:12px}html.desktop .whale-dashboard .whale-quota-grid{gap:10px}html.desktop .whale-quota-box strong{font-size:19px}}
+@media(max-height:330px){html.desktop .whale-dashboard .whale-account-menu>strong{display:none}html.desktop .whale-dashboard-tabs{margin-bottom:6px}html.desktop .whale-dashboard .whale-account-menu{padding-bottom:2px}}
+html.desktop .whale-dashboard [hidden]{display:none!important}
+html.desktop .whale-quota-box progress{-webkit-appearance:none;appearance:none;border:0;border-radius:6px;background:#edf0f7;overflow:hidden}
+html.desktop .whale-quota-box progress::-webkit-progress-bar{background:#edf0f7;border-radius:6px}
+html.desktop .whale-quota-box progress::-webkit-progress-value{background:#4964bc;border-radius:6px}
+html.desktop .whale-quota-box:nth-child(2) progress::-webkit-progress-value{background:#618b83}

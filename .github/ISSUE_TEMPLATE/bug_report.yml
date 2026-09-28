@@ -9,7 +9,7 @@ body:
     id: environment
     attributes:
       label: 环境
-      description: 插件、Windows、Codex、Node.js 版本，显示器数量与缩放，以及全新安装或升级。
+      description: 插件、Windows/macOS、Codex、Node.js 版本，显示器数量与缩放，以及全新安装或升级。
     validations:
       required: true
   - type: textarea

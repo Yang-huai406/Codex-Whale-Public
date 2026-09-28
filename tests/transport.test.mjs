@@ -32,6 +32,15 @@ async function setup(t) {
   return { server, request, dir, config };
 }
 
+test('position reset is authenticated and cannot be invoked as a read', async t=>{
+  const {server,config}=await setup(t);let resets=0;
+  const bridge=await startBridge(server,{dataDir:config.dataDir,onResetPosition:()=>{resets++;return true;}});t.after(()=>bridge.close());
+  const options={dataDir:config.dataDir,method:'POST',body:{}};
+  assert.equal((await bridgeRequest('/api/reset-position',{...options,runtime:{...bridge,token:'wrong-token'}})).ok,false);
+  assert.equal((await bridgeRequest('/api/reset-position',{dataDir:config.dataDir})).ok,false);assert.equal(resets,0);
+  assert.equal((await bridgeRequest('/api/reset-position',options)).ok,true);assert.equal(resets,1);
+});
+
 test('local IPC authenticates requests and restricts operations without a TCP port', async t => {
   const { server, request, config } = await setup(t);
   const bridge = await startBridge(server, { dataDir: config.dataDir });

@@ -30,6 +30,7 @@ public static class WhaleWindows {
     [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr h, out Rect r);
     [DllImport("user32.dll")] static extern bool ClientToScreen(IntPtr h, ref Point p);
     [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
     [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr h, uint cmd);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] static extern IntPtr GetWindowLongPtr(IntPtr h, int index);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] static extern IntPtr SetWindowLongPtr(IntPtr h, int index, IntPtr value);
@@ -38,12 +39,20 @@ public static class WhaleWindows {
     [DllImport("user32.dll")] static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
     [DllImport("user32.dll")] static extern bool SetProcessDPIAware();
     [DllImport("user32.dll")] static extern bool SetProcessDpiAwarenessContext(IntPtr context);
+    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attribute, ref int value, int size);
     [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int attribute, out int value, int size);
     [DllImport("kernel32.dll")] static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint id);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool Process32FirstW(IntPtr h, ref ProcessEntry p);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool Process32NextW(IntPtr h, ref ProcessEntry p);
     [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
-    static string Image(int pid) { try { using (var p = Process.GetProcessById(pid)) return p.MainModule.FileName; } catch { return ""; } }
+    [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool QueryFullProcessImageNameW(IntPtr process, uint flags, System.Text.StringBuilder name, ref int size);
+    static string Image(int pid) {
+        var process = OpenProcess(0x1000, false, pid);
+        if (process == IntPtr.Zero) return "";
+        try { int size=2048;var name=new System.Text.StringBuilder(size);return QueryFullProcessImageNameW(process,0,name,ref size)?name.ToString():""; }
+        finally { CloseHandle(process); }
+    }
     static bool CodexImage(string p) { return p.IndexOf(@"\WindowsApps\OpenAI.Codex_", StringComparison.OrdinalIgnoreCase) >= 0 && (p.EndsWith(@"\app\ChatGPT.exe", StringComparison.OrdinalIgnoreCase) || p.EndsWith(@"\app\Codex.exe", StringComparison.OrdinalIgnoreCase)); }
     static int[] Roots() {
         var parents = new Dictionary<int, int>(); var candidates = new HashSet<int>();
@@ -54,8 +63,9 @@ public static class WhaleWindows {
             if (Process32FirstW(snapshot, ref entry)) do {
                 if (string.Equals(entry.Name, "ChatGPT.exe", StringComparison.OrdinalIgnoreCase) || string.Equals(entry.Name, "Codex.exe", StringComparison.OrdinalIgnoreCase)) {
                     int pid = (int)entry.Id;
+                    if (!CodexImage(Image(pid))) continue;
                     try { using (var process = Process.GetProcessById(pid)) { if (process.SessionId != Process.GetCurrentProcess().SessionId) continue; } } catch { continue; }
-                    if (CodexImage(Image(pid))) { candidates.Add(pid); parents[pid] = (int)entry.Parent; }
+                    candidates.Add(pid); parents[pid] = (int)entry.Parent;
                 }
             } while (Process32NextW(snapshot, ref entry));
         } finally { CloseHandle(snapshot); }
@@ -66,6 +76,7 @@ public static class WhaleWindows {
         var windows = new List<IntPtr>(); var fg = GetForegroundWindow();
         EnumWindows((h, p) => {
             uint pid; GetWindowThreadProcessId(h, out pid);
+            if (!roots.Contains((int)pid)) return true;
             int cloaked = 0; try { DwmGetWindowAttribute(h, 14, out cloaked, 4); } catch { }
             if (roots.Contains((int)pid) && GetWindow(h, 4) == IntPtr.Zero && IsWindowVisible(h) && cloaked == 0 && (GetWindowLongPtr(h, -20).ToInt64() & 0x80) == 0) windows.Add(h);
             return true;
@@ -89,8 +100,19 @@ public static class WhaleWindows {
         try { previous = SetThreadDpiAwarenessContext(new IntPtr(-4)); } catch { }
         try {
             if ((DateTime.UtcNow - scannedAt).TotalMilliseconds > (cachedRoots.Length == 0 ? 250 : 750)) { cachedRoots = Roots(); scannedAt = DateTime.UtcNow; }
-            return Capture(cachedRoots);
+            var state = Capture(cachedRoots);
+            state["mouseButtons"] = ((GetAsyncKeyState(1) & 0x8000) != 0 ? 1 : 0) | ((GetAsyncKeyState(2) & 0x8000) != 0 ? 2 : 0);
+            state["mouseSampleAt"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            return state;
         } finally { if (previous != IntPtr.Zero) SetThreadDpiAwarenessContext(previous); }
+    }
+    // Disable the OS-owned-window fade/slide only. Renderer/CSS press springs
+    // remain untouched. Apply once when a verified Electron handle arrives.
+    public static bool ConfigureOverlay(long overlayValue) {
+        var overlay = new IntPtr(overlayValue); uint pid; GetWindowThreadProcessId(overlay, out pid);
+        if (!Image((int)pid).EndsWith(@"\electron\dist\electron.exe", StringComparison.OrdinalIgnoreCase)) return false;
+        int disabled = 1;
+        return DwmSetWindowAttribute(overlay, 3, ref disabled, sizeof(int)) == 0;
     }
     public static bool Attach(long overlayValue, long ownerValue) {
         var overlay = new IntPtr(overlayValue); var owner = new IntPtr(ownerValue); uint overlayPid, ownerPid;
@@ -113,6 +135,8 @@ public static class WhaleWindows {
         var f = follower;
         return new { enabled = f != null && f.Running, events = f == null ? 0 : Interlocked.Read(ref f.Events), moves = f == null ? 0 : Interlocked.Read(ref f.Moves), error = f == null ? "" : f.Error };
     }
+    public static bool WidgetVisible(long overlayValue) { return overlayValue != 0 && IsWindowVisible(new IntPtr(overlayValue)) && !IsIconic(new IntPtr(overlayValue)); }
+    public static void Detach(long overlayValue) { StopFollowing(); var overlay = new IntPtr(overlayValue); uint pid; GetWindowThreadProcessId(overlay, out pid); if (Image((int)pid).EndsWith(@"\electron\dist\electron.exe", StringComparison.OrdinalIgnoreCase)) SetWindowLongPtr(overlay, -8, IntPtr.Zero); }
     public static void StopFollowing() { var f = follower; follower = null; if (f != null) f.Stop(); }
 
     // This message pump owns physical position. Neither PowerShell IPC nor the
@@ -167,9 +191,13 @@ public static class WhaleWindows {
         }
         void OnLifecycle(IntPtr hook, uint ev, IntPtr hwnd, int obj, int child, uint sourceThread, uint time) {
             if (stopping || hwnd == IntPtr.Zero || hwnd == overlay || obj != 0 || child != 0) return;
-            if (ev != 0x0003 && ev != 0x0010 && ev != 0x0011 && ev != 0x0016 && ev != 0x0017 && ev != 0x8002 && ev != 0x8003) return;
+            if (ev != 0x0010 && ev != 0x0011 && ev != 0x0016 && ev != 0x0017 && ev != 0x8002 && ev != 0x8003) return;
             uint pid; GetWindowThreadProcessId(hwnd, out pid);
             if (pid != hostPid || (hwnd != host && GetAncestor(hwnd, 3) != host)) return;
+            // Chromium child surfaces and tooltips show/hide during ordinary
+            // work. Only the host or a top-level dialog lifecycle can invalidate
+            // its owned overlay; child visibility is not evidence.
+            if (hwnd != host && (GetAncestor(hwnd, 2) != hwnd || (ev != 0x0010 && ev != 0x0011))) return;
             Interlocked.Increment(ref visibilityRevision);
             Interlocked.Increment(ref Events); QueueSync();
         }
@@ -199,9 +227,9 @@ public static class WhaleWindows {
                 moveHook = SetWinEventHook(0x000A, 0x000B, IntPtr.Zero, callback, 0, 0, 2);
                 lifecycleHook = SetWinEventHook(0x0010, 0x0017, IntPtr.Zero, lifecycleCallback, hostPid, 0, 2);
                 showHook = SetWinEventHook(0x8002, 0x8003, IntPtr.Zero, lifecycleCallback, hostPid, 0, 2);
-                // A visible host can regain focus without a minimize/show event.
-                // Only this host's activation advances recovery; showInactive()
-                // on the separate overlay process cannot feed back into the hook.
+                // Focus-only transitions do not prove a lost surface. OnLifecycle
+                // ignores foreground events to avoid a hide/show and coordinate
+                // remap on every click back to Codex. Explicit Restore remains available.
                 foregroundHook = SetWinEventHook(0x0003, 0x0003, IntPtr.Zero, lifecycleCallback, hostPid, 0, 2);
                 Running = locationHook != IntPtr.Zero && moveHook != IntPtr.Zero && lifecycleHook != IntPtr.Zero && showHook != IntPtr.Zero && foregroundHook != IntPtr.Zero;
                 if (!Running) { Error = "Window event hooks unavailable"; return; }

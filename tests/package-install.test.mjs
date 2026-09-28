@@ -43,8 +43,10 @@ for (const scenario of ['fresh', 'upgrade', 'failed-registration']) {
   test(`isolated Windows package ${scenario} restores code and retains current user data`, { skip: process.platform !== 'win32' }, t => {
     const s = setup(t), source = path.join(s.dir, 'source'), target = path.join(s.home, 'plugins/api-balance-whale');
     for (const name of ['install-package.ps1','rollback-package.ps1','package-common.ps1','marketplace-helper.mjs']) write(path.join(source, 'scripts', name), fs.readFileSync(path.join(root, 'scripts', name), 'utf8'));
-    write(path.join(source, '.codex-plugin/plugin.json'), { name: 'api-balance-whale', version: '0.2.0' });
+    write(path.join(source, '.codex-plugin/plugin.json'), { name: 'api-balance-whale', version: '0.3.0+codex.test' });
     write(path.join(source, 'scripts/install-desktop.mjs'), 'process.stdout.write("mock desktop dependency ready\\n");');
+    write(path.join(source, 'scripts/check-package.mjs'), 'process.stdout.write("mock package dependency check\\n");');
+    write(path.join(source, 'scripts/verify-runtime.mjs'), 'process.stdout.write("mock runtime check\\n");');
     write(path.join(source, 'scripts/install-follow.ps1'), 'param([string]$DataDir)\n$null=New-Item -ItemType Directory -Path $DataDir -Force\n[IO.File]::WriteAllText((Join-Path $DataDir "mock-follow"),"ready")\n');
     write(path.join(source, 'scripts/uninstall-follow.ps1'), 'param([string]$DataDir)\n');
     const unrelated = { name: 'keep-other', source: { source: 'local', path: './plugins/keep-other' }, category: 'Productivity' };

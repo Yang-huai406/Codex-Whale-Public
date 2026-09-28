@@ -12,8 +12,14 @@ const ALLOWED = new Map([
   ['/api/status', 'GET'], ['/dsh-whale/balance.json', 'GET'], ['/dsh-whale/usage-records.json', 'GET'], ['/api/show', 'POST'], ['/api/stop', 'POST'],
 ]);
 
-export async function startBridge(dispatcher, { dataDir = DATA_HOME, onHost = null } = {}) {
+export async function startBridge(dispatcher, { dataDir = DATA_HOME, onHost = null, onMode = null, onResetPosition = null } = {}) {
   const pipe = pipeName(dataDir), token = crypto.randomBytes(32).toString('hex'), instanceId = crypto.randomUUID();
+  if (process.platform !== 'win32' && fs.existsSync(pipe)) {
+    // A recycled PID or missing runtime.json must never unlink a live socket.
+    if (await socketResponds(pipe)) throw new Error('A desktop IPC server is already listening');
+    if (!fs.lstatSync(pipe).isSocket()) throw new Error('Desktop IPC path is not a socket');
+    try { fs.unlinkSync(pipe); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  }
   const connections = new Set();
   const server = net.createServer(socket => {
     connections.add(socket); socket.on('close', () => connections.delete(socket)); socket.on('error', () => {});
@@ -30,6 +36,16 @@ export async function startBridge(dispatcher, { dataDir = DATA_HOME, onHost = nu
         const message = JSON.parse(input.slice(0, input.indexOf('\n')));
         const candidate = Buffer.from(typeof message.token === 'string' ? message.token : '');
         if (candidate.length !== token.length || !crypto.timingSafeEqual(candidate, Buffer.from(token))) throw new Error('unauthorized');
+        if (message.route === '/api/reset-position' && message.method === 'POST' && onResetPosition) {
+          const ok=await onResetPosition();
+          if(!socket.destroyed)socket.end(JSON.stringify({status:ok?200:400,payload:{ok:!!ok}})+'\n');
+          return;
+        }
+        if (message.route === '/api/desktop-mode' && message.method === 'POST' && onMode) {
+          const ok = ['standalone', 'follow-codex'].includes(message.body?.mode) && await onMode(message.body.mode);
+          if (!socket.destroyed) socket.end(JSON.stringify({ status: ok ? 200 : 400, payload: { ok: !!ok } }) + '\n');
+          return;
+        }
         if (message.route === '/internal/host' && message.method === 'POST' && onHost) {
           await onHost(message.body);
           if (!socket.destroyed) socket.end(JSON.stringify({ status: 200, payload: { ok: true } }) + '\n');
@@ -44,6 +60,7 @@ export async function startBridge(dispatcher, { dataDir = DATA_HOME, onHost = nu
     });
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(pipe, resolve); });
+  if (process.platform !== 'win32') fs.chmodSync(pipe, 0o600);
   const runtime = { transport: 'local-ipc', pipe, token, pid: process.pid, instanceId, version: VERSION };
   writeJson(path.join(dataDir, 'runtime.json'), runtime);
   async function close() {
@@ -53,6 +70,16 @@ export async function startBridge(dispatcher, { dataDir = DATA_HOME, onHost = nu
     if (readJson(file, {}).instanceId === instanceId) fs.unlinkSync(file);
   }
   return { ...runtime, server, close };
+}
+
+export function socketResponds(pipe) {
+  return new Promise(resolve => {
+    const socket = net.createConnection(pipe);
+    const finish = value => { socket.destroy(); resolve(value); };
+    socket.setTimeout(250, () => finish(false));
+    socket.once('connect', () => finish(true));
+    socket.once('error', () => finish(false));
+  });
 }
 
 export async function bridgeRequest(route, { method = 'GET', body, dataDir = DATA_HOME, runtime = null, timeoutMs = 30000 } = {}) {

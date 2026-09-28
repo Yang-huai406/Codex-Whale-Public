@@ -4,10 +4,10 @@
 
 ## 本次范围和协作关系
 
-- 当前交付：Windows v0.2(fixed)，内部版本 0.2.0；没有独立网页，不修改或注入 Codex 安装文件。
+- 当前交付：Codex v0.3.0（Windows 已做本机回归，macOS 保留兼容代码但待实机验证）；没有独立网页，不修改或注入 Codex 安装文件。
 - 仓库所属账号及上游作者：[@MeteorNOX](https://github.com/MeteorNOX)。
 - 本次上传协作者：[@Yang-huai406](https://github.com/Yang-huai406)，不代表仓库所有权变更。
-- 上传前的 0.2.4/macOS 成果保留于 [原始提交](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/8de181abf5593247f32d57995567dd9f4063e049) 和 [归档目录](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/For-Codex/archive/for-codex-0.2.4)，后续再整合。
+- 上传前的 0.2.4/macOS 成果保留于 [原始提交](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/8de181abf5593247f32d57995567dd9f4063e049) 和 [归档目录](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/For-Codex/archive/for-codex-0.2.4)；v0.3 已整合 PR #128 兼容路径，原归档继续保留。
 - 感谢 [@1llysviel](https://github.com/1llysviel) 的 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128)。本次不会把其工作改称为新原创。
 
 ## 保留与改造
@@ -25,7 +25,7 @@
 | vendor/smol-toml | BSD-3-Clause，保留原包许可证 |
 | Electron 与 Chromium | 安装时另外下载，保留其自带许可证和第三方声明 |
 
-见 [第三方声明](THIRD_PARTY_NOTICES.md)。截图只使用合成测试数据；其中角色素材仍遵循上述素材边界。
+见 [第三方声明](THIRD_PARTY_NOTICES.md)。发布包不包含聊天截图和历史测试截图；其中角色素材仍遵循上述素材边界。
 
 ## 隐私和历史
 

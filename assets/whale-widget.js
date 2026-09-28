@@ -315,7 +315,7 @@
     var usageRecBtn = document.createElement('button');
     usageRecBtn.type = 'button';
     usageRecBtn.className = 'dshwv-roleimport';
-    usageRecBtn.textContent = '- = 小鲸鱼记账 = -';
+    usageRecBtn.textContent = '查看 API 消费记录';
     usageRecBtn.title = '查看今日/近7天/全部消费记录';
     usageRecBtn.addEventListener('click', function (e) {
       e.stopPropagation();
@@ -446,6 +446,7 @@
         var sel = usageSet.taskEnd.sel || taskEndSel.value || '';
         var url = '';
         if (sel.indexOf('grp:') === 0) {
+          if (window.WhaleFeedback) { window.WhaleFeedback.play('success', '/dsh-whale/sound/press.mp3?set=' + encodeURIComponent(sel.slice(4)), soundOn ? soundVol : 0); return; }
           playTaskEndGroupClick(sel.slice(4));
           return;
         }
@@ -454,9 +455,10 @@
           url = '/dsh-whale/sound/' + (parts[2] === 'release' ? 'release' : 'press') + '.mp3?set=' + parts[1];
         }
         if (!url) return;
+        if (window.WhaleFeedback) { window.WhaleFeedbackSources = window.WhaleFeedbackSources || {}; window.WhaleFeedbackSources.success = url; window.WhaleFeedback.play('success', url, soundOn ? soundVol : 0); return; }
         var a = new Audio(url);
         try {
-          a.volume = Number(soundVol) || 0.9;
+          a.volume = (Number.isFinite(Number(soundVol)) ? Number(soundVol) : 0.9);
         } catch (err) {}
         a.play().catch(function () {});
       } catch (err) {}
@@ -472,7 +474,7 @@
         var pressEmpty = !!(g && g.press === '');
         var releaseEmpty = !!(g && g.release === '');
         if (pressEmpty && releaseEmpty) return;
-        var vol = Number(soundVol) || 0.9;
+        var vol = (Number.isFinite(Number(soundVol)) ? Number(soundVol) : 0.9);
         if (pressEmpty) {
           if (!releaseEmpty) {
             var relOnly = new Audio('/dsh-whale/sound/release.mp3?set=' + encodeURIComponent(groupId));
@@ -682,6 +684,7 @@
     } catch (err) {}
     menuBox.appendChild(rowTaskEnd);
     var currencyRow = menuRow();
+    currencyRow.dataset.accountApi = 'true';
     currencyRow.appendChild(menuLabel('显示币种'));
     var currencySel = document.createElement('select');
     currencySel.id = 'dshw-display-currency';
@@ -702,6 +705,7 @@
     currencyNote.setAttribute('role', 'region'); currencyNote.setAttribute('aria-label', '参考汇率说明');
     document.body.appendChild(currencyNote);
     var fxRefreshRow = menuRow();
+    fxRefreshRow.dataset.accountApi = 'true';
     fxRefreshRow.appendChild(menuLabel('参考汇率'));
     var fxRefreshBtn = document.createElement('button');
     fxRefreshBtn.type = 'button'; fxRefreshBtn.className = 'dshwv-roleimport';
@@ -864,6 +868,7 @@
     var apiSettingsBtn = document.createElement('button');
     apiSettingsBtn.type = 'button';
     apiSettingsBtn.className = 'dshwv-api-open';
+    apiSettingsBtn.dataset.accountApi = 'true';
     apiSettingsBtn.textContent = 'API 设置';
     apiSettingsBtn.style.cssText = 'width:100%;margin:6px 0;padding:7px;border:1px solid #badbdc;border-radius:8px;background:#eff9f8;color:#22676b;cursor:pointer';
     apiSettingsBtn.addEventListener('click', function (e) {
@@ -871,6 +876,11 @@
       window.dispatchEvent(new Event('whale-open-settings'));
     });
     menuBox.appendChild(apiSettingsBtn);
+    var resetPositionBtn = document.createElement('button');
+    resetPositionBtn.type = 'button'; resetPositionBtn.className = 'dshwv-sound';
+    resetPositionBtn.textContent = '位置重置到右下角';
+    resetPositionBtn.addEventListener('click', function () { window.dispatchEvent(new Event('whale-reset-position')); });
+    menuBox.appendChild(resetPositionBtn);
     var menuRootView = document.createElement('div');
     menuRootView.className = 'dshwv-menuview';
     while (menuBox.firstChild) menuRootView.appendChild(menuBox.firstChild);
@@ -884,6 +894,7 @@
     menuBox.appendChild(usageArea);
     usageArea.appendChild(usagePanel);
     var usageNavRow = menuRow();
+    usageNavRow.dataset.accountApi = 'true';
     usageNavRow.style.flex = '0 0 auto';
     usageRecBtn.style.width = '100%';
     usageNavRow.appendChild(usageRecBtn);
@@ -908,11 +919,12 @@
     var usageShowTimer = null;
     function setUsageNavBtn(inUsage) {
       try {
-        usageRecBtn.textContent = inUsage ? '‹ 返回' : '- = 小鲸鱼记账 = -';
+        usageRecBtn.textContent = inUsage ? '‹ 返回控制面板' : '查看 API 消费记录';
         usageRecBtn.title = inUsage ? '返回主菜单' : '查看今日/近7天/全部消费记录';
       } catch (err) {}
     }
     function showUsageSub() {
+      if (window.WhaleDashboard) { window.WhaleDashboard.select('usage'); return; }
       try {
         if (usageHideTimer) {
           clearTimeout(usageHideTimer);
@@ -986,6 +998,7 @@
       }, 10000);
     }
     function hideUsageSub() {
+      if (window.WhaleDashboard) { window.WhaleLegacyUsage.stop(); return; }
       if (usageRefreshTimer) {
         clearInterval(usageRefreshTimer);
         usageRefreshTimer = null;
@@ -1086,6 +1099,16 @@
     function closeUsagePanel() {
       hideUsageSub();
     }
+    window.WhaleLegacyUsage = {
+      start: function () {
+        usagePanelOpen = true;
+        usagePanel.style.cssText = 'display:block;position:static;width:100%;height:auto;max-height:none;overflow:visible;transform:none';
+        renderUsagePanel();
+        if (!usageRefreshTimer) usageRefreshTimer = setInterval(function () { if (usagePanelOpen) renderUsagePanel(); }, 10000);
+      },
+      stop: function () { usagePanelOpen = false; clearInterval(usageRefreshTimer); usageRefreshTimer = null; },
+      records: function () { openUsageRecordsWindow(); }
+    };
     function whaleCurrencySymbol() {
       return WhaleMoney.symbol();
     }
@@ -2498,7 +2521,7 @@
       card.innerHTML = '';
       var title = document.createElement('div');
       title.className = 'dshwv-usage-wintitle';
-      title.textContent = '消费记录(全部)';
+      title.textContent = 'API 消费记录';
       card.appendChild(title);
       var closeBtn = document.createElement('button');
       closeBtn.type = 'button';
@@ -8701,6 +8724,7 @@
     function whaleClick() {
       try {
         if (!bubbleOn) return;
+        if (window.WhaleAccountView?.mode === 'subscription') { window.WhaleAccountView.toggleBubble(root); return; }
         if (bubbleScene && (bubbleScene.kind === 'cost' || bubbleScene.kind === 'alert')) return;
         if (!bubbleShown) {
           bubbleRoundOn = true;
@@ -8736,6 +8760,7 @@
       } catch (err) {}
     }
     function showBubble() {
+      if (window.WhaleAccountView?.mode === 'subscription') return;
       if (!bubbleOn) return;
       if (costBubbleActive) return;
       bubbleRoundOn = true;
@@ -9004,6 +9029,7 @@
       };
     }
     function refresh(manual) {
+      if (window.WhaleAccountView?.mode === 'subscription') { window.WhaleAccountView.refresh(); return; }
       if (busy) return;
       busy = true;
       if (manual || state.balance === null) state.status = 'loading';
@@ -9216,6 +9242,9 @@
     var releaseTimer = null;
     function applySoundSet() {
       try {
+        if (pressAudio) { pressAudio.pause(); pressAudio.removeAttribute('src'); pressAudio.load(); }
+        if (releaseAudio) { releaseAudio.pause(); releaseAudio.removeAttribute('src'); releaseAudio.load(); }
+        if (window.WhaleAudio) { window.WhaleAudio.stop('gesture'); ['press', 'release'].forEach(function (slot) { if (!audioGroupSlotEmpty(soundSet, slot)) window.WhaleAudio.warm('/dsh-whale/sound/' + slot + '.mp3?set=' + encodeURIComponent(soundSet)).catch(function () {}); }); pressAudio = null; releaseAudio = null; return; }
         var pEmpty = audioGroupSlotEmpty(soundSet, 'press');
         var rEmpty = audioGroupSlotEmpty(soundSet, 'release');
         if (pEmpty) {
@@ -9234,70 +9263,37 @@
         }
       } catch (err) {}
     }
+    function feedback(event) {
+      var url = '/dsh-whale/sound/' + event + '.mp3?set=' + encodeURIComponent(soundSet);
+      if (audioGroupSlotEmpty(soundSet, event)) url = '';
+      window.WhaleFeedbackSources = window.WhaleFeedbackSources || {};
+      window.WhaleFeedbackSources[event] = url;
+      if (window.WhaleFeedback) return window.WhaleFeedback.play(event, url, soundOn ? soundVol : 0);
+      return false;
+    }
     function playPress() {
-      if (!soundOn) return;
-      if (!pressAudio) {
-        pressEnded = true;
-        return;
-      }
-      try {
-        if (releaseTimer) {
-          clearTimeout(releaseTimer);
-          releaseTimer = null;
-        }
-        if (releaseAudio) {
-          releaseAudio.pause();
-          releaseAudio.currentTime = 0;
-        }
-        pressEnded = false;
-        releasePlayed = false;
-        pressAudio.onended = function () {
-          pressEnded = true;
-          if (!pressing && !releasePlayed) playRelease();
-        };
-        pressAudio.currentTime = 0;
-        var p = pressAudio.play();
-        if (p && typeof p.catch === 'function') p.catch(function () {});
-      } catch (err) {}
+      releasePlayed = false;
+      if (feedback('press')) return;
+      if (!soundOn || !pressAudio) return;
+      try { if (releaseAudio) releaseAudio.pause(); pressAudio.currentTime = 0; pressAudio.play().catch(function () {}); } catch (err) {}
     }
     function playRelease() {
-      if (releasePlayed || !releaseAudio || !soundOn) return;
+      if (releasePlayed) return;
       releasePlayed = true;
-      try {
-        releaseAudio.currentTime = 0;
-        var p = releaseAudio.play();
-        if (p && typeof p.catch === 'function') p.catch(function () {});
-      } catch (err) {}
+      if (feedback('release')) return;
+      if (!soundOn || !releaseAudio) return;
+      try { if (pressAudio) pressAudio.pause(); releaseAudio.currentTime = 0; releaseAudio.play().catch(function () {}); } catch (err) {}
     }
     function pressDown() {
-      body.style.transform = SQUISH;
-      pressing = true;
-      playPress();
+      if (window.WhaleGesture) window.WhaleGesture.apply(body, true, window.WhaleFeedback && window.WhaleFeedback.feel);
+      else { body.style.transitionDuration = '75ms'; body.style.transform = SQUISH; }
+      pressing = true; playPress();
     }
     function pressUp() {
-      body.style.transform = 'scaleY(1) scaleX(1)';
-      pressing = false;
-      if (pressEnded) {
-        playRelease();
-        return;
-      }
-      var durKnown = false;
-      var remainMs = 0;
-      try {
-        var dur = pressAudio ? pressAudio.duration : 0;
-        if (isFinite(dur) && dur > 0) {
-          durKnown = true;
-          remainMs = (dur - pressAudio.currentTime) * 1000;
-        }
-      } catch (err) {}
-      if (durKnown) {
-        releaseTimer = setTimeout(function () {
-          releaseTimer = null;
-          playRelease();
-        }, Math.max(0, remainMs - 100));
-      }
-    }
-    var menuOpen = false;
+      if (window.WhaleGesture) window.WhaleGesture.apply(body, false, window.WhaleFeedback && window.WhaleFeedback.feel);
+      else { body.style.transitionDuration = '140ms'; body.style.transform = 'scaleY(1) scaleX(1)'; }
+      pressing = false; playRelease();
+    }    var menuOpen = false;
     var menuPositionFrame = 0;
     new ResizeObserver(function () {
       if (!menuOpen || menuPositionFrame) return;
@@ -9381,9 +9377,17 @@
         var onLeft = r.left + root.offsetWidth / 2 < vp.w / 2;
         var width = menuBox.offsetWidth, height = menuBox.offsetHeight;
         var assetTop = r.top + root.offsetHeight * (1 - 0.5945);
-        menuBox.style.left = clamp(onLeft ? b.left : b.right - width, 8, Math.max(8, vp.w - width - 8)) + 'px';
+        var left = onLeft ? b.left : b.right - width;
+        var top = assetTop - height - 10;
+        if (top < 8) {
+          if (b.right + 12 + width <= vp.w - 8) left = b.right + 12;
+          else if (b.left - 12 - width >= 8) left = b.left - 12 - width;
+          else if (b.bottom + height + 10 <= vp.h - 8) top = b.bottom + 10;
+          if (top < 8) top = b.top - height / 2;
+        }
+        menuBox.style.left = clamp(left, 8, Math.max(8, vp.w - width - 8)) + 'px';
         menuBox.style.right = 'auto';
-        menuBox.style.top = clamp(assetTop - height - 6, 8, Math.max(8, vp.h - height - 8)) + 'px';
+        menuBox.style.top = clamp(top, 8, Math.max(8, vp.h - height - 8)) + 'px';
         menuBox.style.bottom = 'auto';
         menuBox.style.transformOrigin = onLeft ? 'bottom left' : 'bottom right';
       } catch (err) {}
@@ -11024,7 +11028,7 @@
         if (e.target.closest('.dshwv-pop') || e.target.closest('.dshwv-menu-btn')) return;
         if (e.target.closest('.dshwv-rolelist') || e.target.closest('.dshwv-audiolist') || e.target.closest('.dshwv-cropmask') || e.target.closest('.dshwv-confirmmask') || e.target.closest('.dshwv-audiomask') || e.target.closest('.dshwv-snapmask') || e.target.closest('.dshwv-bubmask') || e.target.closest('.dshwv-qedit') || e.target.closest('.dshwv-usagepanel') || e.target.closest('.dshwv-usage-mask') || e.target.closest('.dshwv-resmask') || e.target.closest('.dshwv-custmenu') || e.target.closest('.dshwv-custbtn')) return;
         if (e.target.closest('.dshwv-rolebtn') || e.target.closest('.dshwv-audiobtn') || e.target.closest('.dshwv-roleimport') || e.target.closest('.dshwv-audioimport')) return;
-        if (e.target.closest('.dshwv-menu')) {
+        if (e.target.closest('.dshwv-menu,.whale-account-card')) {
           closeRolePanel();
           closeAudioGroupPanel();
           return;
@@ -11086,7 +11090,7 @@
     function onDocClickStopper(e) {
       if (e.target && e.target.closest) {
         if (e.target.closest('.dshwv-fx-info')) return;
-        if (e.target.closest('.dshwv-pop') || e.target.closest('.dshwv-menu') || e.target.closest('.dshwv-menu-btn') || e.target.closest('.dshwv-rolelist') || e.target.closest('.dshwv-cropmask') || e.target.closest('.dshwv-confirmmask') || e.target.closest('.dshwv-audiolist') || e.target.closest('.dshwv-audiomask') || e.target.closest('.dshwv-snapmask') || e.target.closest('.dshwv-bubmask') || e.target.closest('.dshwv-qedit') || e.target.closest('.dshwv-usagepanel') || e.target.closest('.dshwv-usage-mask') || e.target.closest('.dshwv-resmask') || e.target.closest('.dshwv-custmenu') || e.target.closest('.dshwv-custbtn')) return;
+        if (e.target.closest('.dshwv-pop') || e.target.closest('.dshwv-menu,.whale-account-card') || e.target.closest('.dshwv-menu-btn') || e.target.closest('.dshwv-rolelist') || e.target.closest('.dshwv-cropmask') || e.target.closest('.dshwv-confirmmask') || e.target.closest('.dshwv-audiolist') || e.target.closest('.dshwv-audiomask') || e.target.closest('.dshwv-snapmask') || e.target.closest('.dshwv-bubmask') || e.target.closest('.dshwv-qedit') || e.target.closest('.dshwv-usagepanel') || e.target.closest('.dshwv-usage-mask') || e.target.closest('.dshwv-resmask') || e.target.closest('.dshwv-custmenu') || e.target.closest('.dshwv-custbtn')) return;
       }
       if (!isWhaleHit(e)) return;
       try {
@@ -11098,7 +11102,7 @@
       try {
         if (!menuBtnHide) return;
         if (e.target && e.target.closest) {
-          if (e.target.closest('.dshwv-pop') || e.target.closest('.dshwv-menu') || e.target.closest('.dshwv-menu-btn') || e.target.closest('.dshwv-rolelist') || e.target.closest('.dshwv-audiolist') || e.target.closest('.dshwv-cropmask') || e.target.closest('.dshwv-confirmmask') || e.target.closest('.dshwv-audiomask') || e.target.closest('.dshwv-snapmask') || e.target.closest('.dshwv-bubmask') || e.target.closest('.dshwv-qedit') || e.target.closest('.dshwv-usagepanel') || e.target.closest('.dshwv-usage-mask') || e.target.closest('.dshwv-resmask') || e.target.closest('.dshwv-custmenu') || e.target.closest('.dshwv-custbtn')) return;
+          if (e.target.closest('.dshwv-pop') || e.target.closest('.dshwv-menu,.whale-account-card') || e.target.closest('.dshwv-menu-btn') || e.target.closest('.dshwv-rolelist') || e.target.closest('.dshwv-audiolist') || e.target.closest('.dshwv-cropmask') || e.target.closest('.dshwv-confirmmask') || e.target.closest('.dshwv-audiomask') || e.target.closest('.dshwv-snapmask') || e.target.closest('.dshwv-bubmask') || e.target.closest('.dshwv-qedit') || e.target.closest('.dshwv-usagepanel') || e.target.closest('.dshwv-usage-mask') || e.target.closest('.dshwv-resmask') || e.target.closest('.dshwv-custmenu') || e.target.closest('.dshwv-custbtn')) return;
         }
         if (!isWhaleHit(e)) return;
         e.preventDefault();
@@ -11113,7 +11117,7 @@
       if (v !== widgetCursor) {
         widgetCursor = v;
         try {
-          document.body.style.cursor = v;
+          document.documentElement.dataset.whaleCursor = v;
         } catch (err) {}
       }
     }
@@ -11126,7 +11130,7 @@
       try {
         el = document.elementFromPoint(e.clientX, e.clientY);
       } catch (err) {}
-      if (el && el.closest && (el.closest('.dshwv-pop') || el.closest('.dshwv-menu') || el.closest('.dshwv-menu-btn') || el.closest('.dshwv-rolelist') || el.closest('.dshwv-cropmask') || el.closest('.dshwv-confirmmask') || el.closest('.dshwv-audiolist') || el.closest('.dshwv-audiomask') || el.closest('.dshwv-snapmask') || el.closest('.dshwv-bubmask') || el.closest('.dshwv-qedit') || el.closest('.dshwv-usagepanel') || el.closest('.dshwv-usage-mask') || el.closest('.dshwv-resmask') || el.closest('.dshwv-custmenu') || el.closest('.dshwv-custbtn'))) {
+      if (el && el.closest && (el.closest('.dshwv-pop') || el.closest('.dshwv-menu,.whale-account-card') || el.closest('.dshwv-menu-btn') || el.closest('.dshwv-rolelist') || el.closest('.dshwv-cropmask') || el.closest('.dshwv-confirmmask') || el.closest('.dshwv-audiolist') || el.closest('.dshwv-audiomask') || el.closest('.dshwv-snapmask') || el.closest('.dshwv-bubmask') || el.closest('.dshwv-qedit') || el.closest('.dshwv-usagepanel') || el.closest('.dshwv-usage-mask') || el.closest('.dshwv-resmask') || el.closest('.dshwv-custmenu') || el.closest('.dshwv-custbtn'))) {
         setWidgetCursor('');
         if (!menuBtnHide) menuBtn.classList.add('dshwv-menu-btn-visible');
         return;
@@ -11140,6 +11144,13 @@
     window.addEventListener('whale-hover', function (e) { onDocPointerMoveCursor({ clientX: e.detail.x, clientY: e.detail.y }); });
     root.addEventListener('lostpointercapture', function (e) { endDrag(e, false); });
     window.addEventListener('blur', function () { endDrag(null, false); });
+    window.addEventListener('whale-mode-changing', function () { endDrag(null,false); closeMenu(); hideBubble(); window.getSelection()?.removeAllRanges(); setWidgetCursor(''); });
+    window.addEventListener('whale-desktop-mode', function () { endDrag(null,false); closeMenu(); hideBubble(); settle(); window.getSelection()?.removeAllRanges(); setWidgetCursor(''); });
+    window.addEventListener('whale-account-view', function () {
+      // A display-mode switch updates this menu in place, retaining its open state.
+      hideBubble(); refresh(true);
+      requestAnimationFrame(function () { if (menuOpen) positionMenu(); });
+    });
     function endDrag(e, clickAllowed) {
       if (!drag || !drag.active) return;
       drag.active = false;
@@ -11192,7 +11203,7 @@
     function applyAnchorPos() {
       try {
         var a = JSON.parse(localStorage.getItem('dshw-pos') || 'null');
-        if (!a || a.v !== 2 || a.hAnchor !== 'left' && a.hAnchor !== 'right' || typeof a.hDist !== 'number' || a.vAnchor !== 'top' && a.vAnchor !== 'bottom' || typeof a.vDist !== 'number') return false;
+        if (!a || a.v !== 2 || a.hAnchor !== 'left' && a.hAnchor !== 'right' || (!Number.isFinite(a.hDist) || a.hDist < 0) || a.vAnchor !== 'top' && a.vAnchor !== 'bottom' || (!Number.isFinite(a.vDist) || a.vDist < 0)) return false;
         var vp = viewport();
         var w = root.offsetWidth || root.getBoundingClientRect().width || 0;
         var h = root.offsetHeight || root.getBoundingClientRect().height || 0;
@@ -11212,13 +11223,25 @@
       }
     }
     window.addEventListener('resize', function () {
-      if (state.h === null && state.v === null && applyAnchorPos()) return;
-      settle();
+      // A shrinking viewport can put the old position wholly outside its new
+      // region. Commit the clamped location directly, without interpolating
+      // through invisible coordinates during desktop/follow or DPI changes.
+      positioner.style.transition = 'none';
+      if (!(state.h === null && state.v === null && applyAnchorPos())) settle();
+      void positioner.getBoundingClientRect();
+      requestAnimationFrame(function () { positioner.style.transition = ''; });
     });
-    var rect0 = root.getBoundingClientRect();
-    state.left = rect0.left;
-    state.top = rect0.top;
+    // Resolve the intended anchor before the first frame, rather than painting
+    // at the CSS wrapper origin and moving after the asynchronous size request.
+    state.left = Math.max(0, viewport().w - root.offsetWidth - rightGap());
+    state.top = Math.max(0, viewport().h - root.offsetHeight);
+    applyAnchorPos();
     express();
+    window.addEventListener('whale-reset-position', function () {
+      endDrag(null, false); closeMenu(); hideBubble();
+      localStorage.setItem('dshw-pos', JSON.stringify({v:2,hAnchor:'right',hDist:12,vAnchor:'bottom',vDist:12}));
+      applyAnchorPos(); settle();
+    });
     applySoundSet();
     setupHitTest(initRoleUrl);
     loadRoles();
@@ -11311,7 +11334,7 @@
       }
       try {
         var a = JSON.parse(localStorage.getItem('dshw-pos') || 'null');
-        if (a && a.v === 2 && (a.hAnchor === 'left' || a.hAnchor === 'right') && typeof a.hDist === 'number' && (a.vAnchor === 'top' || a.vAnchor === 'bottom') && typeof a.vDist === 'number') {
+        if (a && a.v === 2 && (a.hAnchor === 'left' || a.hAnchor === 'right') && Number.isFinite(a.hDist) && a.hDist >= 0 && (a.vAnchor === 'top' || a.vAnchor === 'bottom') && Number.isFinite(a.vDist) && a.vDist >= 0) {
           var vpA = viewport();
           var wA = root.offsetWidth || root.getBoundingClientRect().width || 0;
           var hA = root.offsetHeight || root.getBoundingClientRect().height || 0;
@@ -11370,7 +11393,10 @@
           } catch (err) {}
           if (!fresh) return;
           var notice = WhaleTurnNotice.snapshot(d, state.currency);
+          window.dispatchEvent(new CustomEvent('whale-turn-notice', {detail:notice}));
+          if (typeof window !== 'undefined' && window.WhaleAccountView?.mode === 'subscription') { if(turnCostOn)window.WhaleAccountView.notice(notice); return; }
           if (notice.completionKind === 'success') playTaskEndSound();
+          else if (typeof window !== 'undefined' && window.WhaleFeedback) window.WhaleFeedback.play(notice.completionKind, '', soundOn ? soundVol : 0);
           showCostBubble(notice.amount, notice);
         }).catch(function () {}).finally(function () { lastCostPending = false; });
       } catch (err) { lastCostPending = false; }

@@ -2,7 +2,7 @@
 
 ## 支持范围
 
-本分支（**For-Codex**）当前交付为 **Windows x64 + Codex 桌面应用**的 `api-balance-whale v0.2(fixed)`（内部版本 `0.2.0`）。上传前的 `0.2.4` / macOS 成果保留在历史与 `archive/for-codex-0.2.4`，不属于本次 Windows 安装包。其余漏洞报告渠道与披露方式沿用本仓库既有策略。
+本分支（**For-Codex**）当前交付为 **api-balance-whale v0.3.0**。Windows x64 已做本机回归；macOS 兼容源自 PR #128，实机及完整集成待验证。历史 0.2.4 代码仍保留于 archive/for-codex-0.2.4。漏洞报告渠道与披露方式沿用本仓库既有策略。
 
 上游主分支（DSH Web 版 `dsh-whale-widget`）的问题请提到上游 issue；如果是**两者共有的代码**（例如 `assets/` 素材、前端渲染逻辑），也欢迎在本仓库提出，我们会与上游对齐。
 

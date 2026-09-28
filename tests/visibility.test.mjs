@@ -5,12 +5,45 @@ const { createVisibilityController } = createRequire(import.meta.url)('../deskto
 
 function fixture() {
   let state = { ready: true, host: { hostAlive: true, hostPid: 1, window: '1', visible: true, attached: true, visibilityRevision: 0 } };
-  let visible = false, destroyed = false, id = 0;
+  let visible = false, destroyed = false, id = 0, time = 0;
   const calls = [], timers = new Map(), cancelled = [];
   const window = { isDestroyed: () => destroyed, isVisible: () => visible, hide() { visible = false; calls.push('hide'); }, showInactive() { visible = true; calls.push('show'); } };
-  const controller = createVisibilityController({ getWindow: () => window, getState: () => state, schedule: fn => { timers.set(++id, fn); return id; }, cancel: n => { cancelled.push(timers.get(n)); timers.delete(n); } });
-  return { controller, calls, timers, cancelled, set: value => { state = { ...state, ...value, host: { ...state.host, ...value.host } }; }, destroy: () => { destroyed = true; }, visible: () => visible, pretendVisible: () => { visible = true; }, flush: () => { const batch = [...timers.values()]; timers.clear(); batch.forEach(fn => fn()); } };
+  const controller = createVisibilityController({ getWindow: () => window, getState: () => state, now: () => time, schedule: fn => { timers.set(++id, fn); return id; }, cancel: n => { cancelled.push(timers.get(n)); timers.delete(n); } });
+  return { controller, calls, timers, cancelled, advance: ms => { time += ms; }, set: value => { state = { ...state, ...value, host: { ...state.host, ...value.host } }; }, destroy: () => { destroyed = true; }, visible: () => visible, pretendVisible: () => { visible = true; }, flush: () => { const batch = [...timers.values()]; timers.clear(); batch.forEach(fn => fn()); } };
 }
+
+test('late native hidden samples from our remap cannot feed another recovery', () => {
+  const f = fixture(); f.controller.update(); f.advance(2000);
+  f.controller.requestRecovery(); f.set({ host: { widgetVisible: false } });
+  assert.equal(f.controller.observeNativeVisibility(), false);
+  f.flush();
+  for (let i = 0; i < 14; i++) { f.advance(100); assert.equal(f.controller.observeNativeVisibility(), false); }
+  f.set({ host: { widgetVisible: true } }); f.controller.observeNativeVisibility();
+  f.advance(3000); f.controller.update();
+  assert.deepEqual(f.calls, ['show', 'hide', 'show']);
+});
+
+test('persistent native hidden window recovers, but transient and guarded reports do not', () => {
+  const f = fixture(); f.controller.update(); f.advance(2000);
+  f.set({ host: { widgetVisible: false } }); assert.equal(f.controller.observeNativeVisibility(), false);
+  f.advance(200); assert.equal(f.controller.observeNativeVisibility(), false);
+  f.set({ host: { widgetVisible: true } }); f.controller.observeNativeVisibility();
+  f.set({ host: { widgetVisible: false } }); f.advance(2000); assert.equal(f.controller.observeNativeVisibility(), false);
+  f.advance(250); assert.equal(f.controller.observeNativeVisibility(), true); f.flush();
+  f.advance(2000); f.set({ manuallyHidden: true }); f.controller.update();
+  f.controller.observeNativeVisibility(); f.advance(2000); assert.equal(f.controller.observeNativeVisibility(), false);
+  assert.equal(f.controller.snapshot().remaps, 1);
+});
+
+test('permanently hidden native surface has a bounded automatic retry budget', () => {
+  const f = fixture(); f.controller.update(); f.set({ host: { widgetVisible: false } });
+  for (let i = 0; i < 10; i++) {
+    f.advance(2000); f.controller.observeNativeVisibility(); f.advance(250);
+    f.controller.observeNativeVisibility(); f.flush();
+  }
+  assert.equal(f.controller.snapshot().remaps, 3);
+  f.controller.requestRecovery(); f.flush(); assert.equal(f.controller.snapshot().remaps, 4);
+});
 
 test('owned-window restore remaps even when Chromium reports visible', () => {
   const f = fixture(); f.controller.update();

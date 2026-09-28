@@ -1,34 +1,34 @@
-# API 余额小鲸鱼 · Codex v0.2(fixed)（Windows）
+# API 余额小鲸鱼 · Codex v0.3.0
 
-面向 **Windows Codex 桌面应用**，不是主分支的 DSH 网页插件。内部版本 `0.2.0`，tag `v0.2.0-fixed`，来源分支 `For-Codex`。
+**For-Codex 分支发布，标签 codex-v0.3.0。由仓库协作者 Yang-huai406 发布，仓库所有者仍为 MeteorNOX。**
 
-## 更新内容
+维护者：[Yang-huai406](https://github.com/Yang-huai406)。保留上游版权与 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 的代码、链接和贡献者署名。
 
-- API 设置默认脱敏，未编辑保存保留原连接和模型价格。
-- 汇率说明通过刷新右侧灰色感叹号点击展开，支持外部点击和 Esc 收起。
-- 运行中取消仍报告中性消耗，不说“挤不进去...”，不播放成功音；金额未确认显示待记账/未知与 token。
-- 只有指定拥挤错误造成最终失败时使用“挤不进去...”，抑制重试期间的过时提示。
-- 修复最小化/还原、模态窗口恢复和越界锚点；追加显式显示及返回 Codex 的恢复，托盘新增“恢复显示小鲸鱼”。
-- 提供依赖、版本检查和带本机回执的安装/回滚，分享包不含个人运行数据。
+## 本版内容
 
-## 下载和安装
+- B 版“概览 / 用量 / 设置”分页，保留角色、素材、气泡、音效、账本、预警、预算和高级 API 设置。
+- 顶部切换 API 余额 / Codex 订阅，保留菜单及当前页，不改变登录或连接配置。
+- 订阅模式报告本轮 token，分别显示 5 小时与每周额度快照、重置时间和过期状态；无快照时显示未观测。
+- 跟随 Codex / 独立桌面模式，默认右下角，位置记忆与重置。
+- 三种按压手感、原创合成短音、独立事件音量；本地 JSON 创意工坊导入、预览、导出及失败回滚。
+- DeepSeek 峰谷仅对识别出的官方 API 端点展示。
 
-下载 `api-balance-whale-v0.2-fixed.zip`，解压后进入 `api-balance-whale`，双击“安装插件.cmd”。
+## 显示与输入修复
 
-需要 Windows x64、Codex、含 npm 的 Node.js 24+；首次安装 Electron 44.3.0 需要联网。安装后新建 Codex 聊天。回滚使用“回滚本次安装.cmd”和本机安装回执，保留最新数据。
+分离监督器心跳延迟与窗口隐藏；处理模式切换、旧坐标写回、加载竞争、销毁后 IPC 和缺失素材。Windows 原生区域排除透明空白，dialog/mask 只在实际卡片内接收鼠标。Windows 挂件默认软件合成，作为透明表面偶发不显示的兼容措施，不改变 Codex 本体，不增加周期性重启或重绘。
 
-附件 `.sha256` 用于校验下载，`release-manifest.json` 列出 ZIP 内文件哈希。GitHub 自动提供的 Source code 包属于完整分支源码，含后续平台归档；普通用户应下载上面的安装 ZIP。
+## 验证与限制
 
-## 验证
+当前运行代码通过 223 项自动测试、真实 Electron 界面回归、16 次模式切换及不抬高窗口的 12 次实际屏幕像素采样。详见 [验证记录](docs/VERIFICATION-0.3.md)。
 
-- 179 项自动测试通过。
-- 本次窗口回归：100 次最小化/还原、50 次原生另存为打开/取消、3 次显式显示恢复、5 次返回宿主恢复；均核对实际屏幕像素。
-- 既有 UI 基线 14 项通过；安装新恢复代码后，用户确认挂件重新显示。
+**偶发消失、白块及光标问题仍待日常使用验收，短时测试不代表彻底解决。** Mac 实机和真实订阅账号端到端验证尚未完成。官方额度百分比不能换算成固定剩余 token。本地工坊不是在线市场；桌面模式不含 CC Switch 路由或壁纸层嵌入。
 
-未宣称覆盖全部显卡、多屏/DPI或保存成功业务流程。发现偶发不显示时可用托盘“恢复显示小鲸鱼”，并提供脱敏复现信息。API 观测金额不是服务商逐请求最终账单，ChatGPT 订阅额度不属于本插件余额。
+## 附件
 
-## 协作和范围
+- `api-balance-whale-v0.3.0.zip`：可解压安装的插件包。
+- `api-balance-whale-v0.3.0-source.zip`：源码、测试和 GitHub 文档材料。
+- 对应 `.sha256`、`release-manifest.json`：校验值、内容清单、候选状态。
 
-由项目协作者 [Yang-huai406](https://github.com/Yang-huai406) 上传，仓库所属账号和上游作者仍为 [MeteorNOX](https://github.com/MeteorNOX)。保留 [1llysviel](https://github.com/1llysviel) 的 macOS 贡献及完整历史；0.2.4/macOS 文件归档供后续整合，不属于本次 Windows 安装包。
+Windows 完整解压后双击“安装插件.cmd”。需要 Codex、Node.js 24+（含 npm）与可联网下载 Electron 的环境；这不是包含运行时的离线 EXE。Mac 安装范围见 [平台说明](docs/MACOS.md)。安装与回滚见 [README](README.md)。
 
-代码沿用 MIT；图片、动图和音频按上游 as-is 条款随挂件分发，不扩大素材再许可。本 Release 不设为整个仓库的 Latest，不变更 main 或既有 Release。
+展示版本 v0.3.0；保留当前已测试的内部构建号，具体值见清单。本次使用独立标签 `codex-v0.3.0`，不覆盖已用于主线的 `v0.3.0` 标签，也不替换主线 Latest 标记。

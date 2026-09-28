@@ -94,12 +94,12 @@ export async function verifyDesktop({ app, window, screen, setHost, dispatcher, 
     const reference = await window.webContents.capturePage();
     fs.writeFileSync(path.join(output, 'visibility-reference.png'), reference.toPNG());
     let points;
+    const compositionOnly=process.env.WHALE_COMPOSITION_IDLE_TEST==='1';
     async function pixels(label, save = false, deadline = Date.now() + 1200, obstructionDeadline = Date.now() + 60000, occludedMs = 0) {
       // The user can keep working in another app. Raise only the dedicated
       // fixture pair without activation so an unrelated window cannot be
       // mistaken for a lost whale surface in the screen-copy assertion.
-      await native.request('raise');
-      await delay(40);
+      if(!compositionOnly){await native.request('raise');await delay(40);}
       // Screen copy comes first. capturePage alone can report healthy pixels
       // even when the desktop compositor has lost the transparent surface.
       const { png, unobscured } = await native.request('capture');
@@ -146,6 +146,18 @@ export async function verifyDesktop({ app, window, screen, setHost, dispatcher, 
       return { ratio, samples: points.length, occludedMs };
     }
     await pixels('visibility-initial', true);
+    if(compositionOnly){
+      const remaps=renderInfo().visibility.remaps;results.composition=[];
+      for(let n=0;n<12;n++){
+        if(n%3===0){await ev("__whaleRenderTest.showCost(.003,{completionKind:'success',amount:.003,currency:'USD',costState:'observed',tokens:40,label:'本轮已观测消耗:'})");await delay(300);await ev('__whaleRenderTest.close()');}
+        await delay(600);results.composition.push(await pixels('composition-'+n));
+        assert.equal(renderInfo().visibility.remaps,remaps,'screen sampling never remaps');
+      }
+      assert.equal(renderInfo().gpuStatus.hardwareAcceleration,false);
+      const idle=renderInfo().presents;await delay(1000);assert.equal(renderInfo().presents,idle,'no idle repaint loop');
+      results.checks.push('12 actual screen samples without raising or capturePage between samples','completion bubble closes remain visible without remaps','software rendering confirmed with no idle repaint loop');
+      results.rendering=renderInfo();results.ok=true;return;
+    }
     for(let n=0;n<3;n++){
       const remaps=renderInfo().visibility.remaps;
       await dispatcher.dispatch('/api/show',{method:'POST'});

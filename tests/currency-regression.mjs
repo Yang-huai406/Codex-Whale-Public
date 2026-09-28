@@ -29,7 +29,9 @@ export async function verifyCurrency({ window, ev, wait, clickAt, hitPoint, move
     await saveSettings({ ...initialSettings, alert: { ...initialSettings.alert, on: true, below, autoClose: false }, budget: { ...initialSettings.budget, on: true, amount: budget, autoClose: false } });
     dispatcher.whale.provider.amount = 12.3456; dispatcher.whale.provider.currency = 'USD';
     await refresh();
-    const point = await hitPoint(); move(point.x, point.y); await delay(120);
+    window.focus(); await wait('document.hasFocus()', 'currency fixture focus');
+    const point = await hitPoint(); move(point.x, point.y);
+    await wait("document.querySelector('.dshwv-menu-btn').checkVisibility({opacityProperty:true})", 'currency menu hover affordance');
     if (!(await ev("document.querySelector('.dshwv-menu').checkVisibility({opacityProperty:true})"))) await clickSelector('.dshwv-menu-btn');
     await buttonByText('- = 小鲸鱼记账 = -');
     await wait("document.querySelector('[data-money-role=alert]')?.textContent.includes('$5.12')", 'usage settings loaded');

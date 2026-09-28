@@ -1,0 +1,128 @@
+"""Build clean, reproducible public archives without reading user configuration."""
+from pathlib import Path
+import argparse
+import hashlib
+import json
+import re
+import struct
+import zipfile
+from urllib.parse import unquote
+
+ROOT = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--release-tag', help='Public release tag; omitted for local candidate builds')
+parser.add_argument('--output', type=Path, default=ROOT / 'dist')
+args = parser.parse_args()
+output = args.output.resolve()
+allowed = {'.codex-plugin', '.github', 'assets', 'desktop', 'docs', 'lib', 'runtime', 'scripts', 'skills', 'tests', 'vendor'}
+root_files = {'.mcp.json', '.gitignore', '.gitattributes', 'package.json', 'package-lock.json', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'CHANGELOG.md', 'RELEASE_NOTES.md', 'PROVENANCE.md', 'SECURITY.md'}
+blocked = {'node_modules', '.git', 'dist', 'qa', 'qa-output', 'backups', 'desktop-profile', 'desktop-runtime', '__pycache__', 'archive', 'packages'}
+private_names = {'auth.json', 'config.toml', 'api-settings.json', 'usage-settings.json', 'runtime.json', 'service.lock', 'installation.json', 'ui-state.json', 'follow-state.json', 'last-turn.json'}
+private_ext = {'.log', '.jsonl', '.db', '.sqlite', '.sqlite3', '.pem', '.key', '.pfx', '.bak', '.tmp', '.mp4', '.exe', '.dll'}
+text_ext = {'.json', '.js', '.mjs', '.cjs', '.md', '.ps1', '.cmd', '.command', '.swift', '.txt', '.html', '.css', '.cs', '.py', '.yml', '.yaml'}
+patterns = [re.compile(r'[A-Z]:[/\\]+(?:Users[/\\]+PC(?:[/\\]|\b)|Codex_workplace|QQ[/\\]+downloads)', re.I),
+            re.compile(r'any' + r'router', re.I), re.compile(r'sk-[A-Za-z0-9_-]{24,}'),
+            re.compile(r'codex-clipboard-[0-9a-f-]{30,}', re.I), re.compile(r'gh[pousr]_[A-Za-z0-9]{30,}')]
+removed = []
+
+def sanitize(name, data):
+    kinds = []
+    if data.startswith(b'\x89PNG\r\n\x1a\n'):
+        parts = [data[:8]]
+        offset = 8
+        while offset < len(data):
+            size = struct.unpack('>I', data[offset:offset+4])[0]
+            end = offset + size + 12
+            assert end <= len(data), 'Invalid PNG: ' + name
+            kind = data[offset+4:offset+8]
+            if kind in {b'eXIf', b'iTXt', b'tEXt', b'zTXt'}:
+                kinds.append(kind.decode('ascii'))
+            else:
+                parts.append(data[offset:end])
+            offset = end
+        data = b''.join(parts)  # IDAT bytes remain unchanged: no pixel recompression.
+    if name.endswith('.mp3'):
+        while data.startswith(b'ID3'):
+            assert len(data) >= 10 and all(n < 128 for n in data[6:10]), 'Invalid ID3: ' + name
+            size = sum(n << shift for n, shift in zip(data[6:10], [21, 14, 7, 0]))
+            end = 10 + size + (10 if data[3] == 4 and data[5] & 16 else 0)
+            assert end <= len(data), 'Invalid ID3 length: ' + name
+            # Do not silently discard an embedded license or copyright notice.
+            assert not any(k in data[10:end] for k in (b'TCOP', b'WCOP')), 'License metadata requires review: ' + name
+            kinds.append('ID3v2'); data = data[end:]
+        if len(data) >= 128 and data[-128:-125] == b'TAG':
+            kinds.append('ID3v1'); data = data[:-128]
+    if kinds:
+        removed.append({'path': name, 'removedMetadata': sorted(set(kinds))})
+    return data
+
+files = {}
+for file in sorted(ROOT.rglob('*')):
+    if not file.is_file():
+        continue
+    rel = file.relative_to(ROOT)
+    name = rel.as_posix()
+    if file.resolve().is_relative_to(output):
+        continue
+    # The vendored parser's dist folder is a required runtime dependency.
+    if any(p in blocked - {'dist'} or p.startswith(('qa-', 'private-backup')) for p in rel.parts):
+        continue
+    if rel.parts[0] == 'dist' or name.startswith('docs/images/'):
+        continue
+    assert not file.is_symlink(), 'Unexpected symlink: ' + name
+    assert rel.parts[0] in allowed or name in root_files or len(rel.parts) == 1 and file.suffix in {'.cmd', '.command'}, 'Unexpected file: ' + name
+    assert file.name not in private_names and not file.name.startswith('.env') and file.suffix.lower() not in private_ext, 'Private or binary file: ' + name
+    assert 'rollback-target' not in file.name and not file.name.endswith('-installation.json'), 'Private receipt: ' + name
+    data = sanitize(name, file.read_bytes())
+    if file.suffix.lower() in text_ext:
+        content = data.decode('utf-8-sig').replace('\\\\', '\\')
+        for pattern in patterns:
+            assert not pattern.search(content), 'Privacy review required: ' + name
+    files[name] = data
+
+manifest = json.loads(files['.codex-plugin/plugin.json'].decode('utf-8-sig'))
+assert manifest['name'] == 'api-balance-whale' and manifest['version'].split('+')[0] == '0.3.0'
+assert manifest['author']['name'] == 'Yang-huai406'
+for name in ['vendor/smol-toml/dist/index.js', 'desktop/ui/dashboard.js', 'desktop/ui/shape.js', 'desktop/macos/window-probe.swift', 'scripts/install-package.ps1', 'scripts/install-macos.mjs']:
+    assert name in files, 'Missing runtime dependency: ' + name
+assert b'pull/128' in files['README.md']
+links = 0
+for name, data in files.items():
+    if not name.endswith('.md') or name.startswith('vendor/') or name == 'docs/UPSTREAM-README.md':
+        continue
+    for target in re.findall(r'\]\(([^\n)]+)\)', data.decode('utf-8-sig')):
+        target = target.strip('<>').split('#')[0]
+        if not target or '://' in target or target.startswith('mailto:'):
+            continue
+        resolved = ((ROOT / name).parent / unquote(target)).resolve()
+        assert resolved.is_relative_to(ROOT) and resolved.relative_to(ROOT).as_posix() in files, 'Broken public link: ' + name + ': ' + target
+        links += 1
+
+output.mkdir(parents=True, exist_ok=True)
+def archive(name, selected):
+    destination = output / name
+    with zipfile.ZipFile(destination, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+        for relative, data in selected.items():
+            info = zipfile.ZipInfo('api-balance-whale/' + relative, (2026, 9, 29, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED; info.create_system = 3
+            info.external_attr = (0o100755 if relative.endswith('.command') else 0o100644) << 16
+            z.writestr(info, data)
+    with zipfile.ZipFile(destination) as z:
+        assert z.testzip() is None
+        for relative, data in selected.items():
+            assert z.read('api-balance-whale/' + relative) == data
+    digest = hashlib.sha256(destination.read_bytes()).hexdigest()
+    (output / (name + '.sha256')).write_text(digest + '  ' + name + '\n', encoding='utf-8')
+    return {'name': name, 'sha256': digest, 'bytes': destination.stat().st_size, 'files': len(selected)}
+
+artifacts = [archive('api-balance-whale-v0.3.0.zip', {p: d for p, d in files.items() if not p.startswith(('.github/', 'tests/'))}),
+             archive('api-balance-whale-v0.3.0-source.zip', files)]
+report = {'displayVersion': 'v0.3.0', 'internalVersion': manifest['version'], 'status': 'release-build' if args.release_tag else 'local-test-candidate-awaiting-user-acceptance',
+          'releaseTag': args.release_tag, 'offlineInstaller': False, 'macOS': 'static-checks-no-hardware-acceptance', 'subscriptionLiveAccount': 'unverified',
+          'macOSPR': 'https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128',
+          'privacyScan': 'passed-public-files-only', 'archiveIntegrity': 'passed', 'localLinksChecked': links,
+          'excluded': ['user data and credentials', 'private installation receipts', 'logs and test output', 'chat screenshots and recordings', 'legacy docs/images', 'git history and runtime caches'],
+          'mediaMetadataSanitized': removed, 'artifacts': artifacts,
+          'contentHashes': {p: hashlib.sha256(d).hexdigest() for p, d in files.items()}}
+(output / 'release-manifest.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+print(json.dumps({k: v for k, v in report.items() if k != 'contentHashes'}, ensure_ascii=False))

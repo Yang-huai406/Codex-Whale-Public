@@ -50,7 +50,9 @@ export async function verifyAuditUI({ window, ev, wait, clickAt, hitPoint, move,
     await ev("localStorage.removeItem('dshw-last-seq');localStorage.removeItem('dshw-last-turn-id')");
     const reloaded = once(window.webContents, 'did-finish-load'); window.webContents.reload(); await reloaded;
     await ev(`window.__auditOriginalPlay=HTMLMediaElement.prototype.play;window.__auditMediaPlays=[];window.__auditSpyAt=Date.now();
-      HTMLMediaElement.prototype.play=function(){window.__auditMediaPlays.push(this.src);return Promise.resolve();};true;`);
+      HTMLMediaElement.prototype.play=function(){window.__auditMediaPlays.push(this.src);return Promise.resolve();};
+      window.__auditBufferStart=AudioBufferSourceNode.prototype.start;
+      AudioBufferSourceNode.prototype.start=function(){window.__auditMediaPlays.push('decoded-audio');};true;`);
     publishing = true;
     await wait(`${api}?.poll&&${api}.status().scene==='cost'&&!${api}.status().switching`, 'first-poll delayed-publication failure notice');
     await stable();
@@ -95,7 +97,9 @@ export async function verifyAuditUI({ window, ev, wait, clickAt, hitPoint, move,
       const select=document.querySelector('select[title^="选择任务结束音"]');select.value='preset:duck:press';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
     await delay(150); const beforeSuccess = await plays();
     await publish('success', { amount: 1.25, costState: 'observed', label: '本轮测试扣费:' });
-    assert.match(await text(), /1\.25/); assert.equal(await plays(), beforeSuccess + 1);
+    assert.match(await text(), /1\.25/);
+    await wait(`window.__auditMediaPlays.length === ${beforeSuccess+1}`, 'decoded completion sound scheduled exactly once');
+    assert.equal(await plays(), beforeSuccess + 1);
     await hold(); const successEpoch = await ev(`${api}.status().epoch`);
     record = { ...record, amount: 2.5 }; await ev(`${api}.poll()`); await delay(250);
     assert.equal(await plays(), beforeSuccess + 1); assert.equal(await sameNodes(), true); assert.equal(await ev(`${api}.status().epoch`), successEpoch);
@@ -227,6 +231,7 @@ export async function verifyAuditUI({ window, ev, wait, clickAt, hitPoint, move,
       if(window.__auditOriginalReadData)FileReader.prototype.readAsDataURL=window.__auditOriginalReadData;
       const vol=[...document.querySelectorAll('input[type=range]')].find(el=>el.max==='1');if(vol){vol.value='0';vol.dispatchEvent(new Event('input',{bubbles:true}));}
       if(window.__auditOriginalPlay)HTMLMediaElement.prototype.play=window.__auditOriginalPlay;
+      if(window.__auditBufferStart)AudioBufferSourceNode.prototype.start=window.__auditBufferStart;
       ${api}.close();if(document.querySelector('.dshwv-menu').checkVisibility({opacityProperty:true}))document.querySelector('.dshwv-menu-btn').click();
       document.querySelector('#toast').hidden=true;
     })()` ).catch(() => {});

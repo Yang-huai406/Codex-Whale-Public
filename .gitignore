@@ -4,7 +4,8 @@ qa-output/
 *.tmp
 qa/
 qa-*/
-dist/
+/dist/
+docs/images/
 private-backup*/
 backups/
 desktop-runtime/
@@ -19,6 +20,12 @@ service.lock
 *-installation.json
 *rollback-target.json
 *.bak
+*.jsonl
+*.sqlite*
+*.db
+*.pem
+*.key
+*.pfx
+*.mp4
 *.zip
 __pycache__/
-.DS_Store

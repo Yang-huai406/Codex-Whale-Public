@@ -1,13 +1,14 @@
 // Windows can hide/remap an owned HWND without changing Chromium's cached
 // visibility. Recover only for explicit show requests or lifecycle boundaries,
 // never on a normal heartbeat or move. Injected timers make cancellation testable.
-function createVisibilityController({ getWindow, getState, onShown = () => {}, schedule = setTimeout, cancel = clearTimeout, delayMs = 40 }) {
+function createVisibilityController({ getWindow, getState, onShown = () => {}, schedule = setTimeout, cancel = clearTimeout, delayMs = 40, now = Date.now }) {
   let pending = null, generation = 0, disposed = false, desired = null;
   let shown = false, recover = false, hostKey = null, revision = null, remaps = 0;
-  const wants = state => !state.quitting && state.ready && state.host?.hostAlive !== false && state.host?.visible &&
-    (state.fixture || state.host?.attached) && !state.host?.modal && !state.manuallyHidden;
-  const key = state => String(state.host?.hostPid ?? '') + ':' + String(state.host?.window ?? '');
-  const epoch = state => Number.isSafeInteger(state.host?.visibilityRevision) ? state.host.visibilityRevision : null;
+  let shownAt = -Infinity, hiddenSince = null, nativeAttempts = 0;
+  const wants = state => !state.quitting && state.ready && !state.manuallyHidden && (state.standalone || (state.host?.hostAlive !== false && state.host?.visible &&
+    (state.fixture || state.host?.attached) && !state.host?.modal));
+  const key = state => state.standalone ? 'standalone' : String(state.host?.hostPid ?? '') + ':' + String(state.host?.window ?? '');
+  const epoch = state => !state.standalone && Number.isSafeInteger(state.host?.visibilityRevision) ? state.host.visibilityRevision : null;
   function clear() { generation++; if (pending !== null) cancel(pending); pending = null; }
   function update() {
     if (disposed) return;
@@ -16,6 +17,7 @@ function createVisibilityController({ getWindow, getState, onShown = () => {}, s
     const next = !!wants(state), nextKey = key(state), nextRevision = epoch(state);
     const changed = (hostKey !== null && hostKey !== nextKey) ||
       (revision !== null && nextRevision !== null && revision !== nextRevision);
+    if (hostKey !== nextKey) { hiddenSince = null; nativeAttempts = 0; }
     hostKey = nextKey; revision = nextRevision;
     if (changed && shown) { recover = true; clear(); }
     if (!next) {
@@ -40,10 +42,11 @@ function createVisibilityController({ getWindow, getState, onShown = () => {}, s
         if (!wants(current) || key(current) !== targetKey || epoch(current) !== targetRevision) { update(); return; }
         // Clear before show: its synchronous show event can request an update.
         recover = false; shown = true; remaps++;
+        shownAt = now(); hiddenSince = null;
         window.showInactive(); onShown();
       }, delayMs);
     } else if (!shown || !window.isVisible()) {
-      shown = true; window.showInactive(); onShown();
+      shown = true; shownAt = now(); hiddenSince = null; window.showInactive(); onShown();
     }
   }
   function requestRecovery() {
@@ -53,6 +56,22 @@ function createVisibilityController({ getWindow, getState, onShown = () => {}, s
     recover = true;
     update();
   }
-  return { update, requestRecovery, dispose() { disposed = true; clear(); }, snapshot: () => ({ desired, pending: pending !== null, remaps }) };
+  function observeNativeVisibility() {
+    const state = getState(), time = now();
+    // Samples can arrive after our own hide/show. Require a settled,
+    // persistently hidden HWND before treating a sample as a new failure.
+    if (disposed || pending !== null || !shown || !desired || !wants(state) || state.standalone ||
+        time - shownAt < 1500 || state.host?.widgetVisible !== false) {
+      hiddenSince = null;
+      if (state.host?.widgetVisible === true) nativeAttempts = 0;
+      return false;
+    }
+    if (hiddenSince === null) { hiddenSince = time; return false; }
+    if (time - hiddenSince < 250 || nativeAttempts >= 3) return false;
+    nativeAttempts++; hiddenSince = null;
+    requestRecovery();
+    return true;
+  }
+  return { update, requestRecovery, observeNativeVisibility, dispose() { disposed = true; clear(); }, snapshot: () => ({ desired, pending: pending !== null, remaps }) };
 }
 module.exports = { createVisibilityController };

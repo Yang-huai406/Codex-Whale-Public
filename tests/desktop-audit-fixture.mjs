@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {fileURLToPath} from 'node:url';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function verifyDesktop({ app, window, screen, setHost, setTestCursor, dataDir, openedLinks, errors, renderInfo }) {
@@ -63,7 +66,151 @@ export async function verifyDesktop({ app, window, screen, setHost, setTestCurso
     assert.deepEqual(openedLinks, ['https://example.org/whale-audit']);
     assert.equal(await ev("whaleDesktop.openExternal('https://example.org/repeated')"), false);
     checks.push('actual Electron input clicks the real custom-bubble link through enableLinkRun and opens exactly one allowed HTTP/S URL');
-    fs.writeFileSync(path.join(output, 'desktop-audit.png'), (await window.webContents.capturePage()).toPNG());
+    // v0.3 feedback transactions exercised in the isolated real renderer.
+    await ev("window.WhaleFeedback.open(); window.__feedbackBefore=localStorage.getItem('dshw-v3-feedback'); (()=>{const e=document.querySelector('.whale-v3-dialog input[type=range]'); e.value='0';e.dispatchEvent(new Event('input'));})()");
+    window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+    window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+    await wait("!document.querySelector('.whale-v3-dialog[open]')", 'Escape dismisses feedback draft');
+    assert.equal(await ev("localStorage.getItem('dshw-v3-feedback') === window.__feedbackBefore"), true);
+    await ev("window.WhaleFeedback.open(); (()=>{const d=document.querySelector('.whale-v3-dialog[open]'), e=d.querySelector('input[type=range]');e.value='0';e.dispatchEvent(new Event('input')); [...d.querySelectorAll('button')].find(b=>b.textContent==='保存').click();})()");
+    assert.equal(await ev("JSON.parse(localStorage.getItem('dshw-v3-feedback')).events.press.volume"), 0);
+    assert.equal(await ev("JSON.parse(localStorage.getItem('dshw-v3-feedback')).events.release.volume"), .8);
+    await ev("window.WhaleFeedback.open(); (()=>{const d=document.querySelector('.whale-v3-dialog[open]'), e=d.querySelector('input[type=range]');e.value='.5';e.dispatchEvent(new Event('input')); [...d.querySelectorAll('button')].find(b=>b.textContent==='取消').click();})()");
+    assert.equal(await ev("JSON.parse(localStorage.getItem('dshw-v3-feedback')).events.press.volume"), 0);
+    checks.push('real feedback panel saves zero volume independently and discards Cancel and Escape drafts');
+    await ev("window.WhaleFeedback.open()"); await delay(100);
+    fs.writeFileSync(path.join(output, 'feedback-v3.png'), (await window.webContents.capturePage()).toPNG());
+    await ev("document.querySelector('.whale-v3-dialog[open]').close(); WhaleAccountView.setMode('subscription').then(()=>window.dispatchEvent(new Event('whale-open-insights')))"); await delay(300);
+    await wait("document.querySelector('.whale-v3-dialog[open]')?.textContent.includes('本机已观测 token')", 'insights response rendered');
+    fs.writeFileSync(path.join(output, 'insights-v3.png'), (await window.webContents.capturePage()).toPNG());
+    await ev("WhaleAccountView.setMode('api')");
+    await ev("document.querySelector('.whale-v3-dialog[open]').close(); [...document.querySelectorAll('.dshwv-menu button')].find(b=>b.textContent==='本地创意工坊').click()"); await delay(100);
+    fs.writeFileSync(path.join(output, 'workshop-v3.png'), (await window.webContents.capturePage()).toPNG());
+    await ev("document.querySelector('.whale-v3-dialog[open]').close(); [...document.querySelectorAll('.dshwv-menu button')].find(b=>b.textContent==='进入桌面').click()"); await delay(150);
+    assert.equal((await ev("whaleDesktop.command('mode')")), 'standalone');
+    await ev("[...document.querySelectorAll('.dshwv-menu button')].find(b=>b.textContent==='跟随 Codex').click()"); await delay(150);
+    assert.equal((await ev("whaleDesktop.command('mode')")), 'follow-codex');
+    checks.push('feedback, insights and workshop panels render; desktop/follow buttons execute their real DOM command handlers');
+    assert.equal(await ev("whaleDesktop.command('desktop')"), true);
+    await delay(180);
+    await setHost({hostAlive:false,hostPid:0,window:'0',visible:false,attached:false});
+    await delay(180);
+    assert.equal(window.isVisible(), true, 'standalone survives missing Codex host');
+    await setHost({hostAlive:true,hostPid:123456,window:'0',visible:true,attached:true,bounds:screen.dipToScreenRect(null,dip)});
+    assert.equal(await ev("whaleDesktop.command('follow')"), true);
+    await delay(180);
+    assert.equal(window.isVisible(), true);
+    assert.equal(window.getBounds().width, dip.width);
+    checks.push('real Electron commands switch to desktop, survive absent host and return to the follow viewport');
+    const savedConfig=fs.readFileSync(path.join(dataDir,'fixture-codex','config.toml'),'utf8');
+    assert.equal(await ev("WhaleAccountView.setMode('subscription')"),true);
+    assert.equal(await ev("WhaleAccountView.mode"),'subscription');
+    await ev("WhaleAccountView.toggleBubble(document.querySelector('.dshwv-root'))");
+    await wait("document.querySelector('.whale-account-card')?.textContent.includes('本机近 7 天')",'subscription card uses real insights route');
+    assert.equal(await ev("document.querySelector('.whale-account-card').textContent.includes('不能用百分比换算剩余 token')"),true);
+    fs.writeFileSync(path.join(output,'subscription-mode.png'),(await window.webContents.capturePage()).toPNG());
+    assert.equal(await ev("WhaleAccountView.setMode('api')"),true);
+    assert.equal(await ev("!!document.querySelector('.whale-account-card')"),false);
+    assert.equal(fs.readFileSync(path.join(dataDir,'fixture-codex','config.toml'),'utf8'),savedConfig);
+    await ev("document.querySelector('.dshwv-menu-btn').click(); const r=document.createRange();r.selectNodeContents(document.querySelector('.dshwv-menu'));getSelection().addRange(r); window.dispatchEvent(new Event('whale-mode-changing'));");
+    assert.equal(await ev("getSelection().toString()"),'');
+    assert.equal(await ev("document.querySelector('.dshwv-menu').classList.contains('dshwv-menu-open')"),false);
+    assert.equal(await ev("getComputedStyle(document.querySelector('.dshwv-menu')).userSelect"),'none');
+    checks.push('API/member switch changes the card only, preserves Codex config, and mode transition closes menu and clears selection');
+    const p=await ev("(()=>{const r=document.querySelector('.dshwv-img').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()");
+    await setHost({hostAlive:true,hostPid:123456,window:'0',visible:true,attached:true,bounds:screen.dipToScreenRect(null,dip),mouseButtons:1});
+    setTestCursor(p);await delay(180);assert.equal(renderInfo().inputEnabled,false,'external drag never activates overlay');
+    await setHost({hostAlive:true,hostPid:123456,window:'0',visible:true,attached:true,bounds:screen.dipToScreenRect(null,dip),mouseButtons:0});
+    setTestCursor(p);await delay(180);
+    checks.push('external mouse drag is passed through instead of stealing the host cursor');
+    await ev("window.__whaleShapeTest.publish()");await delay(150);
+    const shapes=renderInfo().windowShape;
+    assert.ok(shapes?.length>0);
+    assert.ok(shapes.reduce((n,r)=>n+r.width*r.height,0)<dip.width*dip.height*.5,'empty client area is not a native overlay');
+    const scale=await ev('devicePixelRatio');
+    const python=process.env.WHALE_TEST_PYTHON;
+    if(python){
+      const result=await promisify(execFile)(python,[fileURLToPath(new URL('./region-probe.py',import.meta.url)),window.getNativeWindowHandle().readBigUInt64LE().toString(),String(process.pid),String(Math.round(2*scale)),String(Math.round(400*scale)),String(Math.round(p.x*scale)),String(Math.round(p.y*scale))],{windowsHide:true});
+      const region=JSON.parse(result.stdout);assert.notEqual(region.kind,0);assert.deepEqual(region.contains,[false,true]);
+      fs.writeFileSync(path.join(output,'native-region.json'),JSON.stringify(region));
+      checks.push('native Windows region excludes the empty Codex text area and includes the whale');
+    }
+    await wait("document.querySelectorAll('.whale-account-menu [data-mode]').length===2", 'visible account mode switch mounts after widget creation');
+    for (const [x,y] of [[0,0],[520,0],[0,370],[520,370]]) {
+      await ev(`window.__whaleRenderTest.place(${x},${y},false);document.querySelector('.dshwv-menu-btn').click()`); await delay(300);
+      assert.equal(await ev("(()=>{const r=document.querySelector('.dshwv-menu').getBoundingClientRect(),b=document.querySelector('[data-mode=subscription]').getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&b.top>=r.top&&b.bottom<=r.bottom})()"),true,'corner menu and mode switch remain within viewport');
+      await ev("document.querySelector('.dshwv-menu-btn').click()");
+    }
+    await ev("document.querySelector('.dshwv-menu-btn').click()"); await delay(200);
+    fs.writeFileSync(path.join(output,'control-panel.png'),(await window.webContents.capturePage()).toPNG());
+    await ev("document.querySelector('[data-mode=subscription]').click()");
+    await wait("WhaleAccountView.mode==='subscription'",'subscription switch works through its actual button');
+    assert.equal(await ev("!!document.querySelector('.dshwv-menu-open')"),true,'display switch does not close the menu');
+    await ev("document.querySelector('.whale-mode-open').click()");
+    await wait("document.querySelector('.whale-v3-dialog[open]')?.textContent.includes('本机已观测 token')",'visible subscription entry opens quota details');
+    await ev("document.querySelector('.whale-v3-dialog[open]').close(); document.querySelector('[data-mode=api]').click()");
+    await wait("WhaleAccountView.mode==='api'",'API switch works');
+    assert.equal(await ev("!!document.querySelector('.dshwv-menu-open')"),true,'return to API keeps the same menu open');
+    await ev("window.__shapeResizeStyle=document.createElement('style');__shapeResizeStyle.textContent='html.desktop .dshwv-menu{width:270px!important}';document.head.append(__shapeResizeStyle)");
+    await wait("(()=>{const m=document.querySelector('.dshwv-menu').getBoundingClientRect();return __whaleShapeTest.status().rectangles.some(r=>r.x<=m.left&&r.y<=m.top&&r.x+r.width>=m.right&&r.y+r.height>=m.bottom)})()",'CSS-only layout changes update full native menu region');
+    await ev("__shapeResizeStyle.remove()"); await delay(100);
+    await ev("document.querySelector('.whale-mode-open').click()");
+    await wait("document.querySelector('#settings-dialog').open",'settings entry opens');
+    assert.equal(await ev("__whaleInputTest.hit({x:1,y:1})"),false,'an open dialog cannot intercept the transparent viewport corner');
+    assert.equal(await ev("getComputedStyle(document.querySelector('#settings-dialog'),'::backdrop').backgroundColor"),'rgba(0, 0, 0, 0)');
+    fs.writeFileSync(path.join(output,'api-settings.png'),(await window.webContents.capturePage()).toPNG());
+    await ev("document.querySelector('#settings-dialog').close();[...document.querySelectorAll('.dshwv-menu button')].find(b=>b.textContent==='查看 API 消费记录').click()");
+    await wait("document.querySelector('.dshwv-usage-more')",'usage overview loaded'); await delay(300);
+    await ev("document.querySelector('.dshwv-usage-more').click()");
+    await wait("document.querySelector('.dshwv-usage-wintitle')?.textContent==='API 消费记录'",'history modal loaded');
+    assert.equal(await ev("getComputedStyle(document.querySelector('.dshwv-usage-mask')).backgroundColor"),'rgba(0, 0, 0, 0)');
+    assert.equal(await ev("__whaleInputTest.hit({x:1,y:1})"),false,'a modal mask cannot intercept the transparent viewport corner');
+    fs.writeFileSync(path.join(output,'usage-history.png'),(await window.webContents.capturePage()).toPNG());
+    await ev("document.querySelector('.dshwv-usage-close').click();document.querySelector('[data-page=overview]').click()"); await delay(300);
+    await ev("document.querySelector('[data-page=settings]').click();document.querySelectorAll('.whale-menu-group').forEach(g=>g.open=true)");
+    const settingsInventory=await ev("document.querySelector('.whale-settings-page').textContent");
+    for(const label of ['角色','大小','音效','音量','自定义泡泡','消耗提示','任务结束','币种','刷新汇率','吸附与翻转','资源管理','API 设置','音效与手感','进入桌面','跟随 Codex','本地创意工坊'])assert.ok(settingsInventory.includes(label),'retained settings: '+label);
+    assert.equal(await ev("document.querySelector('.whale-settings-page').hidden"),false);
+    fs.writeFileSync(path.join(output,'dashboard-settings.png'),(await window.webContents.capturePage()).toPNG());
+    await ev("document.querySelector('[data-page=usage]').click();document.querySelector('[data-mode=subscription]').click()");
+    await wait("WhaleAccountView.mode==='subscription'&&WhaleDashboard.page==='usage'",'switch preserves active usage tab');
+    assert.equal(await ev("getComputedStyle(document.querySelector('.dshwv-usage-area')).display"),'none');
+    await wait("document.querySelector('.whale-token-usage').textContent.includes('近 7 天')",'subscription usage shows token counters');
+    await ev(`window.__dashboardFetch=window.fetch;window.fetch=(url,options)=>url==='/api/insights'?Promise.resolve({ok:true,json:async()=>({subscription:{available:true,windows:[{windowDurationMins:300,usedPercent:37,resetsAt:Date.now()+3600000},{windowDurationMins:10080,usedPercent:68,resetsAt:Date.now()+86400000}]},tokens:{total:12000,last5Hours:3000,input:10000,output:2000}})}):__dashboardFetch(url,options);document.querySelector('[data-page=overview]').click();WhaleDashboard.refresh()`);
+    await ev("window.dispatchEvent(new CustomEvent('whale-turn-notice',{detail:{tokens:12480,amount:999,currency:'USD',completionKind:'success'}}))");
+    const summary=await ev("document.querySelector('.whale-overview-data').textContent");
+    assert.ok(summary.includes('5 小时额度')&&summary.includes('每周额度')&&summary.includes('63.0%')&&summary.includes('32.0%')&&summary.includes('12,480 token')&&!summary.includes('999'));
+    fs.writeFileSync(path.join(output,'dashboard-subscription.png'),(await window.webContents.capturePage()).toPNG());
+    await ev("window.fetch=__dashboardFetch;void 0");
+    await setHost({hostAlive:true,hostPid:123456,window:'0',visible:true,attached:true,bounds:screen.dipToScreenRect(null,{...dip,width:360,height:320})});await delay(250);
+    for(const page of ['overview','usage','settings']){
+      await ev(`document.querySelector('[data-page=${page}]').click()`);
+      assert.equal(await ev("(()=>{const m=document.querySelector('.dshwv-menu').getBoundingClientRect(),t=document.querySelector('.whale-dashboard-tabs').getBoundingClientRect();return m.left>=0&&m.top>=0&&m.right<=innerWidth&&m.bottom<=innerHeight&&t.bottom<m.bottom})()"),true,'small viewport retains tabs and bounds');
+    }
+    fs.writeFileSync(path.join(output,'dashboard-small.png'),(await window.webContents.capturePage()).toPNG());
+    await setHost({hostAlive:true,hostPid:123456,window:'0',visible:true,attached:true,bounds:screen.dipToScreenRect(null,dip)});
+    await ev("WhaleAccountView.setMode('api')");
+    checks.push('B dashboard retains settings inventory, legacy API budgets/history, token usage, distinct quota windows and stable tabs at 360x320');
+    await ev("if(document.querySelector('.dshwv-menu-open'))document.querySelector('.dshwv-menu-btn').click()");
+    checks.push('mode switch and details entry are discoverable; four corner menus fit and dialogs have no dimming backdrop');
+    await ev("whaleDesktop.command('reset-position')"); await delay(350);
+    const anchor=await ev("JSON.parse(localStorage.getItem('dshw-pos'))");
+    assert.equal(anchor.hAnchor,'right');assert.equal(anchor.vAnchor,'bottom');
+    assert.equal(await ev("(()=>{const r=document.querySelector('.dshwv-root').getBoundingClientRect();return r.left>innerWidth/2&&r.top>innerHeight/2&&r.right<=innerWidth&&r.bottom<=innerHeight})()"),true,'reset commits a visible bottom-right position');
+    const remapsBefore=renderInfo().visibility.remaps;
+    for(let cycle=0;cycle<6;cycle++){
+      await ev("__whaleRenderTest.showCost(.003,{completionKind:'success',amount:.003,currency:'USD',costState:'observed',tokens:40,label:'本轮已观测消耗:'})");await delay(250);
+      await ev("__whaleRenderTest.close()");await delay(350);
+      const point=await ev("(()=>{const r=document.querySelector('.dshwv-img').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()");
+      assert.ok(renderInfo().windowShape.some(r=>point.x>=r.x&&point.x<r.x+r.width&&point.y>=r.y&&point.y<r.y+r.height),'closing completion bubble retains whale in native region');
+      assert.equal(window.isVisible(),true);
+    }
+    assert.equal(renderInfo().visibility.remaps,remapsBefore,'completion bubble cycles never hide/show the window');
+    checks.push('bottom-right reset persists; six completion bubble close cycles retain whale region and never remap');
+    await ev("document.querySelector('.dshwv-img').dispatchEvent(new Event('error'))");
+    await wait("document.querySelector('.dshwv-img').src.startsWith('data:image/png') && document.querySelector('.dshwv-img').naturalWidth > 0", 'emergency default-role art decodes');
+    assert.equal(await ev("document.querySelector('.dshwv-img').alt"), '小鲸鱼恢复占位图');
+    checks.push('default-art failure handler produces network-independent visible emergency art');    fs.writeFileSync(path.join(output, 'desktop-audit.png'), (await window.webContents.capturePage()).toPNG());
     fs.writeFileSync(path.join(output, 'desktop-audit.json'), JSON.stringify({ ok: true, checks, viewport, link, expectedMissingImageConsoleMessages: errors.filter(message => /404|ERR_FILE_NOT_FOUND/.test(message)).length, dataDir }, null, 2));
     // Only this isolated test renderer is deliberately stalled. Production
     // Codex and its real companion remain untouched.
@@ -71,7 +218,8 @@ export async function verifyDesktop({ app, window, screen, setHost, setTestCurso
     await delay(80);
     app.quit();
   } catch (error) {
-    fs.writeFileSync(path.join(output, 'desktop-audit.json'), JSON.stringify({ ok: false, checks, error: error.message, errors, dataDir }, null, 2));
+    const dialogs=await ev("[...document.querySelectorAll('dialog')].map(d=>({open:d.open,text:d.textContent.slice(0,1800)}))").catch(()=>[]);
+    fs.writeFileSync(path.join(output, 'desktop-audit.json'), JSON.stringify({ ok: false, checks, error: error.message, errors, dialogs, dataDir }, null, 2));
     throw error;
   }
 }

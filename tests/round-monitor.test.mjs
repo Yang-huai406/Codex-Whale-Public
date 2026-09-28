@@ -152,6 +152,7 @@ test('actual frontend polling suppresses startup replay, duplicates, children an
   assert.ok(begin > 0 && end > begin);
   const stored = new Map(); let fetches = 0, sounds = 0, bubbles = 0, release;
   const pending = [], sandbox = { state: {}, Date, Number, isFinite,
+    window: { dispatchEvent() {} }, CustomEvent: class { constructor(type, options) { this.type=type;this.detail=options.detail; } },
     localStorage: { getItem: key => stored.get(key), setItem: (k, v) => stored.set(k, v) },
     fetch: () => { fetches++; return new Promise(resolve => pending.push(resolve)); },
     playTaskEndSound: () => sounds++, showCostBubble: () => bubbles++ };

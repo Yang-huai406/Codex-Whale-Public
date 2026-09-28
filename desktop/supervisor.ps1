@@ -22,7 +22,7 @@ $whaleSequence = 0
 $whaleStateFile = Join-Path $DataDir 'supervisor-state.json'
 $whaleParentPid = (Get-CimInstance Win32_Process -Filter ('ProcessId=' + $PID)).ParentProcessId
 @{ pid=$PID; parentPid=$whaleParentPid; consoleAttached=[WhaleWindows]::HasConsole(); startedAt=[DateTime]::UtcNow.ToString('o'); host='PowerShell' } | ConvertTo-Json | Set-Content -LiteralPath $whaleStateFile -Encoding utf8
-function Read-WhaleJson([string]$File) { if (Test-Path -LiteralPath $File) { Get-Content -LiteralPath $File -Raw | ConvertFrom-Json } else { @{} } }
+function Read-WhaleJson([string]$File) { try { if (Test-Path -LiteralPath $File) { Get-Content -LiteralPath $File -Raw | ConvertFrom-Json } else { @{} } } catch { @{} } }
 function Send-WhaleHost($State) {
     $whalePipeClient = $null; $whaleWriter = $null; $whaleReader = $null
     try {
@@ -47,11 +47,17 @@ try {
     while (!$whaleStop.WaitOne(100)) {
         $whaleNow = [DateTime]::UtcNow
         $whaleState = [WhaleWindows]::Probe()
+        $whaleConfig = Read-WhaleJson (Join-Path $DataDir 'follow-config.json')
+        $whaleStandalone = $whaleConfig.mode -eq 'standalone'
+        $whaleState['mode'] = if ($whaleStandalone) { 'standalone' } else { 'follow-codex' }
+        if ($whaleStandalone -and $whaleOwner -ne '0') { [WhaleWindows]::Detach([long]$whaleOverlay); $whaleOwner='0' }
+        $whalePause = Read-WhaleJson (Join-Path $DataDir 'pause-until-host-exit.json')
+        if (!$whaleState.hostAlive -and !$whalePause.pauseAll) { Remove-Item -LiteralPath (Join-Path $DataDir 'pause-until-host-exit.json') -ErrorAction SilentlyContinue }
         if ($whaleChild -and $whaleChild.HasExited) { [WhaleWindows]::StopFollowing(); $whaleChild.Dispose(); $whaleChild = $null; $whaleOverlay='0'; $whaleOwner='0'; $whaleLastMessage='' }
-        if (!$whaleChild -and $whaleState.hostAlive -and ($whaleNow - $whaleLastLaunch).TotalSeconds -gt 4) {
+        if (!$whaleChild -and ($whaleState.hostAlive -or $whaleStandalone) -and ($whaleNow - $whaleLastLaunch).TotalSeconds -gt 4) {
             $whaleConfig = Read-WhaleJson (Join-Path $DataDir 'follow-config.json')
             $whalePause = Read-WhaleJson (Join-Path $DataDir 'pause-until-host-exit.json')
-            if ($whaleConfig.enabled -eq $false -or [string]$whalePause.hostPid -eq [string]$whaleState.hostPid) { continue }
+            if ($whaleConfig.enabled -eq $false -or $whalePause.pauseAll -eq $true -or ($whaleState.hostAlive -and [string]$whalePause.hostPid -eq [string]$whaleState.hostPid)) { continue }
             if (!(Test-Path -LiteralPath $whaleConfig.electronPath)) { throw 'Desktop runtime is missing.' }
             $whaleMain = Join-Path $whaleConfig.pluginRoot 'desktop\main.cjs'
             $whaleStart = [Diagnostics.ProcessStartInfo]::new()
@@ -63,24 +69,27 @@ try {
             $whaleStart.EnvironmentVariables.Remove('ELECTRON_RUN_AS_NODE')
             $whaleStart.EnvironmentVariables['WHALE_INITIAL_HOST'] = ($whaleState | ConvertTo-Json -Depth 5 -Compress)
             $whaleStart.EnvironmentVariables['WHALE_LAUNCH_TIME'] = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds().ToString()
+            $whaleStart.EnvironmentVariables['WHALE_SUPERVISOR_PID'] = [string]$PID
             $whaleChild = [Diagnostics.Process]::new(); $whaleChild.StartInfo=$whaleStart
             [void]$whaleChild.Start(); $whaleLastLaunch=$whaleNow
             $whaleOutput=$whaleChild.StandardOutput.ReadLineAsync(); $whaleErrors=$whaleChild.StandardError.ReadToEndAsync()
         }
         if ($whaleChild) {
             if ($whaleOutput -and $whaleOutput.IsCompleted) {
-                try { $whaleLine=$whaleOutput.GetAwaiter().GetResult(); if ($whaleLine) { $whaleResponse=$whaleLine | ConvertFrom-Json; if ($whaleResponse.overlayHandle) { $whaleOverlay=[string]$whaleResponse.overlayHandle } } } catch { }
+                try { $whaleLine=$whaleOutput.GetAwaiter().GetResult(); if ($whaleLine) { $whaleResponse=$whaleLine | ConvertFrom-Json; if ($whaleResponse.overlayHandle) { $whaleOverlay=[string]$whaleResponse.overlayHandle; $whaleTransitionsDisabled=[WhaleWindows]::ConfigureOverlay([long]$whaleOverlay) } } } catch { }
                 $whaleOutput=$whaleChild.StandardOutput.ReadLineAsync()
             }
-            if ($whaleOverlay -ne '0' -and $whaleState.window -ne '0' -and $whaleOwner -ne $whaleState.window) {
+            if (!$whaleStandalone -and $whaleOverlay -ne '0' -and $whaleState.window -ne '0' -and $whaleOwner -ne $whaleState.window) {
                 if ([WhaleWindows]::Attach([long]$whaleOverlay, [long]$whaleState.window)) { $whaleOwner=[string]$whaleState.window }
             }
+            $whaleState['windowTransitionsDisabled'] = $whaleTransitionsDisabled
+            $whaleState['widgetVisible'] = [WhaleWindows]::WidgetVisible([long]$whaleOverlay)
             $whaleState['attached'] = ($whaleOwner -ne '0' -and $whaleOwner -eq $whaleState.window)
             $whaleState['nativeFollowing'] = [WhaleWindows]::IsFollowing()
             $whaleState['visibilityRevision'] = [WhaleWindows]::VisibilityRevision()
             # Bounds belong to the native follower. Only lifecycle changes and
             # a one-second heartbeat use IPC/disk; there is no per-move I/O.
-            $whaleMessage = if ($whaleState.nativeFollowing) { @($whaleState.hostAlive,$whaleState.hostPid,$whaleState.window,$whaleState.visible,$whaleState.modal,$whaleState.visibilityRevision,$whaleState.attached,$whaleState.dpi,$whaleState.bounds.width,$whaleState.bounds.height,'native') -join '|' } else { $whaleState | ConvertTo-Json -Depth 5 -Compress }
+            $whaleMessage = if ($whaleState.nativeFollowing) { @($whaleState.mode,$whaleState.mouseButtons,$whaleState.hostAlive,$whaleState.hostPid,$whaleState.window,$whaleState.visible,$whaleState.modal,$whaleState.widgetVisible,$whaleState.visibilityRevision,$whaleState.attached,$whaleState.dpi,$whaleState.bounds.width,$whaleState.bounds.height,'native') -join '|' } else { $whaleState | ConvertTo-Json -Depth 5 -Compress }
             if ($whaleMessage -ne $whaleLastMessage -or ($whaleNow - $whaleHeartbeat).TotalSeconds -ge 1) {
                 try {
                     $whaleSequence++; $whaleState['serial'] = $whaleSequence

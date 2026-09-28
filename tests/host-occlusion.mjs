@@ -9,8 +9,8 @@ import { once } from 'node:events';
 import { ROOT } from '../runtime/paths.mjs';
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-export async function verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint, move, dispatcher, output, dataDir, setHost, host, renderInfo }) {
-  const { BrowserWindow } = await import('electron');
+export async function verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint, move, dispatcher, output, dataDir, setHost, setTestCursor, host, renderInfo }) {
+  const { BrowserWindow, screen } = await import('electron');
   const checks = [], details = {}, env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
   // This is a GUI-subsystem fixture whose window must actually be visible.
@@ -56,6 +56,7 @@ export async function verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint,
     assert.notEqual(fixture.pid, process.pid); assert.equal(fixture.defaultBackgroundThrottling, true);
     await setHost({ hostAlive: true, hostPid: fixture.pid, window: fixture.handle, visible: true, attached: true, bounds: fixture.bounds });
     await attach(fixture.handle, fixture.pid); window.moveTop();
+    if (process.env.WHALE_NATIVE_FOLLOW_ONLY !== '1') {
     await ev("window.__whaleRenderTest.close(); window.__whaleRenderTest.scale(1.2); window.__whaleRenderTest.place(120,80,false)");
     await delay(650); await request('focus');
     await continuous('beforeClick');
@@ -67,14 +68,15 @@ export async function verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint,
     move(5, 5); await delay(120);
     await promisify(execFile)(process.env.WHALE_TEST_PYTHON || 'python', [path.join(ROOT, 'tests', 'native-click.py'), fixture.handle, String(fixture.pid), String(Math.round(hostPoint.x)), String(Math.round(hostPoint.y))], { windowsHide: true, timeout: 10000 });
     dispatcher.whale.provider.delay = 2200;
-    let point;
-    for (let attempt = 0; attempt < 20; attempt++) {
-      point = await hitPoint(); move(point.x, point.y); await delay(100);
-      if (renderInfo().inputEnabled) break;
-    }
+    // Real native injection must use the real cursor. A pinned synthetic cursor
+    // races the OS cursor restored by native-click.py and falsely toggles input.
+    const point = await hitPoint();
+    setTestCursor?.(null);
     details.beforeNative = { point, inputEnabled: renderInfo().inputEnabled, flags: await probe(), hit: await ev(`WhaleRendering.hitCache.hit(document.querySelector('.dshwv-img'),${point.x},${point.y},WhaleRendering.mirrorScale(document.querySelector('.dshwv-root'))<0)`) };
-    assert.equal(renderInfo().inputEnabled, true, 'hover makes the fixture clickable before native injection');
+    // native-click.py moves the real pointer, waits for hover, and refuses to
+    // click unless WindowFromPoint identifies this exact fixture HWND/PID.
     const bounds = window.getContentBounds();
+    await ev("window.__nativeTrace=[];for(const n of ['pointerdown','pointerup','pointermove','blur','focus','gotpointercapture','lostpointercapture'])window.addEventListener(n,e=>window.__nativeTrace.push({type:e.type,x:e.clientX,y:e.clientY,buttons:e.buttons,focus:document.hasFocus(),drag:document.querySelector('.dshwv-root').classList.contains('dshwv-dragging')}),true)");
     const physical = screen.dipToScreenPoint({ x: bounds.x + point.x, y: bounds.y + point.y });
     const actualClick = await promisify(execFile)(process.env.WHALE_TEST_PYTHON || 'python', [path.join(ROOT, 'tests', 'native-click.py'), window.getNativeWindowHandle().readBigUInt64LE().toString(), String(process.pid), String(Math.round(physical.x)), String(Math.round(physical.y))], { windowsHide: true, timeout: 10000 });
     details.nativeClick = JSON.parse(actualClick.stdout);
@@ -115,10 +117,12 @@ export async function verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint,
     // Input emulation runs after the occlusion measurements, so attaching a
     // debugger cannot affect their scheduling. It targets only this fixture.
     move(5,5); await delay(120);
+    await request('focus'); await delay(120); setTestCursor?.(null);
     await promisify(execFile)(process.env.WHALE_TEST_PYTHON || 'python', [path.join(ROOT, 'tests', 'native-click.py'), fixture.handle, String(fixture.pid), String(Math.round(hostPoint.x)), String(Math.round(hostPoint.y))], { windowsHide: true, timeout: 10000 });
     const typed = await request('type'); details.input = { ...typed.observed, focusEmulation: true };
     assert.equal(typed.observed.active, 'editor'); assert.equal(typed.observed.value, 'fixture-input-ok');
     checks.push('native click reaches the isolated host input and scoped text emulation updates the focused editor');
+    }
     if (process.env.WHALE_TEST_POWERSHELL) {
       const nativeHost = { hostAlive: true, hostPid: fixture.pid, window: fixture.handle, visible: true, attached: true, nativeFollowing: true, bounds: fixture.bounds, dpi: screen.getDisplayMatching(window.getBounds()).scaleFactor * 96, serial: 0 };
       // Keep delivering deliberately stale geometry during real native moves.
@@ -142,6 +146,7 @@ export async function verifyHostOcclusion({ window, ev, wait, clickAt, hitPoint,
     fs.writeFileSync(path.join(output, 'host-occlusion.json'), JSON.stringify({ ok: true, checks, details }, null, 2));
     return { checks };
   } catch (error) {
+    details.inputTrace = await ev('window.__nativeTrace || []').catch(() => []);
     fs.writeFileSync(path.join(output, 'host-process.log'), diagnostics);
     fs.writeFileSync(path.join(output, 'host-occlusion.json'), JSON.stringify({ ok: false, checks, details, error: error.stack }, null, 2));
     throw error;
