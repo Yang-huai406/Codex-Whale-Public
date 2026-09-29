@@ -30,7 +30,10 @@ if(Test-Path -LiteralPath $expectedTarget){Copy-WhaleTree $expectedTarget (Join-
 if(Test-Path -LiteralPath $saved.dataDir){Copy-WhaleTree $saved.dataDir (Join-Path $checkpoint 'data') @('desktop-runtime','desktop-profile','native','npm-cache')}
 $task=Get-ScheduledTask -TaskName 'Codex API Balance Whale' -ErrorAction SilentlyContinue
 Assert-WhaleTaskOwner $task $saved.dataDir
-if($task -and (Test-Path -LiteralPath (Join-Path $expectedTarget 'scripts\uninstall-follow.ps1'))){& (Join-Path $expectedTarget 'scripts\uninstall-follow.ps1') -DataDir $saved.dataDir}
+if($task -and (Test-Path -LiteralPath (Join-Path $expectedTarget 'scripts\uninstall-follow.ps1'))){
+    if($saved.keepExistingTask){Stop-WhaleExistingTask $task $saved.dataDir $expectedTarget}
+    else{& (Join-Path $expectedTarget 'scripts\uninstall-follow.ps1') -DataDir $saved.dataDir}
+}
 if($saved.stage -in @('plugin-registered','complete')) { Invoke-WhaleCommand $cli @('plugin','remove',('api-balance-whale@'+$saved.marketplace),'--json') }
 if(Test-Path -LiteralPath $expectedTarget){
     $retired=Join-Path $checkpoint 'retired-source'
@@ -47,8 +50,10 @@ if($saved.previousTask){
         $operationalBackup=Join-Path (Join-Path $backup 'data') $operational
         if(Test-Path -LiteralPath $operationalBackup -PathType Leaf){Copy-Item -LiteralPath $operationalBackup -Destination (Join-Path $saved.dataDir $operational) -Force}
     }
-    $taskXml=Get-Content -LiteralPath (Join-Path $backup 'scheduled-task.xml') -Raw -Encoding UTF8
-    $null=Register-ScheduledTask -TaskName 'Codex API Balance Whale' -Xml $taskXml -Force
+    if(!$saved.keepExistingTask){
+        $taskXml=Get-Content -LiteralPath (Join-Path $backup 'scheduled-task.xml') -Raw -Encoding UTF8
+        $null=Register-ScheduledTask -TaskName 'Codex API Balance Whale' -Xml $taskXml -Force
+    }
     # The old action is restored as captured; data and newer usage remain untouched.
     Start-ScheduledTask -TaskName 'Codex API Balance Whale'
 }

@@ -188,12 +188,40 @@ test('recovery closes the crash window between a pending ledger append and journ
   assert.equal(restarted.journal.entries.size, 0);
 });
 
-test('parser suppresses generic failure phrases and permits neutral cancellation consumption', () => {
+test('parser permits neutral consumption for failed and cancelled turns', () => {
   const ends = [], parser = new SessionParser({ id: 'file', onEnd: meta => ends.push(meta) });
   for (const [id, type, extra] of [['bad', 'task_complete', { error: 'fixture' }], ['cancel', 'turn_aborted', {}]]) {
     parser.accept(header); parser.accept(event('task_started', id)); parser.accept(event(type, id, extra));
   }
-  assert.deepEqual(ends.map(meta => [meta.outcome, meta.notify, meta.statusNotify]), [['failed', false, false], ['aborted', false, true]]);
+  assert.deepEqual(ends.map(meta => [meta.outcome, meta.notify, meta.statusNotify]), [['failed', false, true], ['aborted', false, true]]);
+});
+
+test('unmarked terminal API error settles observed consumption without waiting for task_complete', async t => {
+  const {make,provider,scope}=fixture(t),service=make(),jobs=[];
+  const parser=new SessionParser({id:'main',defaultModel:'model',onStart:m=>service.beginTurn(m),onUpdate:m=>service.updateTurn(m),onEnd:m=>jobs.push(service.finishTurn(m))});
+  parser.accept(header);parser.accept(event('task_started','unexpected'));
+  await service.turns.get('main:unexpected').start;
+  parser.accept(tokens(40));provider.used=0.25;
+  parser.accept(event('stream_error','unexpected',{message:'SYNTHETIC-RETRY'}));assert.equal(jobs.length,0);
+  parser.accept(event('error','unexpected',{message:'SYNTHETIC-PRIVATE-API-ERROR'}));
+  await Promise.all(jobs);
+  const notice=service.lastTurn();assert.equal(notice.completionKind,'failed');assert.equal(notice.failureKind,null);
+  assert.equal(notice.notify,true);assert.equal(notice.amount,0.25);assert.equal(notice.tokens,40);
+  assert.equal(JSON.stringify(notice).includes('SYNTHETIC-PRIVATE'),false);
+  parser.accept(event('task_complete','unexpected',{status:'failed'}));await Promise.all(jobs);
+  assert.equal(service.lastTurn().seq,notice.seq);assert.equal(service.ledger.load(scope).events.filter(e=>e.id==='main:unexpected').length,1);
+});
+
+test('unexpected failure retains pending or unknown cost, tokens, and one notice after continue',async t=>{
+  const {make}=fixture(t),service=make();
+  for(const outcome of ['failed','interrupted','superseded']){
+    const meta=round(outcome);service.beginTurn(meta);await service.turns.get(meta.id).start;
+    const finish=service.finishTurn({...meta,outcome,statusNotify:true,byModel:usage(57)});
+    service.beginTurn(round(outcome+'-continued'));await finish;
+    const notice=service.lastTurn();assert.equal(notice.id,meta.id);assert.equal(notice.completionKind,'failed');
+    assert.equal(notice.amount,null);assert.equal(notice.tokens,57);
+    assert.ok(['pending','unknown'].includes(notice.costState));assert.equal(notice.notify,true);
+  }
 });
 
 test('immediately starting another turn does not suppress cancellation consumption',async t=>{

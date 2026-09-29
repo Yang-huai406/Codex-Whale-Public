@@ -1,8 +1,8 @@
-# API 余额小鲸鱼 v0.3.0
+# API 余额小鲸鱼 v0.3(fixed)
 
-**Codex v0.3.0 · For-Codex 分支**
+**For-Codex · 发布标签 `codex-v0.3.0-fixed.2`**
 
-仓库所有者为 [MeteorNOX](https://github.com/MeteorNOX)；本次由协作者 Yang-huai406 发布，不涉及所有权变更。本机用户已确认本次光标修复生效；长期显示稳定性、Mac 实机及真实订阅账号仍有待验证项，见下方限制。
+仓库所有者为 [MeteorNOX](https://github.com/MeteorNOX)，Codex 适配由协作者 Yang-huai406 维护。本次 v0.3(fixed) 按维护者授权发布至 For-Codex 分支，保留既有发布与主线 Latest。包内版本保持 `0.3.0+codex.20260929173027`，对应已安装并验证的运行代码；v0.3(fixed) 为交付展示名称。
 
 Codex 适配维护：[Yang-huai406](https://github.com/Yang-huai406)。上游及 macOS 贡献者见文末致谢。
 
@@ -11,6 +11,25 @@ Codex 适配维护：[Yang-huai406](https://github.com/Yang-huai406)。上游及
 ## 界面与兼容性
 
 本包使用 B 版“概览 / 用量 / 设置”分页，完整保留原功能。参见 [功能对照与验证](docs/DASHBOARD-B.md)。同时包含静止闪动、拖动光标和桌面/跟随切换修复，菜单顶部可切换 API 余额 / Codex 订阅模式。详见 [问题原因、修复和使用方法](docs/FEEDBACK-FIX-0.3.md)。
+
+## 本次 fixed 修复
+
+- **气泡完整收起**：Windows 原生绘制区域跟随真实动画生命周期，等待文字、主气泡和小尾泡淡出结束后再移除，避免直角裁边；快速关闭再打开不会被旧回调误裁。
+- **菜单按钮可达**：人物到按钮之间的透明缝隙保持悬停显示，离开后短暂延迟隐藏；开放菜单和隐藏按钮偏好有明确优先级。保留范围只影响显示，不拦截底层点击。
+- **显示与诊断**：保留按条件纠正挂件被 Codex 压住的层级异常；Ctrl+Alt+Shift+F10 可静默保存现场状态，不切换焦点或强制恢复。
+- **意外中断消耗**：明确失败或中断也显示中性消耗提示；保留已观测 token、金额未知或待记账状态，重试中不提前结算、不播放成功音效。
+
+238 项单元测试、原生区域/穿透专项与 B 版 Electron 界面审计已通过。用户日常使用、其他设备和 macOS 实机仍需验收，详见 [验证记录](docs/VERIFICATION-0.3.md)。
+
+## 为什么不采用点击空白关闭菜单和气泡
+
+[Issue #177](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/issues/177) 提出了组件外点击关闭浮层的建议。这种操作在普通应用面板中很常见，但小鲸鱼覆盖在其他软件上：点击空白通常是在编辑、选择文字或切换宿主操作，不能可靠地代表“已经读完挂件提示”。
+
+- 人物气泡、任务和消耗提示可能尚未阅读，无关点击会把它们提前清掉。
+- “二级菜单”可能指整块控制面板，也可能指角色/音效下拉列表，仅为后者关闭会造成预期不一致。
+- 透明区域本来需要穿透；为了同时观察外部点击，需额外维护跨平台全局事件监听与生命周期，增加误关闭和回归排查的复杂度。
+
+本版最终撤回新增的全局空白点击关闭方案，保留已有控件内关闭、人物点击及各类提示原有的超时规则。**这是一项交互取舍，不代表技术不可实现，也不否定 Issue 的使用诉求。** 窗口层级、意外中断提示和本次动画/悬停修复继续保留。详见 [交互决定与替代行为](docs/OUTSIDE-CLICK-DECISION.md)。
 
 ## 本版新增
 
@@ -27,7 +46,7 @@ Codex 适配维护：[Yang-huai406](https://github.com/Yang-huai406)。上游及
 
 ## 安装
 
-下载 `api-balance-whale-v0.3.0.zip` 并完整解压。附带 SHA-256 用于校验；源码和 GitHub 文档在 `api-balance-whale-v0.3.0-source.zip`。这不是预装运行时的离线 EXE，首次安装需联网下载 Electron。
+下载 `api-balance-whale-v0.3(fixed).zip` 并完整解压。附带 SHA-256 用于校验；源码和 GitHub 文档在 `api-balance-whale-v0.3(fixed)-source.zip`。这不是预装运行时的离线 EXE，首次安装需联网下载 Electron。
 
 需要包含 npm 的 Node.js 24+ 与支持插件功能的 Codex 桌面应用，桌面组件使用 Electron 44.3.0。Windows 本机验证环境为 x64；不要从 ZIP 内直接运行安装脚本。
 
@@ -78,7 +97,7 @@ macOS 运行 `回滚 Mac 更新.command`（如该平台包提供），或 `node 
 
 ## 已知限制
 
-- 本次通过关闭 Windows 鼠标移动转发修复光标干扰，用户已确认生效；偶发显示与多设备兼容性仍需持续验证。Windows 挂件默认软件合成；这是兼容措施，短时测试通过不代表所有设备已根治。
+- 保留此前关闭 Windows 鼠标移动转发的光标修复和软件合成兼容措施。本次动画/悬停修复已通过自动验证，其他设备和日常使用仍需持续观察；短时测试不代表所有设备上的偶发显示问题均已根治。
 - Mac 脚本目前安装桌面组件和 LaunchAgent，不自动完成 Codex 插件市场的技能/MCP 注册；相关平台流程仍待实机补充验证。
 
 - macOS Apple Silicon/Intel、Spaces、多屏、睡眠唤醒仍需实机验收。
@@ -94,4 +113,4 @@ macOS 运行 `回滚 Mac 更新.command`（如该平台包提供），或 `node 
 
 ## 发布材料
 
-[本轮开发总结](docs/DEVELOPMENT_SUMMARY.md) · [用户验收清单](docs/USER_TEST_CHECKLIST.md) · [发布草稿](RELEASE_NOTES.md) · [GitHub 发布准备](docs/GITHUB_PUBLISHING.md)。本次发布目标为本仓库 For-Codex 分支，独立标签 `codex-v0.3.0-fixed`。
+[本轮开发总结](docs/DEVELOPMENT_SUMMARY.md) · [用户验收清单](docs/USER_TEST_CHECKLIST.md) · [发布草稿](RELEASE_NOTES.md) · [GitHub 发布准备](docs/GITHUB_PUBLISHING.md)。本次发布到本仓库 For-Codex 分支，使用新标签 `codex-v0.3.0-fixed.2` 和 Codex-v0.3(fixed) Release。旧 `codex-v0.3.0-fixed` 及主线 Latest 保留。

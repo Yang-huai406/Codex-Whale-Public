@@ -1,4 +1,4 @@
-param([string]$Source, [string]$DataDir, [string]$CodexCli, [switch]$CheckOnly, [switch]$Resume)
+param([string]$Source, [string]$DataDir, [string]$CodexCli, [switch]$CheckOnly, [switch]$Resume, [switch]$KeepExistingTask)
 $ErrorActionPreference = 'Stop'
 if ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Run this installer with Windows PowerShell (powershell.exe), not pwsh.' }
 . (Join-Path $PSScriptRoot 'package-common.ps1')
@@ -21,6 +21,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Personal marketplace validation failed.' }
 $marketplaceInfo = $marketplaceInfo | ConvertFrom-Json
 $task = Get-ScheduledTask -TaskName 'Codex API Balance Whale' -ErrorAction SilentlyContinue
 Assert-WhaleTaskOwner $task $DataDir
+if ($KeepExistingTask) { Assert-WhaleReusableTask $task $DataDir $target }
 $previousVersion = $null
 if (Test-Path -LiteralPath $target) {
     $previousManifest = Get-Content -LiteralPath (Join-Path $target '.codex-plugin\plugin.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -32,6 +33,7 @@ $backupRoot = Get-WhaleFullPath (Join-Path $env:LOCALAPPDATA ('CodexWhale\backup
 Assert-WhalePlainPath $backupRoot
 $null = New-Item -ItemType Directory -Path $backupRoot
 $receipt = @{ format=1; plugin='api-balance-whale'; version=$manifest.version; installedAt=[DateTime]::UtcNow.ToString('o'); target=$target; dataDir=$DataDir; backup=$backupRoot; codexCli=$cli; previousVersion=$previousVersion; previousTask=($null -ne $task); stage='backup'; marketplace=$marketplaceInfo.marketplaceName }
+$receipt.keepExistingTask = [bool]$KeepExistingTask
 if (Test-Path -LiteralPath $target) { Copy-WhaleTree $target (Join-Path $backupRoot 'plugin') @('node_modules','.git') }
 if (Test-Path -LiteralPath $DataDir) { Copy-WhaleTree $DataDir (Join-Path $backupRoot 'data') @('desktop-runtime','desktop-profile','native','npm-cache','runtime.json','service.lock','supervisor-state.json','launcher-state.json') }
 if ($task) { Export-ScheduledTask -TaskName 'Codex API Balance Whale' | Set-Content -LiteralPath (Join-Path $backupRoot 'scheduled-task.xml') -Encoding UTF8 }
@@ -42,7 +44,10 @@ try {
     if ($Source -ine $target) {
         $stage = $target + '.stage-' + [Guid]::NewGuid().ToString('N')
         Copy-WhaleTree $Source $stage @('node_modules','.git')
-        if ($task) { & (Join-Path $target 'scripts\uninstall-follow.ps1') -DataDir $DataDir }
+        if ($task) {
+            if ($KeepExistingTask) { Stop-WhaleExistingTask $task $DataDir $target }
+            else { & (Join-Path $target 'scripts\uninstall-follow.ps1') -DataDir $DataDir }
+        }
         if (Test-Path -LiteralPath $target) {
             # Both absolute locations were validated; the old tree remains a private checkpoint.
             $old = Join-Path $backupRoot 'previous-source'
@@ -70,7 +75,8 @@ try {
         if ($installed.Count -ne 1) { throw 'Codex did not report one enabled v0.3.0 installation.' }
         # Explicit resume is opt-in; the original pause marker is already backed up.
         if ($Resume) { Remove-Item -LiteralPath (Join-Path $DataDir 'pause-until-host-exit.json') -Force -ErrorAction SilentlyContinue }
-        & (Join-Path $target 'scripts\install-follow.ps1') -DataDir $DataDir
+        if ($KeepExistingTask) { Start-ScheduledTask -TaskName 'Codex API Balance Whale' -ErrorAction Stop }
+        else { & (Join-Path $target 'scripts\install-follow.ps1') -DataDir $DataDir }
         Invoke-WhaleCommand $node @((Join-Path $target 'scripts\verify-runtime.mjs'),'--allow-idle')
     } finally { $env:WHALE_HOME = $savedWhaleHome }
     $receipt.stage='complete'; Write-WhaleReceipt (Join-Path $backupRoot 'installation.json') $receipt

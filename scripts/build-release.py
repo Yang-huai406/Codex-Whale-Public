@@ -20,13 +20,59 @@ blocked = {'node_modules', '.git', 'dist', 'qa', 'qa-output', 'backups', 'deskto
 private_names = {'auth.json', 'config.toml', 'api-settings.json', 'usage-settings.json', 'runtime.json', 'service.lock', 'installation.json', 'ui-state.json', 'follow-state.json', 'last-turn.json'}
 private_ext = {'.log', '.jsonl', '.db', '.sqlite', '.sqlite3', '.pem', '.key', '.pfx', '.bak', '.tmp', '.mp4', '.exe', '.dll'}
 text_ext = {'.json', '.js', '.mjs', '.cjs', '.md', '.ps1', '.cmd', '.command', '.swift', '.txt', '.html', '.css', '.cs', '.py', '.yml', '.yaml'}
-patterns = [re.compile(r'[A-Z]:[/\\]+(?:Users[/\\]+PC(?:[/\\]|\b)|Codex_workplace|QQ[/\\]+downloads)', re.I),
+patterns = [re.compile(r'[A-Z]:[/\\]+(?:Users[/\\]+PC(?:[/\\]|\b)|Codex_work(?:place)?(?:[/\\]|\b)|QQ[/\\]+downloads)', re.I),
             re.compile(r'any' + r'router', re.I), re.compile(r'sk-[A-Za-z0-9_-]{24,}'),
             re.compile(r'codex-clipboard-[0-9a-f-]{30,}', re.I), re.compile(r'gh[pousr]_[A-Za-z0-9]{30,}')]
 removed = []
 
+def sanitize_gif(name, data):
+    """Drop non-rendering comments/XMP; retain frame data and loop controls."""
+    assert len(data) >= 14, 'Invalid GIF: ' + name
+    offset = 13 + (3 * (2 ** ((data[10] & 7) + 1)) if data[10] & 0x80 else 0)
+    assert offset < len(data), 'Invalid GIF color table: ' + name
+    parts, kinds = [data[:offset]], []
+
+    def subblocks(index):
+        while True:
+            assert index < len(data), 'Truncated GIF: ' + name
+            size = data[index]
+            index += 1
+            assert index + size <= len(data), 'Truncated GIF sub-block: ' + name
+            index += size
+            if not size:
+                return index
+
+    while offset < len(data):
+        start, tag = offset, data[offset]
+        if tag == 0x3b:
+            assert offset + 1 == len(data), 'Unexpected GIF trailing data: ' + name
+            parts.append(data[offset:])
+            return b''.join(parts), kinds
+        if tag == 0x21:
+            assert offset + 2 < len(data), 'Invalid GIF extension: ' + name
+            label = data[offset + 1]
+            offset = subblocks(offset + 2)
+            if label == 0xfe:
+                kinds.append('GIF-comment')
+                continue
+            if label == 0xff and data[start + 2] == 11 and data[start + 3:start + 14] == b'XMP DataXMP':
+                kinds.append('GIF-XMP')
+                continue
+        elif tag == 0x2c:
+            assert offset + 10 < len(data), 'Invalid GIF image: ' + name
+            packed = data[offset + 9]
+            offset += 10 + (3 * (2 ** ((packed & 7) + 1)) if packed & 0x80 else 0)
+            offset = subblocks(offset + 1)
+        else:
+            raise AssertionError('Unknown GIF block: ' + name)
+        parts.append(data[start:offset])
+    raise AssertionError('Missing GIF trailer: ' + name)
+
+
 def sanitize(name, data):
     kinds = []
+    if data.startswith((b'GIF87a', b'GIF89a')):
+        data, kinds = sanitize_gif(name, data)
     if data.startswith(b'\x89PNG\r\n\x1a\n'):
         parts = [data[:8]]
         offset = 8
@@ -74,6 +120,12 @@ for file in sorted(ROOT.rglob('*')):
     assert file.name not in private_names and not file.name.startswith('.env') and file.suffix.lower() not in private_ext, 'Private or binary file: ' + name
     assert 'rollback-target' not in file.name and not file.name.endswith('-installation.json'), 'Private receipt: ' + name
     data = sanitize(name, file.read_bytes())
+    # Match .gitattributes independent of the OS/check-out line-ending policy.
+    # Windows entrypoints keep CRLF; ordinary source and Mac launchers use LF.
+    if file.suffix.lower() in text_ext or file.name in {'.gitattributes', '.gitignore', 'LICENSE'}:
+        data = data.replace(b'\r\n', b'\n')
+        if file.suffix.lower() in {'.cmd', '.ps1'}:
+            data = data.replace(b'\n', b'\r\n')
     if file.suffix.lower() in text_ext:
         content = data.decode('utf-8-sig').replace('\\\\', '\\')
         for pattern in patterns:
@@ -115,9 +167,10 @@ def archive(name, selected):
     (output / (name + '.sha256')).write_text(digest + '  ' + name + '\n', encoding='utf-8')
     return {'name': name, 'sha256': digest, 'bytes': destination.stat().st_size, 'files': len(selected)}
 
-artifacts = [archive('api-balance-whale-v0.3.0.zip', {p: d for p, d in files.items() if not p.startswith(('.github/', 'tests/'))}),
-             archive('api-balance-whale-v0.3.0-source.zip', files)]
-report = {'displayVersion': 'v0.3.0', 'internalVersion': manifest['version'], 'status': 'release-build' if args.release_tag else 'local-test-candidate-awaiting-user-acceptance',
+artifacts = [archive('api-balance-whale-v0.3(fixed).zip', {p: d for p, d in files.items() if not p.startswith(('.github/', 'tests/'))}),
+             archive('api-balance-whale-v0.3(fixed)-source.zip', files)]
+report = {'displayVersion': 'v0.3(fixed)', 'internalVersion': manifest['version'], 'status': 'release-build' if args.release_tag else 'local-test-candidate-awaiting-user-acceptance',
+          'lineEndings': 'LF for source and Mac launchers; CRLF for Windows .cmd and .ps1',
           'releaseTag': args.release_tag, 'offlineInstaller': False, 'macOS': 'static-checks-no-hardware-acceptance', 'subscriptionLiveAccount': 'unverified',
           'macOSPR': 'https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128',
           'privacyScan': 'passed-public-files-only', 'archiveIntegrity': 'passed', 'localLinksChecked': links,

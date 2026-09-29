@@ -4,9 +4,9 @@
 
 ## 本次范围和协作关系
 
-- 当前交付：Codex v0.3.0（Windows 已做本机回归，macOS 保留兼容代码但待实机验证）；没有独立网页，不修改或注入 Codex 安装文件。
+- 当前交付：Codex v0.3(fixed) For-Codex 分支发布，包内基线版本仍为 0.3.0（Windows 已做本机回归，macOS 保留兼容代码但待实机验证）；没有独立网页，不修改或注入 Codex 安装文件。
 - 仓库所属账号及上游作者：[@MeteorNOX](https://github.com/MeteorNOX)。
-- 本次上传协作者：[@Yang-huai406](https://github.com/Yang-huai406)，不代表仓库所有权变更。
+- Codex 适配协作者：[@Yang-huai406](https://github.com/Yang-huai406)，不代表仓库所有权变更。
 - 上传前的 0.2.4/macOS 成果保留于 [原始提交](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/8de181abf5593247f32d57995567dd9f4063e049) 和 [归档目录](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/For-Codex/archive/for-codex-0.2.4)；v0.3 已整合 PR #128 兼容路径，原归档继续保留。
 - 感谢 [@1llysviel](https://github.com/1llysviel) 的 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128)。本次不会把其工作改称为新原创。
 
@@ -29,6 +29,6 @@
 
 ## 隐私和历史
 
-分享包不包含个人密钥、账号、账本、运行日志、真实账户截图、缓存或本机备份。完整旧实现可通过 Git 历史恢复。本次是普通提交，不改写历史，不变更仓库设置或所有者。
+分享包不包含个人密钥、账号、账本、运行日志、真实账户截图、缓存或本机备份。完整旧实现可通过 Git 历史恢复。本次采用普通提交与独立 Codex 标签发布，不改写历史，不变更仓库设置或所有者；发布授权不改变尚未验收的平台限制。
 
 如果认为某个素材侵犯权利，请沿用仓库既有反馈渠道说明文件名和依据；核实后由维护者处理。安全问题按 [SECURITY.md](SECURITY.md) 私下报告，不提交凭据或完整日志。

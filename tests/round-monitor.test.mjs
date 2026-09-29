@@ -172,7 +172,7 @@ test('actual frontend polling suppresses startup replay, duplicates, children an
     notice(12, 'cancelled-notice', { outcome: 'aborted', completionKind: 'cancelled', amount: 2, costState: 'observed' })]) {
     sandbox.pollLastTurn(); await respond(data);
   }
-  assert.equal(sounds, 2); assert.equal(bubbles, 3);
-  sandbox.pollLastTurn(); await respond(notice(13, 'busy', { outcome: 'failed', completionKind: 'failed', failureKind: 'high-demand' }));
   assert.equal(sounds, 2); assert.equal(bubbles, 4);
+  sandbox.pollLastTurn(); await respond(notice(13, 'busy', { outcome: 'failed', completionKind: 'failed', failureKind: 'high-demand' }));
+  assert.equal(sounds, 2); assert.equal(bubbles, 5);
 });

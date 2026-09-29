@@ -6,14 +6,13 @@
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
   function kind(record) {
-    if (record.completionKind === 'failed' || record.outcome === 'failed') return 'failed';
+    if (record.completionKind === 'failed' || ['failed','interrupted','superseded'].includes(record.outcome)) return 'failed';
     if (record.completionKind === 'cancelled' || ['aborted', 'cancelled'].includes(record.outcome)) return 'cancelled';
     return 'success';
   }
   function shouldNotify(record, { seq = 0, id = '', firstPoll = false, startedAt = 0 } = {}) {
     if (!record?.ok || !Number.isSafeInteger(record.seq) || record.seq <= seq || !record.id || record.id === id ||
         record.turn == null || record.notify === false || record.isSubagent) return false;
-    if (kind(record) === 'failed' && record.failureKind !== 'high-demand') return false;
     const published = record.notificationAt || record.ts;
     const at = typeof published === 'number' ? published : Date.parse(published);
     return !firstPoll || Number.isFinite(at) && at >= startedAt;
@@ -26,7 +25,7 @@
     return Object.freeze({
       id: String(record.id || ''), completionKind,
       failureKind,
-      label: completionKind === 'cancelled' ? (record.source === 'configured-pricing-estimate' ? '本轮消耗（估算）:' : record.source === 'token-only' ? '本轮 token 用量:' : '本轮已观测消耗:') : failureKind ? '挤不进去...' : String(record.label || '上一轮期间 API 扣费:'),
+      label: failureKind ? '挤不进去...' : completionKind !== 'success' ? (record.source === 'configured-pricing-estimate' ? '本轮消耗（估算）:' : record.source === 'token-only' ? '本轮 token 用量:' : '本轮已观测消耗:') : String(record.label || '上一轮期间 API 扣费:'),
       amount: known ? Number(record.amount) : null,
       currency: record.currency || nativeCurrency,
       costState: known ? record.costState || 'observed' : record.costState === 'pending' ? 'pending' : 'unknown',
@@ -35,7 +34,7 @@
     });
   }
   function enabled(notice, settings, turnCostOn) {
-    return ['success','cancelled'].includes(notice.completionKind) ? !!turnCostOn : notice.completionKind === 'failed' && notice.failureKind === 'high-demand';
+    return notice.completionKind === 'failed' && notice.failureKind === 'high-demand' || ['success','cancelled','failed'].includes(notice.completionKind) && !!turnCostOn;
   }
   return Object.freeze({ kind, shouldNotify, snapshot, enabled });
 });

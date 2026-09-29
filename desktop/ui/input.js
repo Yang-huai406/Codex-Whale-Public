@@ -6,18 +6,24 @@
   const failedRoleSources = new Set();
   let pointerEventAt=0;
   let point = { x: -1, y: -1 }, heldPointer = null, releaseEpoch = 0, interactive = false, keyboardFocus = false, ready = false, lastStorage = '', externalDrag = false;
-  const surfaces = '.whale-account-card,dialog[open],.dshwv-menu,.dshwv-menu-btn,.dshwv-rolelist,.dshwv-audiolist,.dshwv-qedit,.dshwv-usagepanel,.dshwv-custmenu,.dshwv-custbtn,.dshwv-tplhelp,.dshwv-fx-info,#toast:not([hidden])';
-  const keyboardSurfaces = 'dialog[open],.dshwv-menu,.dshwv-rolelist,.dshwv-audiolist,[class*="mask"],.dshwv-qedit,.dshwv-usagepanel,.dshwv-custmenu,.dshwv-fx-info';
-  function visible(el) { return el.checkVisibility({ opacityProperty: true, visibilityProperty: true }); }
+  const surfaces = '.whale-account-card,dialog[open],.dshwv-menu-open,.dshwv-menu-btn-visible:not(.dshwv-menu-btn-hidden),.dshwv-rolelist,.dshwv-audiolist,.dshwv-qedit,.dshwv-usagepanel,.dshwv-custmenu,.dshwv-custbtn,.dshwv-tplhelp,.dshwv-fx-info,#toast:not([hidden])';
+  const keyboardSurfaces = 'dialog[open],.dshwv-menu-open,.dshwv-rolelist,.dshwv-audiolist,[class*="mask"],.dshwv-qedit,.dshwv-usagepanel,.dshwv-custmenu,.dshwv-fx-info';
+  function visible(el) { return !!el?.isConnected && !el.hidden && el.checkVisibility({ opacityProperty: true, visibilityProperty: true }); }
+  function acceptsInput(el) {
+    if (!visible(el) || el.closest('[inert]') || getComputedStyle(el).pointerEvents === 'none') return false;
+    // Child panels may remain painted during the parent menu's exit animation.
+    const menu = el.closest('.dshwv-menu');
+    return !menu || menu.classList.contains('dshwv-menu-open');
+  }
   function contains(el, p) { const r = el.getBoundingClientRect(); return p.x >= r.left && p.x < r.right && p.y >= r.top && p.y < r.bottom; }
   function hit(p) {
-    for (const el of document.querySelectorAll(surfaces)) if (visible(el) && contains(el, p)) return true;
+    for (const el of document.querySelectorAll(surfaces)) if (acceptsInput(el) && contains(el, p)) return true;
     // Transparent modal backdrops are not input surfaces. Only the bounded
     // content card may intercept the host pointer, matching the native region.
     function cardHit(el,depth=0){
       if(!visible(el))return false;const r=el.getBoundingClientRect();
       if(depth<3&&r.width>=innerWidth*.95&&r.height>=innerHeight*.95)return [...el.children].some(c=>cardHit(c,depth+1));
-      return contains(el,p);
+      return acceptsInput(el)&&contains(el,p);
     }
     for(const mask of document.querySelectorAll('[class*="mask"]'))if(visible(mask)&&[...mask.children].some(c=>cardHit(c)))return true;
     const target = document.elementFromPoint(p.x, p.y);

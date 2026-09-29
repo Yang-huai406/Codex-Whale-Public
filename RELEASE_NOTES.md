@@ -1,38 +1,38 @@
-# API 余额小鲸鱼 · Codex v0.3.0
+# API 余额小鲸鱼 v0.3(fixed)
 
-**For-Codex 分支发布，标签 codex-v0.3.0-fixed。由仓库协作者 Yang-huai406 发布，仓库所有者仍为 MeteorNOX。**
+**For-Codex 分支发布，标签 `codex-v0.3.0-fixed.2`。** 本次按维护者授权发布；内部构建为 `0.3.0+codex.20260929173027`。协作者 [Yang-huai406](https://github.com/Yang-huai406) 维护 Codex 适配，仓库所有者仍为 [MeteorNOX](https://github.com/MeteorNOX)。
 
-维护者：[Yang-huai406](https://github.com/Yang-huai406)。保留上游版权与 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 的代码、链接和贡献者署名。
+## 修复内容
 
-## 本版内容
+- 气泡收起不再提前被 Windows 原生窗口区域裁切；文字、主泡泡及小尾泡按完整动画淡出。快速关开不受旧结束回调影响。
+- 鼠标从人物经过透明缝隙移向菜单按钮时，按钮保持可达；透明范围只保留悬停显示，仍让底层软件接收点击。
+- 保留条件式窗口层级纠正、Ctrl+Alt+Shift+F10 静默诊断，以及 Windows 鼠标移动不转发和软件合成兼容措施。
+- 明确失败或意外中断也显示中性消耗提示；不把未知/待记账金额当零，不播放成功音效，重试中不提前结算。
 
-- B 版“概览 / 用量 / 设置”分页，保留角色、素材、气泡、音效、账本、预警、预算和高级 API 设置。
-- 顶部切换 API 余额 / Codex 订阅，保留菜单及当前页，不改变登录或连接配置。
-- 订阅模式报告本轮 token，分别显示 5 小时与每周额度快照、重置时间和过期状态；无快照时显示未观测。
-- 跟随 Codex / 独立桌面模式，默认右下角，位置记忆与重置。
-- 三种按压手感、原创合成短音、独立事件音量；本地 JSON 创意工坊导入、预览、导出及失败回滚。
-- DeepSeek 峰谷仅对识别出的官方 API 端点展示。
+## 关于 Issue #177
 
-## 用户确认的光标修复
+[点击组件外空白关闭菜单、人物气泡和账户卡片](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/issues/177) 是合理的便利性建议。本版最终撤回新增的全局空白点击关闭：挂件覆盖其他软件，宿主正常点击可能误清尚未阅读的人物、任务和消耗提示；“二级菜单”的范围也容易造成理解差异。保持点击穿透的同时监听外部点击，还会增加跨平台事件处理和排查成本。
 
-Windows 透明挂件不再向 Chromium 转发穿透区域的鼠标移动，使用独立的原生位置采样处理悬停；避免挂件参与宿主光标的处理。用户已确认本机修复生效，并授权继续发布。Mac 鼠标路径保持原状。
+当前沿用已有控件内关闭、人物点击和提示超时规则。这是交互取舍，不表示技术不可实现，不代表 Issue 已被关闭。详见 [决定说明](docs/OUTSIDE-CLICK-DECISION.md)。
 
-## 显示与输入修复
+## 保留功能与来源
 
-分离监督器心跳延迟与窗口隐藏；处理模式切换、旧坐标写回、加载竞争、销毁后 IPC 和缺失素材。Windows 原生区域排除透明空白，dialog/mask 只在实际卡片内接收鼠标。Windows 挂件默认软件合成，作为透明表面偶发不显示的兼容措施，不改变 Codex 本体，不增加周期性重启或重绘。
+B 版概览/用量/设置、API/订阅模式、角色和气泡、音效与手感、本地创意工坊、桌面/跟随切换、余额与 token 统计、官方端点适用时的 DeepSeek 峰谷均保留。
 
-## 验证与限制
+保留 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 的平台代码、来源和贡献者署名；不以旧整包覆盖当前修复。
 
-当前运行代码通过 223 项自动测试、真实 Electron 界面回归、16 次模式切换及不抬高窗口的 12 次实际屏幕像素采样。详见 [验证记录](docs/VERIFICATION-0.3.md)。
+## 验证和限制
 
-**本机光标修复已经用户确认；其他设备及长期显示稳定性仍需验证，不作全平台根治保证。** Mac 实机和真实订阅账号端到端验证尚未完成。官方额度百分比不能换算成固定剩余 token。本地工坊不是在线市场；桌面模式不含 CC Switch 路由或壁纸层嵌入。
+238 项单元测试通过；16 次 Windows 原生区域采样覆盖关闭与快速重开，慢/快悬停及原生点击穿透、当前 B 版 Electron 界面审计通过。最新成品解压验证和哈希见随附 `verification-report.json`、`release-manifest.json`。
 
-## 附件
+长期偶发显示稳定性、其他设备、Mac 实机及真实订阅账号端到端仍待验证；发布授权不等于这些场景已全部验收。专项置顶隔离窗口测试用于动画裁剪，不证明日常跟随层级始终正确。旧版布局脚本的既有断言不适配 B 版，具体范围见 [验证记录](docs/VERIFICATION-0.3.md)。
 
-- `api-balance-whale-v0.3.0.zip`：可解压安装的插件包。
-- `api-balance-whale-v0.3.0-source.zip`：源码、测试和 GitHub 文档材料。
-- 对应 `.sha256`、`release-manifest.json`：校验值、内容清单、候选状态。
+## 安装附件
 
-Windows 完整解压后双击“安装插件.cmd”。需要 Codex、Node.js 24+（含 npm）与可联网下载 Electron 的环境；这不是包含运行时的离线 EXE。Mac 安装范围见 [平台说明](docs/MACOS.md)。安装与回滚见 [README](README.md)。
+- `api-balance-whale-v0.3(fixed).zip`：完整解压后安装的插件包。
+- `api-balance-whale-v0.3(fixed)-source.zip`：源码、测试、README 和 GitHub 准备材料。
+- 两份 `.sha256`、`release-manifest.json`、`verification-report.json`：校验及验证摘要。
 
-展示版本 v0.3.0；保留当前已测试的内部构建号，具体值见清单。本次使用独立标签 `codex-v0.3.0-fixed`，不覆盖已用于主线的 `v0.3.0` 标签，也不替换主线 Latest 标记。
+Windows 完整解压后运行“安装插件.cmd”；需要 Node.js 24+（含 npm）、支持插件的 Codex 及首次下载 Electron 的网络。此包不是包含运行时的离线 EXE。Mac 安装范围、Swift 工具与未验证限制见 [平台说明](docs/MACOS.md)。安装和按本次私有回执回滚见 [README](README.md)。
+
+公开包不包含个人凭据、配置、账本、日志、截图、录屏、回滚回执或 Git 历史。公开署名、第三方许可和兼容来源保留。本次使用新标签 `codex-v0.3.0-fixed.2`，不覆盖既有 `codex-v0.3.0-fixed` tag，不变更主线 Latest。
