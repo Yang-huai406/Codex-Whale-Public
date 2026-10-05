@@ -62,4 +62,4 @@ issue 核查先比较原讨论与 Codex 实际路径，不把 DSH 标题或上�
 
 对外 fixed 名称与内部 `0.4.1` 可以同时存在；区分初期连接构建与本包时必须核对 build。安装/回滚使用本次私有回执对应的备份，不凭版本号猜测；回滚程序不等于删除新增账本或素材。成品与源码通过发布清单绑定，远端状态以 GitHub Release 为准。
 
-原始项目与仓库所有者为 [MeteorNOX](https://github.com/MeteorNOX)，Codex 适配维护为 [Yang-huai406](https://github.com/Yang-huai406)。保留原许可、媒体来源和 macOS 贡献，不将上游工作重新署名；For-Codex 发布也不替代 DSH 主线的发行状态。
+原始项目与上游仓库所有者为 [MeteorNOX](https://github.com/MeteorNOX)，Codex 适配维护为 [Yang-huai406](https://github.com/Yang-huai406)。现已开始迁入由 Yang-huai406 所有的独立仓库，详见 [迁移说明](REPOSITORY-MIGRATION.md)。保留原许可、媒体来源和 macOS 贡献，不将上游工作重新署名；历史 For-Codex 发布也不替代 DSH 主线的发行状态。

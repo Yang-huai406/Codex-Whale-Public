@@ -2,15 +2,15 @@
 
 ## 支持范围
 
-本分支（**For-Codex**）当前交付为 **api-balance-whale v0.4.0 For-Codex 发布版**，对应标签 `codex-v0.4.0`。Windows x64 已做回归验证；macOS 兼容源自 PR #128，实机及完整集成待验证。上游 0.3.0-beta、历史 0.2.4 及 macOS 改编来源见 [PROVENANCE.md](PROVENANCE.md)，它们不代表当前版本号。漏洞报告渠道与披露安排遵循仓库维护者的实际政策。
+本独立仓库 [Yang-huai406/Codex-Whale](https://github.com/Yang-huai406/Codex-Whale) 由 Yang-huai406 维护，当前为私有迁移仓库，开发分支为 `main`。当前代码基线为 **Codex-v0.4(fixed)**，内部版本 `0.4.1`，构建 `auto-probe-fixed-20261005`；`codex-v0.4.0(fixed)` 是上游历史发行标签，本仓库尚无独立发行。Windows x64 已做回归验证；macOS 兼容源自 PR #128，实机及完整集成待验证。上游 0.3.0-beta、历史 0.2.4 及 macOS 改编来源见 [PROVENANCE.md](PROVENANCE.md)，它们不代表当前版本号。漏洞报告渠道与披露安排遵循仓库维护者的实际政策。
 
-上游主分支（DSH Web 版 `dsh-whale-widget`）的普通功能问题可在对应 issue 中反馈。安全问题及两者共有代码的漏洞，请按下面的私密渠道说明受影响分支。
+上游 DSH Web 版 `dsh-whale-widget` 的普通功能问题请向[原仓库](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/issues)反馈；Codex 版普通问题使用[本仓库 Issues](https://github.com/Yang-huai406/Codex-Whale/issues)。安全问题及两者共有代码的漏洞，请按下面的私密渠道说明受影响分支。
 
 ## 报告漏洞
 
 **请不要用公开 issue 报告安全漏洞。** 任选一种私下渠道：
 
-1. **GitHub 私密漏洞报告**（推荐）：仓库 → **Security** → **Report a vulnerability**（Private vulnerability reporting）。若该入口不可用，用第 2 种。
+1. **GitHub 私密漏洞报告**（仅在维护者启用且可访问时）：[本仓库 Security](https://github.com/Yang-huai406/Codex-Whale/security) → **Report a vulnerability**（Private vulnerability reporting）。当前未声明该入口已启用；若不可用，用第 2 种。
 2. **维护者公开指定的安全联系渠道**：以仓库主页或维护者发布的政策为准；不要从未公开授权的个人信息推断联系方式。
 
 请尽量包含：
@@ -38,7 +38,7 @@
 
 **属于已知设计（不算漏洞，欢迎提改进建议）**
 
-- 不校验余额接口服务商的真实性：插件按你配置的地址与密钥查询，返回什么就显示什么；
+- 不校验余额接口服务商的真实性：插件按你配置的地址与密钥查询，并校验已支持的字段契约；这不构成对服务商身份或账单真实性的认证；
 - 汇率来自公开接口（`api.frankfurter.dev`），不做可信度背书；
 - 原生窗口跟随依赖 Win32 窗口句柄或 macOS `CGWindowList` 与用户态权限，不设提权；
 - 金额为**观测估算**，不是服务商正式账单。

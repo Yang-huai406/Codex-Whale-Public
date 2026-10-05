@@ -1,16 +1,16 @@
 blank_issues_enabled: false
 contact_links:
   - name: 安装 / 使用文档（先看这里）
-    url: https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/blob/For-Codex/README.md
-    about: For-Codex v0.4.0 的安装、验证、停用与回滚入口，也可离线查看包内 README.md。
-  - name: v0.4 已知问题与验证边界
-    url: https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/blob/For-Codex/docs/KNOWN-ISSUES-0.4.md
+    url: https://github.com/Yang-huai406/Codex-Whale/blob/main/README.md
+    about: Codex-v0.4(fixed)（内部 0.4.1） 的安装、验证、停用与回滚入口，也可离线查看包内 README.md。
+  - name: fixed 已知问题与验证边界
+    url: https://github.com/Yang-huai406/Codex-Whale/blob/main/docs/KNOWN-ISSUES-FIXED.md
     about: 已知限制和仍需实机验证的场景；远端更新前请查看本地包内同名文档。
   - name: 变更记录
-    url: https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/blob/For-Codex/CHANGELOG.md
-    about: For-Codex 版本变更、发布范围与历史记录。
+    url: https://github.com/Yang-huai406/Codex-Whale/blob/main/CHANGELOG.md
+    about: Codex-Whale 版本变更、发布范围与历史记录。
   - name: 安全漏洞（请勿公开提交）
-    url: https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/blob/For-Codex/SECURITY.md
+    url: https://github.com/Yang-huai406/Codex-Whale/blob/main/SECURITY.md
     about: 私密报告安全问题的渠道；处理安排遵循仓库维护者的实际政策。
   - name: 上游 DSH 网页版插件
     url: https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget

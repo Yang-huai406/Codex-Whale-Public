@@ -2,7 +2,7 @@
 
 跟随 Codex 显示 API 余额、密钥额度、已观测消费和本机 token；也可查看 Codex 订阅额度快照，或作为独立桌面挂件使用。支持角色、动图、气泡、音效、拖动缩放和本地素材工坊。
 
-**For-Codex 修复发行版。** 运行构建已完成下文列出的测试；本次压缩包的隐私、解压和完整性结果以随包清单为准。
+**Codex-Whale 独立维护仓库（当前私有，迁移准备中）。** 是否公开由维护者后续决定。这里完整承接上游 `For-Codex` 的提交历史，当前代码基线为 `Codex-v0.4(fixed)`。本仓库尚未发布独立安装包；可使用[历史上游已发布包](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/tag/codex-v0.4.0%28fixed%29)，该包保留当时的仓库身份。运行构建已完成下文列出的测试，压缩包的隐私、解压和完整性结果以随包清单为准。
 
 | 标识 | 当前值 |
 | --- | --- |
@@ -11,11 +11,13 @@
 | 内部程序及插件版本 | `0.4.1` |
 | 构建标识 | `auto-probe-fixed-20261005` |
 | 插件 ID | `api-balance-whale` |
-| 发布标签 | `codex-v0.4.0(fixed)` |
+| 历史上游发布标签 | `codex-v0.4.0(fixed)` |
 
-标签、对外名称与内部版本用途不同，不需要把内部版本改成带括号的字符串。此前 `codex-v0.4.0` 发布保留；本修复版属于独立 **For-Codex** 适配线，不替代 DSH 主线 Latest。
+标签、对外名称与内部版本用途不同，不需要把内部版本改成带括号的字符串。上述标签属于历史上游发行，迁移不会重建或移动它。后续开发在 [Yang-huai406/Codex-Whale](https://github.com/Yang-huai406/Codex-Whale) 的 `main` 进行；新包发布后见[本仓库 Releases](https://github.com/Yang-huai406/Codex-Whale/releases)。
 
-上游作者和仓库所有者：[MeteorNOX](https://github.com/MeteorNOX)。Codex 适配协作者：[Yang-huai406](https://github.com/Yang-huai406)。持续保留 [1llysviel](https://github.com/1llysviel) 的 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 实现与署名。
+原项目作者及上游仓库所有者：[MeteorNOX](https://github.com/MeteorNOX)。当前独立仓库所有者及 Codex 适配维护者：[Yang-huai406](https://github.com/Yang-huai406)。普通问题与建议请提交到[本仓库 Issues](https://github.com/Yang-huai406/Codex-Whale/issues)；安全问题见 [SECURITY.md](SECURITY.md)。持续保留 [1llysviel](https://github.com/1llysviel) 的 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 实现与署名。
+
+迁移范围、历史保留与后续事项见 [独立仓库迁移说明](docs/REPOSITORY-MIGRATION.md)，功能演进见 [开发过程](docs/DEVELOPMENT-FIXED.md)。
 
 ## 1. 安装前准备
 
