@@ -1,26 +1,24 @@
 # API 余额小鲸鱼 · Codex-v0.4(fixed)
 
-跟随 Codex 显示 API 余额、密钥额度、已观测消费和本机 token；也可查看 Codex 订阅额度快照，或作为独立桌面挂件使用。支持角色、动图、气泡、音效、拖动缩放和本地素材工坊。
+跟随 Codex 显示 API 余额、密钥额度、已观测消费和本机 token；支持订阅快照、角色音效、气泡、拖动缩放和本地素材工坊。
 
-**Codex-Whale 独立维护仓库（当前私有）。** 是否公开由维护者后续决定。这里完整承接上游 `For-Codex` 的提交历史，当前代码基线为 `Codex-v0.4(fixed)`。7 个历史 Codex Release、38 个附件及 9 个相关标签已迁入本仓库；下载见[最新历史发行](https://github.com/Yang-huai406/Codex-Whale/releases/latest)，完整演进见[发行历史](docs/RELEASE-HISTORY.md)。这些是保留原附件的迁移副本，不是新构建或新版本；仓库私有期间仅有权限的用户可访问。运行构建已完成下文列出的测试，压缩包的隐私、解压和完整性结果以随包清单为准。
+**这里是净化候选仓库 Codex-Whale-Public，目前仍为私有。** 原始私有档案保持不变；本副本保留开发过程、作者、提交时间和合并关系，清理了旧图片中的非渲染元数据，因此相关提交 SHA 和标签对象已经改变。
+
+7 个历史 Release 保留原始发布时间和开发说明。38 个原附件中 5 个经过图片元数据/校验清单更新，另新增 14 个核验文件；没有新增功能版本，也不冒充原始字节。每个 Release 使用 `SHA256SUMS.sanitized.txt` 校验，差异见 `SANITIZATION.json`。
+
+- [安装包与历史发行](https://github.com/Yang-huai406/Codex-Whale-Public/releases/latest) · [完整时间线](docs/RELEASE-HISTORY.md)
+- [净化范围与验证](docs/SANITIZATION.md) · [提交映射](docs/HISTORY-SANITIZATION.json) · [待办](docs/BACKLOG.md)
+- [素材来源与待确认问题](docs/MATERIALS-REVIEW.md)：元数据清理不等于补授媒体许可；公开时间另行决定。
 
 | 标识 | 当前值 |
 | --- | --- |
-| 对外名称 | `Codex-v0.4(fixed)` |
-| 构建时安装包 / 源码包名 | `Codex-v0.4(fixed).zip` / `Codex-v0.4(fixed)-source.zip` |
-| GitHub 实际下载文件名 | `Codex-v0.4.fixed.zip` / `Codex-v0.4.fixed.-source.zip` |
-| 内部程序及插件版本 | `0.4.1` |
-| 构建标识 | `auto-probe-fixed-20261005` |
+| 程序版本 / 构建 | `0.4.1` / `auto-probe-fixed-20261005` |
+| 对外名称 / 标签名 | `Codex-v0.4(fixed)` / `codex-v0.4.0(fixed)` |
+| GitHub 安装包 | `Codex-v0.4.fixed.zip` |
+| GitHub 源码包 | `Codex-v0.4.fixed.-source.zip` |
 | 插件 ID | `api-balance-whale` |
-| 历史上游发布标签 | `codex-v0.4.0(fixed)` |
 
-标签、对外名称与内部版本用途不同，不需要把内部版本改成带括号的字符串。上述标签属于历史上游发行，迁移保留其原目标，不重建或移动它。后续开发在 [Yang-huai406/Codex-Whale](https://github.com/Yang-huai406/Codex-Whale) 的 `main` 进行；历史迁移副本与后续新版本均见[本仓库 Releases](https://github.com/Yang-huai406/Codex-Whale/releases)。
-
-原项目作者及上游仓库所有者：[MeteorNOX](https://github.com/MeteorNOX)。当前独立仓库所有者及 Codex 适配维护者：[Yang-huai406](https://github.com/Yang-huai406)。普通问题与建议请提交到[本仓库 Issues](https://github.com/Yang-huai406/Codex-Whale/issues)；安全问题见 [SECURITY.md](SECURITY.md)。持续保留 [1llysviel](https://github.com/1llysviel) 的 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 实现与署名。
-
-迁移范围、历史保留与后续事项见 [独立仓库迁移说明](docs/REPOSITORY-MIGRATION.md)，功能演进见 [开发过程](docs/DEVELOPMENT-FIXED.md)。
-
-公开准备情况见 [公开前复核](docs/PREPUBLIC-REVIEW.md) 和 [待办清单](docs/BACKLOG.md)。历史图片元数据仍有待处理项，仓库保持私有。GitHub 会转换附件名中的括号；从 Release 下载后用 `SHA256SUMS.downloads.txt` 核验实际文件名，原构建校验文件保留当时名称。
+原项目作者为 [MeteorNOX](https://github.com/MeteorNOX)，Codex 适配维护者为 [Yang-huai406](https://github.com/Yang-huai406)；保留 [1llysviel 的 macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 贡献与来源。许可见 [LICENSE](LICENSE) 与 [第三方声明](THIRD_PARTY_NOTICES.md)。新问题使用[本仓库 Issues](https://github.com/Yang-huai406/Codex-Whale-Public/issues)，安全问题见 [SECURITY.md](SECURITY.md)。
 
 ## 1. 安装前准备
 

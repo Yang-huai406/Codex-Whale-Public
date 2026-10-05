@@ -6,23 +6,23 @@
 
 | 待办 | 类型 |
 | --- | --- |
-| [[公开前] 核定并处理历史图片中的 XMP 作者与外部标识元数据](https://github.com/Yang-huai406/Codex-Whale/issues/11) | 公开前处理 |
-| [[公开前复核] 补充媒体来源及适配版本的分发依据](https://github.com/Yang-huai406/Codex-Whale/issues/12) | 来源核对 |
+| [[公开前] 核定并处理历史图片中的 XMP 作者与外部标识元数据](https://github.com/Yang-huai406/Codex-Whale-Public/issues/11) | 公开前处理 |
+| [[公开前复核] 补充媒体来源及适配版本的分发依据](https://github.com/Yang-huai406/Codex-Whale-Public/issues/12) | 来源核对 |
 
 ## 核心验收与调查
 
 | 待办 | 类型 |
 | --- | --- |
-| [[P1] 明确退款净支出与观测消费的统计语义](https://github.com/Yang-huai406/Codex-Whale/issues/1) | P1 / 统计语义设计 |
-| [[P1 验证] 完成真实订阅账户及额度窗口切换验收](https://github.com/Yang-huai406/Codex-Whale/issues/2) | P1 / 实机验收 |
-| [[P1 验证] 完成 macOS 安装、插件注册和回滚验收](https://github.com/Yang-huai406/Codex-Whale/issues/3) | P1 / Mac 安装集成验收 |
-| [[P1 验证] 补齐多屏、DPI、恢复及长期显示稳定性记录](https://github.com/Yang-huai406/Codex-Whale/issues/4) | P1 / 显示稳定性实测 |
-| [[P1 验证] 完成实际发行包的干净安装与公开下载验收](https://github.com/Yang-huai406/Codex-Whale/issues/5) | P1 / 安装发行验收 |
-| [[P2 验证] 验证真实余额服务的认证、单位及候选确认](https://github.com/Yang-huai406/Codex-Whale/issues/6) | P2 / 服务兼容实测 |
-| [[P2] 明确跨日观测区间与逐日账本的边界](https://github.com/Yang-huai406/Codex-Whale/issues/7) | P2 / 账本区间说明与设计 |
-| [[P2 验证] 验证 macOS 音频睡眠断言与唤醒恢复](https://github.com/Yang-huai406/Codex-Whale/issues/8) | P2 / Mac 睡眠实测 |
-| [[P2 调查] 复现故障音频设备闲置后的首音裁切](https://github.com/Yang-huai406/Codex-Whale/issues/9) | P2 / 故障设备调查 |
-| [[P2 调查] 定位双重音效的事件与播放来源](https://github.com/Yang-huai406/Codex-Whale/issues/10) | P2 / 待复现故障 |
+| [[P1] 明确退款净支出与观测消费的统计语义](https://github.com/Yang-huai406/Codex-Whale-Public/issues/1) | P1 / 统计语义设计 |
+| [[P1 验证] 完成真实订阅账户及额度窗口切换验收](https://github.com/Yang-huai406/Codex-Whale-Public/issues/2) | P1 / 实机验收 |
+| [[P1 验证] 完成 macOS 安装、插件注册和回滚验收](https://github.com/Yang-huai406/Codex-Whale-Public/issues/3) | P1 / Mac 安装集成验收 |
+| [[P1 验证] 补齐多屏、DPI、恢复及长期显示稳定性记录](https://github.com/Yang-huai406/Codex-Whale-Public/issues/4) | P1 / 显示稳定性实测 |
+| [[P1 验证] 完成实际发行包的干净安装与公开下载验收](https://github.com/Yang-huai406/Codex-Whale-Public/issues/5) | P1 / 安装发行验收 |
+| [[P2 验证] 验证真实余额服务的认证、单位及候选确认](https://github.com/Yang-huai406/Codex-Whale-Public/issues/6) | P2 / 服务兼容实测 |
+| [[P2] 明确跨日观测区间与逐日账本的边界](https://github.com/Yang-huai406/Codex-Whale-Public/issues/7) | P2 / 账本区间说明与设计 |
+| [[P2 验证] 验证 macOS 音频睡眠断言与唤醒恢复](https://github.com/Yang-huai406/Codex-Whale-Public/issues/8) | P2 / Mac 睡眠实测 |
+| [[P2 调查] 复现故障音频设备闲置后的首音裁切](https://github.com/Yang-huai406/Codex-Whale-Public/issues/9) | P2 / 故障设备调查 |
+| [[P2 调查] 定位双重音效的事件与播放来源](https://github.com/Yang-huai406/Codex-Whale-Public/issues/10) | P2 / 待复现故障 |
 
 ## 候选功能与范围决定
 
@@ -47,3 +47,6 @@
 
 
 公开条件见 [公开前复核](PREPUBLIC-REVIEW.md)，当前功能限制见 [已知问题](KNOWN-ISSUES-FIXED.md)。Mac/真实订阅等硬件验收缺口可在明确标注限制时保留，不等同于隐私元数据的公开前处理项。
+
+
+净化副本更新：#11 的图片元数据技术处理本轮已实施，完成独立核验后关闭；#12 素材分发依据仍待确认，详见 [素材核对](MATERIALS-REVIEW.md)。其它功能与实机待办不因净化自动完成。

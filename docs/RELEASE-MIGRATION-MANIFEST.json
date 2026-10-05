@@ -269,5 +269,6 @@
         }
       ]
     }
-  ]
+  ],
+  "scope": "Historical original-byte archive manifest, not the sanitized candidate checksum manifest. Use ARTIFACT-SANITIZATION.json and each Release SHA256SUMS.sanitized.txt."
 }

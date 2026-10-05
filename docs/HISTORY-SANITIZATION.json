@@ -1,0 +1,366 @@
+{
+  "scope": "Original private archive to sanitized candidate; original IDs are provenance identifiers, not retained objects in this candidate.",
+  "commits": [
+    {
+      "original": "156abe6ace0ef2082a38332224f38fd2badde29b",
+      "sanitized": "629c5105b812f89c8ceadda61c7453a4f992488a"
+    },
+    {
+      "original": "19a8c6c1008dab1b4638c05069ab5b8ff5bc384f",
+      "sanitized": "13eb2a3a8a86220473864f5f975648c96c4ff26c"
+    },
+    {
+      "original": "2a7dac2945f3c29251aaf067831c501694a52193",
+      "sanitized": "91e842c11c73ec4580ca8b170375361b28105d95"
+    },
+    {
+      "original": "469c9862c2ff97e0bb50dc516b57596c1fa7caa3",
+      "sanitized": "d464b412a90eb654c0ce0e6a8c51bc934aa6c554"
+    },
+    {
+      "original": "51f88c6e14f15174d0d6d4fd3d238cf00fd88119",
+      "sanitized": "9cacef1ecd6b85c42f6248a20d2efc27bba5ecca"
+    },
+    {
+      "original": "5a36d6442d272cd7fea255206f2abcd697a87563",
+      "sanitized": "2541a4d193f4027c56ff000f20d03fba8e18a1e8"
+    },
+    {
+      "original": "609faa626e5ba4120d9e24341e9cf72ab5cc49fa",
+      "sanitized": "241b5630c380e38630fe052e9da4576e226ef166"
+    },
+    {
+      "original": "7fa45961c0e0bacc9bb08737f73b4491399956b0",
+      "sanitized": "e1872a31010735085bc3c82bee15656844e2b30e"
+    },
+    {
+      "original": "8c13a627120a175f6c92b3aeb12c99d392416ac7",
+      "sanitized": "f81a3ec9c783e9644ef2d5c95f33bf21a35b526b"
+    },
+    {
+      "original": "8cb3fa346645e634ca7cbfe382ad68e1711c3a0a",
+      "sanitized": "75db1ba3fa6c91379eb23cb12ff632d694ef0efc"
+    },
+    {
+      "original": "8de181abf5593247f32d57995567dd9f4063e049",
+      "sanitized": "7a408f97422fbb00182f0f997ece623acde96c08"
+    },
+    {
+      "original": "91ab59276320d43fe6f290a8cecaed03edb497b0",
+      "sanitized": "8584386960be53716234a5d55e237602fa1c4549"
+    },
+    {
+      "original": "b62c947c262c14bd734bbbecbd7475334398832a",
+      "sanitized": "a9dab64e0a63e772f1c09ff7f24af7f869a1b947"
+    },
+    {
+      "original": "b9e168d3dd6c04e660567cb8c96f4b0bdeeb45e8",
+      "sanitized": "fdb1eff82d0eb4a90f4b5e0054fa42aa3f81163c"
+    },
+    {
+      "original": "c72d754d9d311f2c957f125a757ac97e77ad3b99",
+      "sanitized": "5584ffcce0889cea775f2cd56c96e84df1e3efe6"
+    },
+    {
+      "original": "c86b055e8f24473ca76324d6e67145d65c596c41",
+      "sanitized": "cb272cefaf1816757fa2e20411a638d6838ef084"
+    },
+    {
+      "original": "cd861cfc3a569844377d15615d32a0e9edc2da7f",
+      "sanitized": "964d3ab8340ba1ca48bc5ed24921a90c05c06716"
+    },
+    {
+      "original": "e2720500807ab847756f14d13ee0b8a30c682798",
+      "sanitized": "984dbbc575f9223b3ae65bf45595cc561946e915"
+    },
+    {
+      "original": "e3749e093d69a8f9bdafac0520eb73463ec64292",
+      "sanitized": "5ff95e4e590a8501c4b3e2ffe66d001bb8f9c5e4"
+    },
+    {
+      "original": "e9e64902b97769b1ed772d01313902744275fed5",
+      "sanitized": "e14056ab63ebf69a4c93d2403d893bff119283c0"
+    },
+    {
+      "original": "eda5474e18f1575077dbc65ce1f5b80719c766d4",
+      "sanitized": "fe8be3fe651e2b54ca7ecc024f1a274e7a1c5e69"
+    },
+    {
+      "original": "f171cf1b1c4bb1ecb8ea0c707bd80400d791365c",
+      "sanitized": "f1cc73dfebeda97689c4e32ea63bfdaa68a3de68"
+    },
+    {
+      "original": "fcd96603f2fde6be955a0dc6c93bebd8a6365e52",
+      "sanitized": "b6c4a473028d9ed901c6250b1f8dd2039f1492b7"
+    }
+  ],
+  "tags": [
+    {
+      "tag": "Codex-v0.2(fixed)",
+      "originalObject": "2a7dac2945f3c29251aaf067831c501694a52193",
+      "sanitizedObject": "91e842c11c73ec4580ca8b170375361b28105d95",
+      "originalCommit": "2a7dac2945f3c29251aaf067831c501694a52193",
+      "sanitizedCommit": "91e842c11c73ec4580ca8b170375361b28105d95"
+    },
+    {
+      "tag": "codex-v0.2.0",
+      "originalObject": "156abe6ace0ef2082a38332224f38fd2badde29b",
+      "sanitizedObject": "629c5105b812f89c8ceadda61c7453a4f992488a",
+      "originalCommit": "156abe6ace0ef2082a38332224f38fd2badde29b",
+      "sanitizedCommit": "629c5105b812f89c8ceadda61c7453a4f992488a"
+    },
+    {
+      "tag": "codex-v0.2.4",
+      "originalObject": "c1d606f3863731f978aa8883b09b01eb49588cf2",
+      "sanitizedObject": "28600b0c44f97bac79f58b2e7d10f7740451a11b",
+      "originalCommit": "8de181abf5593247f32d57995567dd9f4063e049",
+      "sanitizedCommit": "7a408f97422fbb00182f0f997ece623acde96c08"
+    },
+    {
+      "tag": "codex-v0.3.0",
+      "originalObject": "d830965ffb71c29c1e64280089220c5e3991dcfd",
+      "sanitizedObject": "b3555fdd8a7e7adede782dfb43fc9a3c6c8d7656",
+      "originalCommit": "51f88c6e14f15174d0d6d4fd3d238cf00fd88119",
+      "sanitizedCommit": "9cacef1ecd6b85c42f6248a20d2efc27bba5ecca"
+    },
+    {
+      "tag": "codex-v0.3.0-fixed",
+      "originalObject": "5419af78d4f3f878f4b71fea1c838583953b2d32",
+      "sanitizedObject": "602aca9bd85453f64cc728d02e84c05f6cbb6cbb",
+      "originalCommit": "e2720500807ab847756f14d13ee0b8a30c682798",
+      "sanitizedCommit": "984dbbc575f9223b3ae65bf45595cc561946e915"
+    },
+    {
+      "tag": "codex-v0.3.0-fixed.2",
+      "originalObject": "d100c1e93d28716b49e653a967900d819f5dd168",
+      "sanitizedObject": "a0ee79b3410a8834de95e606259b80f11fea0ee8",
+      "originalCommit": "5a36d6442d272cd7fea255206f2abcd697a87563",
+      "sanitizedCommit": "2541a4d193f4027c56ff000f20d03fba8e18a1e8"
+    },
+    {
+      "tag": "codex-v0.4.0",
+      "originalObject": "b80ff3c3be371ddb2e063c0e0e57c1e555fa0768",
+      "sanitizedObject": "7a901ac7989da23d810958c42d155ef146aaca6f",
+      "originalCommit": "c86b055e8f24473ca76324d6e67145d65c596c41",
+      "sanitizedCommit": "cb272cefaf1816757fa2e20411a638d6838ef084"
+    },
+    {
+      "tag": "codex-v0.4.0(fixed)",
+      "originalObject": "e667264af7a9368b4fa17bdea135cbd2559187e4",
+      "sanitizedObject": "e6758b9a81ba242ad6cd3ccd6e4e910dbbe37383",
+      "originalCommit": "7fa45961c0e0bacc9bb08737f73b4491399956b0",
+      "sanitizedCommit": "e1872a31010735085bc3c82bee15656844e2b30e"
+    },
+    {
+      "tag": "v0.2.0-fixed",
+      "originalObject": "2a7dac2945f3c29251aaf067831c501694a52193",
+      "sanitizedObject": "91e842c11c73ec4580ca8b170375361b28105d95",
+      "originalCommit": "2a7dac2945f3c29251aaf067831c501694a52193",
+      "sanitizedCommit": "91e842c11c73ec4580ca8b170375361b28105d95"
+    }
+  ],
+  "changedBlobCount": 7,
+  "changes": [
+    {
+      "path": "assets/DSH2.png",
+      "kind": "PNG metadata only",
+      "oldSha256": "9286302f2d8729c35576800640333e7f171deca78b1bec0a9b8d25cb83cc437b",
+      "newSha256": "f7e507fb3e527a52d57b54f7a74a4000fd66fb2ab1ad10fd80a30591e43079ca",
+      "oldBytes": 1103533,
+      "newBytes": 1101856,
+      "removedChunkTypes": [
+        "eXIf",
+        "iTXt"
+      ],
+      "decodedPixelsEqual": true,
+      "keptChunkTypes": [
+        "IHDR",
+        "pHYs",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IDAT",
+        "IEND"
+      ]
+    },
+    {
+      "path": "packages/v0.2-fixed/api-balance-whale-v0.2-fixed.zip",
+      "kind": "ZIP metadata cleanup and internal checksums",
+      "oldSha256": "2c7b9d2059a734c98f83c122087449351dfc0187f7a4ef64e9f25f72c7ca65b1",
+      "newSha256": "c616204d5a6b8d9925c156abaced913833d45dd6f57b1924c6fcea7acea8d8ef",
+      "oldBytes": 2979967,
+      "newBytes": 2979027
+    },
+    {
+      "path": "packages/v0.2-fixed/api-balance-whale-v0.2-fixed.zip",
+      "kind": "ZIP metadata cleanup and internal checksums",
+      "oldSha256": "1021ebeefd0d38f62428a593b594fe0f66896810825c09da0b0e9a2f173db852",
+      "newSha256": "a12c868f160d399da03b8219dc809a88ce1f7fc186d09d497744dc1af9c46bc4",
+      "oldBytes": 2979595,
+      "newBytes": 2978655
+    },
+    {
+      "path": "packages/v0.2-fixed/api-balance-whale-v0.2-fixed.zip.sha256",
+      "kind": "SHA-256 companion",
+      "oldSha256": "743b7012f85346b5d5d8e0a896fac4b8ebaf973359ab35a3235d3a9ef8698c7a",
+      "newSha256": "b54c10ce35aa3fa5582cbd77d4137cf9371399b8e459bb33d3e1d48f8510f585",
+      "oldBytes": 99,
+      "newBytes": 99
+    },
+    {
+      "path": "packages/v0.2-fixed/release-manifest.json",
+      "kind": "Artifact manifest",
+      "oldSha256": "763fdaef00fd356af1f29ba4018208d7786db45cd2001b5f101d19409d687e33",
+      "newSha256": "4e678056ca2a5c78525151fdb9727b42dd947f0bc9c1633e1a76b6bad33f175c",
+      "oldBytes": 15174,
+      "newBytes": 15499
+    },
+    {
+      "path": "packages/v0.2-fixed/api-balance-whale-v0.2-fixed.zip.sha256",
+      "kind": "SHA-256 companion",
+      "oldSha256": "5ce6eaf901f2c41b6d70b122d00afc1fba10d3ebfc3ebd229f16502f87298a93",
+      "newSha256": "7c0924d3e29bb888472c3d72c9b1813cbcd92290860779e3da2405b2fdbc30db",
+      "oldBytes": 99,
+      "newBytes": 99
+    },
+    {
+      "path": "packages/v0.2-fixed/release-manifest.json",
+      "kind": "Artifact manifest",
+      "oldSha256": "fef9b9e82c4fb2ff879caf57c4ada21b7db336050979abe079cc66153c449d54",
+      "newSha256": "89094337868795158ef2fdb02b3743f0f8b90a0ac258ebdb8ba547cde69dc1e4",
+      "oldBytes": 15075,
+      "newBytes": 15400
+    }
+  ]
+}
