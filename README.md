@@ -2,13 +2,13 @@
 
 跟随 Codex 显示 API 余额、密钥额度、已观测消费和本机 token；支持订阅快照、角色音效、气泡、拖动缩放和本地素材工坊。
 
-**这里是净化候选仓库 Codex-Whale-Public，目前仍为私有。** 原始私有档案保持不变；本副本保留开发过程、作者、提交时间和合并关系，清理了旧图片中的非渲染元数据，因此相关提交 SHA 和标签对象已经改变。
+**这里是已公开的 Codex-Whale-Public 独立维护仓库。** 原始私有档案保持不变；本副本保留开发过程、作者、提交时间和合并关系，清理了旧图片中的非渲染元数据，因此相关提交 SHA 和标签对象已经改变。
 
 7 个历史 Release 保留原始发布时间和开发说明。38 个原附件中 5 个经过图片元数据/校验清单更新，另新增 14 个核验文件；没有新增功能版本，也不冒充原始字节。每个 Release 使用 `SHA256SUMS.sanitized.txt` 校验，差异见 `SANITIZATION.json`。
 
 - [安装包与历史发行](https://github.com/Yang-huai406/Codex-Whale-Public/releases/latest) · [完整时间线](docs/RELEASE-HISTORY.md)
 - [净化范围与验证](docs/SANITIZATION.md) · [提交映射](docs/HISTORY-SANITIZATION.json) · [待办](docs/BACKLOG.md)
-- [素材分发范围与署名](docs/MATERIALS-PERMISSION.md) · [来源核对](docs/MATERIALS-REVIEW.md)：四个 MP3 按维护者确认继续保留；公开时间另行决定。
+- [素材分发范围与署名](docs/MATERIALS-PERMISSION.md) · [来源核对](docs/MATERIALS-REVIEW.md)：四个 MP3 按维护者确认继续保留；本仓库于 2026-10-05 经维护者授权公开。
 
 | 标识 | 当前值 |
 | --- | --- |

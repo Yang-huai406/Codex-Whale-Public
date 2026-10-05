@@ -2,7 +2,7 @@
 
 ## 支持范围
 
-本独立仓库 [Yang-huai406/Codex-Whale](https://github.com/Yang-huai406/Codex-Whale-Public) 由 Yang-huai406 维护，当前为私有仓库，开发分支为 `main`。当前代码基线为 **Codex-v0.4(fixed)**，内部版本 `0.4.1`，构建 `auto-probe-fixed-20261005`；`codex-v0.4.0(fixed)` 是指向对应净化提交的历史版本标签，安装包见[最新历史发行](https://github.com/Yang-huai406/Codex-Whale-Public/releases/latest)。本仓库的历史发行是迁移副本，不是新版本；净化旧包不代表重新验证或承诺维护每个旧版本，详见[发行历史](docs/RELEASE-HISTORY.md)。Windows x64 已做回归验证；macOS 兼容源自 PR #128，实机及完整集成待验证。上游 0.3.0-beta、历史 0.2.4 及 macOS 改编来源见 [PROVENANCE.md](PROVENANCE.md)，它们不代表当前版本号。漏洞报告渠道与披露安排遵循仓库维护者的实际政策。
+本独立仓库 [Yang-huai406/Codex-Whale-Public](https://github.com/Yang-huai406/Codex-Whale-Public) 由 Yang-huai406 维护，当前为公开仓库，开发分支为 `main`。当前代码基线为 **Codex-v0.4(fixed)**，内部版本 `0.4.1`，构建 `auto-probe-fixed-20261005`；`codex-v0.4.0(fixed)` 是指向对应净化提交的历史版本标签，安装包见[最新历史发行](https://github.com/Yang-huai406/Codex-Whale-Public/releases/latest)。本仓库的历史发行是迁移副本，不是新版本；净化旧包不代表重新验证或承诺维护每个旧版本，详见[发行历史](docs/RELEASE-HISTORY.md)。Windows x64 已做回归验证；macOS 兼容源自 PR #128，实机及完整集成待验证。上游 0.3.0-beta、历史 0.2.4 及 macOS 改编来源见 [PROVENANCE.md](PROVENANCE.md)，它们不代表当前版本号。漏洞报告渠道与披露安排遵循仓库维护者的实际政策。
 
 上游 DSH Web 版 `dsh-whale-widget` 的普通功能问题请向[原仓库](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/issues)反馈；Codex 版普通问题使用[本仓库 Issues](https://github.com/Yang-huai406/Codex-Whale-Public/issues)。安全问题及两者共有代码的漏洞，请按下面的私密渠道说明受影响分支。
 
@@ -10,7 +10,7 @@
 
 **请不要用公开 issue 报告安全漏洞。** 任选一种私下渠道：
 
-1. **GitHub 私密漏洞报告**（仅在维护者启用且可访问时）：[本仓库 Security](https://github.com/Yang-huai406/Codex-Whale-Public/security) → **Report a vulnerability**（Private vulnerability reporting）。当前未声明该入口已启用；若不可用，用第 2 种。
+1. **GitHub 私密漏洞报告（已启用）**：[提交私密报告](https://github.com/Yang-huai406/Codex-Whale-Public/security/advisories/new)。需要登录 GitHub；请勿将漏洞或凭据贴到公开 Issue。若入口不可用，用第 2 种。
 2. **维护者公开指定的安全联系渠道**：以仓库主页或维护者发布的政策为准；不要从未公开授权的个人信息推断联系方式。
 
 请尽量包含：
