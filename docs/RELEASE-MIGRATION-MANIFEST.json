@@ -1,0 +1,273 @@
+{
+  "sourceRepository": "MeteorNOX/DeepSeek-Balance-Whale-Widget",
+  "destinationRepository": "Yang-huai406/Codex-Whale",
+  "releases": [
+    {
+      "tag": "codex-v0.2.0",
+      "name": "Codex-v0.2.0",
+      "originalPublishedAt": "2026-09-17T16:04:53Z",
+      "originalAuthor": "Yang-huai406",
+      "originalUrl": "https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/tag/codex-v0.2.0",
+      "migratedUrl": "https://github.com/Yang-huai406/Codex-Whale/releases/tag/codex-v0.2.0",
+      "prerelease": false,
+      "assets": [
+        {
+          "name": "api-balance-whale-0.2.0-codex.zip",
+          "bytes": 2745225,
+          "sha256": "af020ed1cf38145c8d707c49a41575c55b95046692b57ac2df444f6034eb0b87"
+        }
+      ]
+    },
+    {
+      "tag": "codex-v0.2.4",
+      "name": "Codex v0.2.4（新增 macOS 支持）",
+      "originalPublishedAt": "2026-09-22T10:46:20Z",
+      "originalAuthor": "Yang-huai406",
+      "originalUrl": "https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/tag/codex-v0.2.4",
+      "migratedUrl": "https://github.com/Yang-huai406/Codex-Whale/releases/tag/codex-v0.2.4",
+      "prerelease": false,
+      "assets": [
+        {
+          "name": "api-balance-whale-0.2.4-codex.zip",
+          "bytes": 2773756,
+          "sha256": "36a3d953066a042485d3ca2124c0e0cbdefeab12f9f291d04d0f5ec70961c0c4"
+        }
+      ]
+    },
+    {
+      "tag": "Codex-v0.2(fixed)",
+      "name": "Codex-v0.2(fixed)",
+      "originalPublishedAt": "2026-09-28T11:26:12Z",
+      "originalAuthor": "Yang-huai406",
+      "originalUrl": "https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/tag/Codex-v0.2(fixed)",
+      "migratedUrl": "https://github.com/Yang-huai406/Codex-Whale/releases/tag/Codex-v0.2%28fixed%29",
+      "prerelease": false,
+      "assets": [
+        {
+          "name": "api-balance-whale-v0.2-fixed.zip",
+          "bytes": 2979967,
+          "sha256": "2c7b9d2059a734c98f83c122087449351dfc0187f7a4ef64e9f25f72c7ca65b1"
+        },
+        {
+          "name": "api-balance-whale-v0.2-fixed.zip.sha256",
+          "bytes": 100,
+          "sha256": "78e9dabf01c79a3de0083d7078eeafcb8851439ff516858292acf79d76ff6b26"
+        },
+        {
+          "name": "release-manifest.json",
+          "bytes": 15343,
+          "sha256": "d78047438cee648bf54250b556b2f8742dd262eaf338c196e1402484bad7e886"
+        }
+      ]
+    },
+    {
+      "tag": "codex-v0.3.0-fixed",
+      "name": "Codex-v0.3",
+      "originalPublishedAt": "2026-09-28T19:29:34Z",
+      "originalAuthor": "Yang-huai406",
+      "originalUrl": "https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/tag/codex-v0.3.0-fixed",
+      "migratedUrl": "https://github.com/Yang-huai406/Codex-Whale/releases/tag/codex-v0.3.0-fixed",
+      "prerelease": false,
+      "assets": [
+        {
+          "name": "api-balance-whale-v0.3.0-source.zip",
+          "bytes": 2958203,
+          "sha256": "4602e190057de189e1e27941914f90ab9aaa2d791d4211f2aec48027a79b30a7"
+        },
+        {
+          "name": "api-balance-whale-v0.3.0-source.zip.sha256",
+          "bytes": 103,
+          "sha256": "eab7bee32afab31b63f1213d716ee76ef901cc0bd927e4d6d9a6c0e2ba0503c0"
+        },
+        {
+          "name": "api-balance-whale-v0.3.0.zip",
+          "bytes": 2821638,
+          "sha256": "b95c7854ac2a9d36ff7c47e50067941ddf81f707b0556cfa05f86f459a1911b9"
+        },
+        {
+          "name": "api-balance-whale-v0.3.0.zip.sha256",
+          "bytes": 96,
+          "sha256": "7951d5dfd4b4f8501a04759c9d50e39c16bb88ec158762fae5d6fb414cc7ce0f"
+        },
+        {
+          "name": "release-manifest.json",
+          "bytes": 21188,
+          "sha256": "35bfb864f97942a08c976442a66c16952c15ca516a040961c3d8cb2cb81d2633"
+        },
+        {
+          "name": "verification-report.json",
+          "bytes": 818,
+          "sha256": "2c03b30c9f9bd890ccec3196be5744d481bf007ee7fde9bc4b3e3335fdc38e1f"
+        }
+      ]
+    },
+    {
+      "tag": "codex-v0.3.0-fixed.2",
+      "name": "Codex-v0.3(fixed)",
+      "originalPublishedAt": "2026-09-29T18:07:24Z",
+      "originalAuthor": "Yang-huai406",
+      "originalUrl": "https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/tag/codex-v0.3.0-fixed.2",
+      "migratedUrl": "https://github.com/Yang-huai406/Codex-Whale/releases/tag/codex-v0.3.0-fixed.2",
+      "prerelease": false,
+      "assets": [
+        {
+          "name": "api-balance-whale-v0.3-fixed-source.zip",
+          "bytes": 2992052,
+          "sha256": "851fb32fd675d5f887e4b74a17bd465978de8e373c105309805d3689b33f553b"
+        },
+        {
+          "name": "api-balance-whale-v0.3-fixed-source.zip.sha256",
+          "bytes": 107,
+          "sha256": "a53963def285a6cbdd74ecb6cfc139f5f9f204c6092fa63c9962c415a720405c"
+        },
+        {
+          "name": "api-balance-whale-v0.3-fixed.zip",
+          "bytes": 2841188,
+          "sha256": "d31a4e7ea076314824a3387c1fa2f727aba26af835f34a7683f62415ce91f4f1"
+        },
+        {
+          "name": "api-balance-whale-v0.3-fixed.zip.sha256",
+          "bytes": 100,
+          "sha256": "04ab3cf9a9c0245698bddfcae62810f494867f701e0c57411a88f7d9f18824ce"
+        },
+        {
+          "name": "release-manifest.json",
+          "bytes": 22775,
+          "sha256": "c25b855b14865f9f7257f0e2f484879563a64744d16ae3ae2ea2042a24fd3e44"
+        },
+        {
+          "name": "verification-report.json",
+          "bytes": 3208,
+          "sha256": "a4389e14d4f23ea235d8457fcfa570fc8d0e45134db4808117bbf014453f9e90"
+        }
+      ]
+    },
+    {
+      "tag": "codex-v0.4.0",
+      "name": "Codex-v0.4",
+      "originalPublishedAt": "2026-10-04T19:47:35Z",
+      "originalAuthor": "Yang-huai406",
+      "originalUrl": "https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/tag/codex-v0.4.0",
+      "migratedUrl": "https://github.com/Yang-huai406/Codex-Whale/releases/tag/codex-v0.4.0",
+      "prerelease": false,
+      "assets": [
+        {
+          "name": "Codex-v0.4-github-materials.zip",
+          "bytes": 56607,
+          "sha256": "6d88bc4187b9952cd21c8532f655db21b8b90e8222619d1d2caeb52a034bf48a"
+        },
+        {
+          "name": "Codex-v0.4-github-materials.zip.sha256",
+          "bytes": 99,
+          "sha256": "1824ba83d8b3488080d800bd52e00951c27cd96cb0960fc91ae705286fbf10f3"
+        },
+        {
+          "name": "Codex-v0.4-source.zip",
+          "bytes": 3092623,
+          "sha256": "f42828664e595591a4b14e03c694c4bcc1f4adf3a6a2ed02fbaf8e2a01b5430c"
+        },
+        {
+          "name": "Codex-v0.4-source.zip.sha256",
+          "bytes": 89,
+          "sha256": "3b8f3ca87d45a9892d2359444536a16d56536d8142f543932a8fc9267799d088"
+        },
+        {
+          "name": "Codex-v0.4.zip",
+          "bytes": 2888241,
+          "sha256": "f4c3b58c39b7d868d75d391966c67922716b9bb88ca040bbe2ba12d705c61638"
+        },
+        {
+          "name": "Codex-v0.4.zip.sha256",
+          "bytes": 82,
+          "sha256": "272dd73cbfe48dcfbb7ace9b7fb8fe208ac6cf9dc8240f0c0b49b6bb677779bc"
+        },
+        {
+          "name": "privacy-report.json",
+          "bytes": 1681,
+          "sha256": "31d9b44985e5ef2d7de95ac65b41aefe9148057e545fd0e47107d7dc53f4de70"
+        },
+        {
+          "name": "release-manifest.json",
+          "bytes": 26887,
+          "sha256": "8f6a005cdf8f64d0b8a7dbbf002d8afcd2642aa3fe907c4dc3756b9f58a37408"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 829,
+          "sha256": "262fe832f7de3a0032e8560141ba1e64d234ab0d4c1376cc8ce999b789b3b7e3"
+        },
+        {
+          "name": "verification-report.json",
+          "bytes": 3729,
+          "sha256": "e7964bac5f5f3d331a7d714f192ff30a8aa519961514e4b9c1adbea8088aa74a"
+        }
+      ]
+    },
+    {
+      "tag": "codex-v0.4.0(fixed)",
+      "name": "Codex-v0.4(fixed)",
+      "originalPublishedAt": "2026-10-05T12:02:13Z",
+      "originalAuthor": "Yang-huai406",
+      "originalUrl": "https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/tag/codex-v0.4.0(fixed)",
+      "migratedUrl": "https://github.com/Yang-huai406/Codex-Whale/releases/tag/codex-v0.4.0%28fixed%29",
+      "prerelease": false,
+      "assets": [
+        {
+          "name": "Codex-v0.4.fixed.-github-materials.zip",
+          "bytes": 63515,
+          "sha256": "737569496fb9b519c3b413f3dece34112212be5c31f130bf0aead4d3bd291582"
+        },
+        {
+          "name": "Codex-v0.4.fixed.-github-materials.zip.sha256",
+          "bytes": 106,
+          "sha256": "c67d74f3e5370e7e64713d5be19d392fc8f0a025e542da2415b70a8332c70a0f"
+        },
+        {
+          "name": "Codex-v0.4.fixed.-source.zip",
+          "bytes": 3211372,
+          "sha256": "0058a1728a12c50a6e8e3371825f615ed05115c607b81f5ab5f4c7a1adb704a4"
+        },
+        {
+          "name": "Codex-v0.4.fixed.-source.zip.sha256",
+          "bytes": 96,
+          "sha256": "bcc646185efbe9893174a4c307a157708906521ec0f573bbc54b0b5577062842"
+        },
+        {
+          "name": "Codex-v0.4.fixed.zip",
+          "bytes": 2966726,
+          "sha256": "887f909ad9b3748e0c558ab7e1bffc31ba51fa75e715e09e907a2af6d7d768ee"
+        },
+        {
+          "name": "Codex-v0.4.fixed.zip.sha256",
+          "bytes": 89,
+          "sha256": "d95e2aab97b2eddc14c21deb106dca13cd79f93850b6477fab6e327aa4b0dad2"
+        },
+        {
+          "name": "privacy-report.json",
+          "bytes": 752,
+          "sha256": "6704be5846c983ed7e6f74d7b4351a1a753675890f0e505c4ee5fe5802a6610f"
+        },
+        {
+          "name": "release-manifest.json",
+          "bytes": 29150,
+          "sha256": "0dc437ba6d097e2cf1163adf4cb82f1f9b6ec4f4b846ea9ef156d8c0af89a5ac"
+        },
+        {
+          "name": "SHA256SUMS.downloads.txt",
+          "bytes": 951,
+          "sha256": "956fb3bd2bad376d8abfffed7582c8b1f685fe72c03f50b10ce5347e84a25f41"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 559,
+          "sha256": "4e5972b9eb8ddbbb1a8d88b7ada9ad0f3fc748fa269c32722ada411501585780"
+        },
+        {
+          "name": "verification-report.json",
+          "bytes": 3487,
+          "sha256": "3f741783e75fadf8d58e7538ce9f79949c576ee800819784c35d4415ef0f8bc2"
+        }
+      ]
+    }
+  ]
+}

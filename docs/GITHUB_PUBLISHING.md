@@ -1,4 +1,4 @@
-# Codex-Whale 迁移准备与后续发布流程
+# Codex-Whale 历史迁移与后续发布流程
 
 当前独立仓库为 [Yang-huai406/Codex-Whale](https://github.com/Yang-huai406/Codex-Whale)，由 Yang-huai406 维护，默认分支为 `main`。仓库当前私有，是否公开由维护者后续决定。本次迁移保留原始提交和作者信息；建库与迁移授权不代表已发布新版安装包。
 
@@ -11,16 +11,18 @@
 | 内部版本 | `0.4.1`，插件/package/lockfile/runtime 一致 |
 | 构建标识 | `auto-probe-fixed-20261005` |
 | 历史上游标签 | `codex-v0.4.0(fixed)` |
-| 新仓库安装包 | 尚未独立发行 |
+| 新仓库安装包 | 已迁入 7 个历史 Release、38 个原附件；不是新构建 |
 
-现有安装包见[上游历史发行](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/releases/tag/codex-v0.4.0%28fixed%29)。它保留当时的仓库身份，不能把该包称为本仓库新构建的安装包。上游作者和原仓库所有者是 MeteorNOX，当前独立仓库所有者及 Codex 适配维护者是 Yang-huai406；保留 [1llysviel 的 macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128)、原版权和素材来源。
+现有安装包见[本仓库最新历史发行](https://github.com/Yang-huai406/Codex-Whale/releases/latest)，各版本及原始来源见[发行历史](RELEASE-HISTORY.md)。附件保留当时的仓库身份，不能把迁移副本称为本仓库新构建的安装包。上游作者和原仓库所有者是 MeteorNOX，当前独立仓库所有者及 Codex 适配维护者是 Yang-huai406；保留 [1llysviel 的 macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128)、原版权和素材来源。
+
+历史 Release 正文与附件原样保留，仅在正文前新增迁移说明及原始发布者、发布时间、来源链接。GitHub 新建 Release 的发布账号和时间不能回填为原值，页面显示的是迁移时的平台记录；原始发布过程以正文记录和发行历史为准。仓库仍为私有，迁移不意味着对外公开。
 
 ## 迁移边界
 
 - 日常代码与文档更新提交到新仓库 `main`；迁移使用完整 Git 历史，不以 ZIP 重建根提交、不压平作者记录。
 - 原仓库分支、标签、Release、Issue、PR 与 Latest 保持原状。对原非当前维护者所有的仓库进行修改、删除、迁移提示或其它重要操作前，必须征询用户意见。
 - 旧标签不可移动、覆盖或重新指向迁移文档提交。新仓库后续发布须选择新的版本和标签，并先更新构建器及相关版本元数据；当前构建器仍绑定历史 fixed 标签，不能直接当作新版本发布流程。
-- Git 历史迁移不等于迁移 GitHub Issue、PR 和 Release 附件。历史资料用原链接追溯，后续 Codex 问题在新仓库维护。
+- Git 历史本身不会自动携带 GitHub Release 附件；本次另行复制了全部 7 个 Codex Release 和 38 个附件，保留 9 个相关标签。Issue、PR 和讨论仍用原链接追溯，后续 Codex 问题在新仓库维护。
 
 ## 本地构建与隐私检查
 

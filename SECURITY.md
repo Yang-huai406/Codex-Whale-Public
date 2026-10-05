@@ -2,7 +2,7 @@
 
 ## 支持范围
 
-本独立仓库 [Yang-huai406/Codex-Whale](https://github.com/Yang-huai406/Codex-Whale) 由 Yang-huai406 维护，当前为私有迁移仓库，开发分支为 `main`。当前代码基线为 **Codex-v0.4(fixed)**，内部版本 `0.4.1`，构建 `auto-probe-fixed-20261005`；`codex-v0.4.0(fixed)` 是上游历史发行标签，本仓库尚无独立发行。Windows x64 已做回归验证；macOS 兼容源自 PR #128，实机及完整集成待验证。上游 0.3.0-beta、历史 0.2.4 及 macOS 改编来源见 [PROVENANCE.md](PROVENANCE.md)，它们不代表当前版本号。漏洞报告渠道与披露安排遵循仓库维护者的实际政策。
+本独立仓库 [Yang-huai406/Codex-Whale](https://github.com/Yang-huai406/Codex-Whale) 由 Yang-huai406 维护，当前为私有仓库，开发分支为 `main`。当前代码基线为 **Codex-v0.4(fixed)**，内部版本 `0.4.1`，构建 `auto-probe-fixed-20261005`；`codex-v0.4.0(fixed)` 是保留原目标的历史发行标签，安装包见[最新历史发行](https://github.com/Yang-huai406/Codex-Whale/releases/latest)。本仓库的历史发行是迁移副本，不是新版本；保留旧包不代表重新验证或承诺维护每个旧版本，详见[发行历史](docs/RELEASE-HISTORY.md)。Windows x64 已做回归验证；macOS 兼容源自 PR #128，实机及完整集成待验证。上游 0.3.0-beta、历史 0.2.4 及 macOS 改编来源见 [PROVENANCE.md](PROVENANCE.md)，它们不代表当前版本号。漏洞报告渠道与披露安排遵循仓库维护者的实际政策。
 
 上游 DSH Web 版 `dsh-whale-widget` 的普通功能问题请向[原仓库](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/issues)反馈；Codex 版普通问题使用[本仓库 Issues](https://github.com/Yang-huai406/Codex-Whale/issues)。安全问题及两者共有代码的漏洞，请按下面的私密渠道说明受影响分支。
 
