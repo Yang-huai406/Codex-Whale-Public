@@ -7,7 +7,8 @@
 | 标识 | 当前值 |
 | --- | --- |
 | 对外名称 | `Codex-v0.4(fixed)` |
-| 安装包 / 源码包 | `Codex-v0.4(fixed).zip` / `Codex-v0.4(fixed)-source.zip` |
+| 构建时安装包 / 源码包名 | `Codex-v0.4(fixed).zip` / `Codex-v0.4(fixed)-source.zip` |
+| GitHub 实际下载文件名 | `Codex-v0.4.fixed.zip` / `Codex-v0.4.fixed.-source.zip` |
 | 内部程序及插件版本 | `0.4.1` |
 | 构建标识 | `auto-probe-fixed-20261005` |
 | 插件 ID | `api-balance-whale` |
@@ -18,6 +19,8 @@
 原项目作者及上游仓库所有者：[MeteorNOX](https://github.com/MeteorNOX)。当前独立仓库所有者及 Codex 适配维护者：[Yang-huai406](https://github.com/Yang-huai406)。普通问题与建议请提交到[本仓库 Issues](https://github.com/Yang-huai406/Codex-Whale/issues)；安全问题见 [SECURITY.md](SECURITY.md)。持续保留 [1llysviel](https://github.com/1llysviel) 的 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 实现与署名。
 
 迁移范围、历史保留与后续事项见 [独立仓库迁移说明](docs/REPOSITORY-MIGRATION.md)，功能演进见 [开发过程](docs/DEVELOPMENT-FIXED.md)。
+
+公开准备情况见 [公开前复核](docs/PREPUBLIC-REVIEW.md) 和 [待办清单](docs/BACKLOG.md)。历史图片元数据仍有待处理项，仓库保持私有。GitHub 会转换附件名中的括号；从 Release 下载后用 `SHA256SUMS.downloads.txt` 核验实际文件名，原构建校验文件保留当时名称。
 
 ## 1. 安装前准备
 
