@@ -1,0 +1,27 @@
+{
+  "scannedCandidateCommit": "b56d3b73d01659b99752d0c086fdebebe7140503",
+  "visibility": "PRIVATE",
+  "originalPrivateArchiveUnchanged": true,
+  "originalAssetsUnchanged": true,
+  "releases": 7,
+  "tags": 9,
+  "assets": 52,
+  "changedOriginalAssets": 5,
+  "supplementalAssets": 14,
+  "sha256AndSizesMatch": true,
+  "historyCommitsPreserved": 23,
+  "authorDatesMessagesAndTopology": "independently verified",
+  "pixelEquality": "independently verified",
+  "scanCounts": {
+    "git_blobs": 613,
+    "files": 2887,
+    "archives": 15,
+    "release_assets": 52
+  },
+  "pngMetadataBlocks": 0,
+  "knownSecretOrPersonalPathPatternHits": 0,
+  "runtimeTestsRerun": false,
+  "materialRights": "pending confirmation; not certified by sanitization",
+  "candidateIssue11": "closed: technical metadata cleanup verified",
+  "candidateIssue12": "open: media distribution basis"
+}
