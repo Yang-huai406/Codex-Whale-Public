@@ -1,6 +1,6 @@
 # 当前净化副本的来源范围
 
-原始提交与附件已在私有档案保留。本副本保持作者、日期和开发过程，相关SHA、标签目标与5个原附件字节因元数据清理改变；详见 [净化记录](docs/SANITIZATION.md)。下文的原样迁移描述属于此前档案阶段。媒体分发依据仍见 [素材核对](docs/MATERIALS-REVIEW.md)，不由净化补授。
+原始提交与附件已在私有档案保留。本副本保持作者、日期和开发过程，相关SHA、标签目标与5个原附件字节因元数据清理改变；详见 [净化记录](docs/SANITIZATION.md)。下文的原样迁移描述属于此前档案阶段。媒体分发范围已按提供者回复与维护者确认记录于 [素材分发说明](docs/MATERIALS-PERMISSION.md)。允许 For-Codex 随仓库、安装包与历史版本继续分发提供者有权授权的素材；保留来源署名、可清元数据、不声明为适配者原创、不授予再许可、按 as-is 提供不作担保，收到权利主张时替换或移除。四个 MP3 按维护者确认继续保留。
 
 # 来源、改编范围与许可
 
@@ -8,7 +8,7 @@
 
 ## 本次范围和协作关系
 
-- 当前代码基线：**Codex-v0.4(fixed)**，内部版本 `0.4.1`，构建 `auto-probe-fixed-20261005`，历史上游标签 `codex-v0.4.0(fixed)`。安装包见[本仓库最新历史发行](https://github.com/Yang-huai406/Codex-Whale-Public/releases/latest)；这些是原附件的迁移副本，不是新构建或新版本，完整记录见[发行历史](docs/RELEASE-HISTORY.md)。Windows 已进行回归验证；macOS 保留兼容代码，仍需实机验证。没有独立网页，不修改或注入 Codex 安装文件。
+- 当前代码基线：**Codex-v0.4(fixed)**，内部版本 `0.4.1`，构建 `auto-probe-fixed-20261005`，历史上游标签 `codex-v0.4.0(fixed)`。安装包见[本仓库最新历史发行](https://github.com/Yang-huai406/Codex-Whale-Public/releases/latest)；这些是记录于净化说明的历史副本，不是新的功能版本，完整记录见[发行历史](docs/RELEASE-HISTORY.md)。Windows 已进行回归验证；macOS 保留兼容代码，仍需实机验证。没有独立网页，不修改或注入 Codex 安装文件。
 - 原项目作者及上游仓库所有者：[@MeteorNOX](https://github.com/MeteorNOX)，原版权与来源声明继续保留。
 - 当前独立仓库：[Yang-huai406/Codex-Whale](https://github.com/Yang-huai406/Codex-Whale-Public)，当前为私有仓库，是否公开由维护者后续决定，默认开发分支 `main`；仓库所有者及 Codex 适配维护者为 [@Yang-huai406](https://github.com/Yang-huai406)。这不改变原上游仓库的所有权。
 - 历史 0.2.4/macOS 成果见 [原始提交](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/8de181abf5593247f32d57995567dd9f4063e049)。历史归档名称 `archive/for-codex-0.2.4` 仅用于来源追溯，不是当前发布版的安装入口；v0.3 系列整合了 PR #128 的兼容路径。
@@ -33,6 +33,6 @@
 
 ## 隐私和历史
 
-公开打包规则排除个人密钥、账号、账本、运行日志、真实账户截图、缓存和本机备份。完整旧实现可通过 Git 历史追溯。历史 For-Codex 发行源于 MeteorNOX 所有的原仓库；迁移后由 Yang-huai406 在独立仓库维护。7 个 Codex Release、38 个附件与 9 个相关标签保留开发过程，正文及附件原样复制，正文前另加迁移说明和原始发布者、时间、来源链接。GitHub 新建 Release 的账号与发布时间不能回填，须与这些原始记录区分。原始提交和作者信息保留，不改写原仓库历史、旧发布或主线 Latest。平台验证边界见已知问题文档。
+公开打包规则排除个人密钥、账号、账本、运行日志、真实账户截图、缓存和本机备份。完整旧实现可通过 Git 历史追溯。历史 For-Codex 发行源于 MeteorNOX 所有的原仓库；迁移后由 Yang-huai406 在独立仓库维护。原档案阶段的7个Codex Release、38个原附件与9个标签保留开发过程；净化候选中5个原附件因图片清理和校验更新改变，另有14个核验文件。四个MP3没有删除或替换。GitHub 新建 Release 的账号与发布时间不能回填，须与这些原始记录区分。原始提交和作者信息保留，不改写原仓库历史、旧发布或主线 Latest。平台验证边界见已知问题文档。
 
 如果认为某个素材侵犯权利，请通过[本仓库 Issues](https://github.com/Yang-huai406/Codex-Whale-Public/issues)说明文件名和依据；核实后由维护者处理。安全问题按 [SECURITY.md](SECURITY.md) 私下报告，不提交凭据或完整日志。

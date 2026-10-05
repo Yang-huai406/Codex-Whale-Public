@@ -8,7 +8,7 @@
 
 - [安装包与历史发行](https://github.com/Yang-huai406/Codex-Whale-Public/releases/latest) · [完整时间线](docs/RELEASE-HISTORY.md)
 - [净化范围与验证](docs/SANITIZATION.md) · [提交映射](docs/HISTORY-SANITIZATION.json) · [待办](docs/BACKLOG.md)
-- [素材来源与待确认问题](docs/MATERIALS-REVIEW.md)：元数据清理不等于补授媒体许可；公开时间另行决定。
+- [素材分发范围与署名](docs/MATERIALS-PERMISSION.md) · [来源核对](docs/MATERIALS-REVIEW.md)：四个 MP3 按维护者确认继续保留；公开时间另行决定。
 
 | 标识 | 当前值 |
 | --- | --- |
