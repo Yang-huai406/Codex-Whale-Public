@@ -62,7 +62,7 @@ Issue 核查先比较原讨论与 Codex 实际路径，不把 DSH 的标题或�
 
 ## 2026-10-05：迁移到独立公开仓库
 
-公开项目迁移到 [Yang-huai406/Codex-Whale-Public](https://github.com/Yang-huai406/Codex-Whale-Public)，默认分支为 `main`，已有 fixed 发行完成迁移。当前代码、使用文档和候选发布材料以新公开仓库为目标；本次 `fixixed` 仍是待用户测试的发行版本，没有因此提前发布。
+公开项目迁移到 [Yang-huai406/Codex-Whale-Public](https://github.com/Yang-huai406/Codex-Whale-Public)，默认分支为 `main`，已有 fixed 发行完成迁移。当前代码、使用文档及本次发行以新公开仓库为目标。fixixed 在本地验证阶段之后，经用户确认正式发行。
 
 仓库迁移改变当前维护与发行入口，不改变成果来源或媒体授权范围。[MeteorNOX](https://github.com/MeteorNOX) 仍是上游原作者及 [原仓库](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget) 所有者；[Yang-huai406](https://github.com/Yang-huai406) 从上游项目的 Codex 适配协作者成为新独立仓库所有者和维护者。历史 Issue、[1llysviel 的 PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 和上游许可继续保留原始链接及署名。
 

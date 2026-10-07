@@ -34,4 +34,4 @@
 
 ## 后续新功能发行
 
-2026-10-07：[Codex-v0.4(fixixed)](https://github.com/Yang-huai406/Codex-Whale-Public/releases/tag/codex-v0.4.0%28fixixed%29)，内部0.4.1、构建surface-audio-fix-20261007。新增Windows原生区域保护、连点音效调度与安装就绪核验。这是基于已净化main的正常新提交，不重写上表历史版本、映射或附件。
+2026-10-08：[Codex-v0.4(fixixed)](https://github.com/Yang-huai406/Codex-Whale-Public/releases/tag/codex-v0.4.0%28fixixed%29)，内部0.4.1、构建surface-audio-fix-20261007。新增Windows原生区域保护、连点音效调度与安装就绪核验。这是基于已净化main的正常新提交，不重写上表历史版本、映射或附件。

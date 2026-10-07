@@ -1,6 +1,6 @@
 # 变更记录
 
-## Codex-v0.4(fixixed) — 2026-10-07
+## Codex-v0.4(fixixed) — 2026-10-08
 
 内部版本0.4.1，构建 `surface-audio-fix-20261007`，发行标签 `codex-v0.4.0(fixixed)`。目标为独立仓库 Codex-Whale-Public 的 main，保留旧版 Release。
 
