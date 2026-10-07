@@ -1,4 +1,5 @@
 # API 余额小鲸鱼 · Codex-v0.4(fixixed)
+<img width="2048" height="1080" alt="bac5bb4b3b12b7613de8883bf6a54a18" src="https://github.com/user-attachments/assets/809ec643-07eb-4aa8-af4d-5a7c0f08b0a0" />
 
 跟随 Codex 显示 API 余额、密钥额度、已观测消费和本机 token；也可查看 Codex 订阅额度快照，或作为独立桌面挂件使用。支持角色、动图、气泡、音效、拖动缩放和本地素材工坊。
 
