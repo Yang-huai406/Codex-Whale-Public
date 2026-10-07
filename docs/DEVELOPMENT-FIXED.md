@@ -1,5 +1,7 @@
 # Codex-v0.4(fixed)：开发过程与能力摘要
 
+> 本文保留 fixed 历史记录；当前 fixixed 版本见 [新版说明](DEVELOPMENT-FIXIXED.md)。
+
 本文总结项目开发讨论形成的最终决定、累计功能和本轮修复，不复制原始聊天、私人配置、真实服务地址、个人路径、凭据或测试现场。对外包名为 `Codex-v0.4(fixed)`，内部版本 `0.4.1`，构建标识 `auto-probe-fixed-20261005`；发行标签 `codex-v0.4.0(fixed)`。
 
 ## 从原挂件到 Codex 桌面适配

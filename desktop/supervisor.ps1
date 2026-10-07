@@ -12,13 +12,14 @@ if ($Probe) { [WhaleWindows]::Probe() | ConvertTo-Json -Depth 5 -Compress; retur
 if ($Hit) { [WhaleWindows]::Hit($X, $Y) | ConvertTo-Json -Compress; return }
 Add-Type -TypeDefinition (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'WindowDiagnostics.cs') -Raw)
 Add-Type -TypeDefinition (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'WindowStacking.cs') -Raw)
+Add-Type -TypeDefinition (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'SurfaceGuard.cs') -Raw) -ReferencedAssemblies 'System.Web.Extensions','System','System.Core'
 [WhaleWindows]::DetachConsole()
 $whaleFresh = $false
 $whaleMutex = [Threading.Mutex]::new($true, ('Local\CodexWhaleWatch-' + $whaleHash), [ref]$whaleFresh)
 if (!$whaleFresh) { $whaleMutex.Dispose(); return }
 $whaleStop = [Threading.EventWaitHandle]::new($false, [Threading.EventResetMode]::ManualReset, $whaleStopName)
 [void]$whaleStop.Reset()
-$whaleChild = $null; $whaleOutput = $null; $whaleErrors = $null
+$whaleChild = $null; $whaleSurface = $null; $whaleErrors = $null; $whaleLastSurface = ''
 $whaleLastLaunch = [DateTime]::MinValue; $whaleHeartbeat = [DateTime]::MinValue; $whaleLastMessage = ''; $whaleOverlay = '0'; $whaleOwner = '0'
 $whaleSequence = 0
 $whaleStateFile = Join-Path $DataDir 'supervisor-state.json'
@@ -56,7 +57,7 @@ try {
         if ($whaleStandalone -and $whaleOwner -ne '0') { [WhaleWindows]::Detach([long]$whaleOverlay); $whaleOwner='0' }
         $whalePause = Read-WhaleJson (Join-Path $DataDir 'pause-until-host-exit.json')
         if (!$whaleState.hostAlive -and !$whalePause.pauseAll) { Remove-Item -LiteralPath (Join-Path $DataDir 'pause-until-host-exit.json') -ErrorAction SilentlyContinue }
-        if ($whaleChild -and $whaleChild.HasExited) { [WhaleWindows]::StopFollowing(); $whaleChild.Dispose(); $whaleChild = $null; $whaleOverlay='0'; $whaleOwner='0'; $whaleLastMessage='' }
+        if ($whaleChild -and $whaleChild.HasExited) { [WhaleWindows]::StopFollowing(); if ($whaleSurface) { $whaleSurface.Dispose(); $whaleSurface=$null }; $whaleChild.Dispose(); $whaleChild = $null; $whaleOverlay='0'; $whaleOwner='0'; $whaleLastMessage=''; $whaleLastSurface='' }
         if (!$whaleChild -and ($whaleState.hostAlive -or $whaleStandalone) -and ($whaleNow - $whaleLastLaunch).TotalSeconds -gt 4) {
             $whaleConfig = Read-WhaleJson (Join-Path $DataDir 'follow-config.json')
             $whalePause = Read-WhaleJson (Join-Path $DataDir 'pause-until-host-exit.json')
@@ -75,13 +76,15 @@ try {
             $whaleStart.EnvironmentVariables['WHALE_SUPERVISOR_PID'] = [string]$PID
             $whaleChild = [Diagnostics.Process]::new(); $whaleChild.StartInfo=$whaleStart
             [void]$whaleChild.Start(); $whaleLastLaunch=$whaleNow
-            $whaleOutput=$whaleChild.StandardOutput.ReadLineAsync(); $whaleErrors=$whaleChild.StandardError.ReadToEndAsync()
+            $whaleSurface=[WhaleSurfaceGuard]::new($whaleChild); $whaleErrors=$whaleChild.StandardError.ReadToEndAsync()
         }
         if ($whaleChild) {
-            if ($whaleOutput -and $whaleOutput.IsCompleted) {
-                try { $whaleLine=$whaleOutput.GetAwaiter().GetResult(); if ($whaleLine) { $whaleResponse=$whaleLine | ConvertFrom-Json; if ($whaleResponse.overlayHandle) { $whaleOverlay=[string]$whaleResponse.overlayHandle; $whaleTransitionsDisabled=[WhaleWindows]::ConfigureOverlay([long]$whaleOverlay) } } } catch { }
-                $whaleOutput=$whaleChild.StandardOutput.ReadLineAsync()
-            }
+            $whaleCurrentOverlay=[string]$whaleSurface.OverlayHandle
+            if ($whaleCurrentOverlay -ne '0' -and $whaleOverlay -ne $whaleCurrentOverlay) { $whaleOverlay=$whaleCurrentOverlay; $whaleTransitionsDisabled=[WhaleWindows]::ConfigureOverlay([long]$whaleOverlay) }
+            $whaleSurfaceReport=$whaleSurface.Report
+            $whaleState['surfaceHeartbeat']=$whaleSurface.Heartbeat
+            $whaleSurfaceKey=if ($whaleSurfaceReport) { @($whaleSurfaceReport.instance,$whaleSurfaceReport.epoch,$whaleSurfaceReport.sequence,$whaleSurfaceReport.ok,$whaleSurfaceReport.reason,$whaleSurfaceReport.revocations) -join '|' } else { '' }
+            if ($whaleSurfaceReport) { $whaleState['surfaceGuard']=$whaleSurfaceReport }
             if (!$whaleStandalone -and $whaleOverlay -ne '0' -and $whaleState.window -ne '0' -and $whaleOwner -ne $whaleState.window) {
                 if ([WhaleWindows]::Attach([long]$whaleOverlay, [long]$whaleState.window)) { $whaleOwner=[string]$whaleState.window }
             }
@@ -92,8 +95,13 @@ try {
             $whaleState['visibilityRevision'] = [WhaleWindows]::VisibilityRevision()
             # Bounds belong to the native follower. Only lifecycle changes and
             # a one-second heartbeat use IPC/disk; there is no per-move I/O.
-            $whaleMessage = if ($whaleState.nativeFollowing) { @($whaleState.mode,$whaleState.mouseButtons,$whaleState.hostAlive,$whaleState.hostPid,$whaleState.window,$whaleState.visible,$whaleState.modal,$whaleState.widgetVisible,$whaleState.visibilityRevision,$whaleState.attached,$whaleState.dpi,$whaleState.bounds.width,$whaleState.bounds.height,'native') -join '|' } else { $whaleState | ConvertTo-Json -Depth 5 -Compress }
-            if ($whaleMessage -ne $whaleLastMessage -or ($whaleNow - $whaleHeartbeat).TotalSeconds -ge 1) {
+            $whaleMessage = if ($whaleState.nativeFollowing) { @($whaleState.mode,$whaleState.mouseButtons,$whaleState.hostAlive,$whaleState.hostPid,$whaleState.window,$whaleState.visible,$whaleState.modal,$whaleState.widgetVisible,$whaleState.visibilityRevision,$whaleState.attached,$whaleState.dpi,$whaleState.bounds.width,$whaleState.bounds.height,'native') -join '|' } else {
+                $whaleStableState=@{}
+                foreach($whaleStateKey in $whaleState.Keys) { if ($whaleStateKey -notin @('surfaceGuard','surfaceHeartbeat','mouseSampleAt')) { $whaleStableState[$whaleStateKey]=$whaleState[$whaleStateKey] } }
+                $whaleStableState | ConvertTo-Json -Depth 5 -Compress
+            }
+            $whalePersistHost = $whaleMessage -ne $whaleLastMessage -or ($whaleNow - $whaleHeartbeat).TotalSeconds -ge 1
+            if ($whalePersistHost -or $whaleSurfaceKey -ne $whaleLastSurface) {
                 try {
                     $whaleState['visualDiagnostics'] = [WhaleWindowDiagnostics]::Snapshot([long]$whaleOverlay, [long]$whaleState.window)
                     # Capture evidence first. Correct only a verified owned
@@ -107,8 +115,13 @@ try {
                     $whaleState['stackRepairRequests'] = $whaleStackRepairs
                     $whaleSequence++; $whaleState['serial'] = $whaleSequence
                     if (Send-WhaleHost $whaleState) {
-                        @{ childPid=$whaleChild.Id; state=$whaleState; native=[WhaleWindows]::FollowMetrics(); at=$whaleNow.ToString('o') } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $DataDir 'follow-state.json') -Encoding utf8
-                        $whaleLastMessage=$whaleMessage; $whaleHeartbeat=$whaleNow
+                        # Animation ACKs are memory/IPC only. They must not turn
+                        # native dragging into per-frame diagnostic disk writes.
+                        if ($whalePersistHost) {
+                            @{ childPid=$whaleChild.Id; state=$whaleState; native=[WhaleWindows]::FollowMetrics(); at=$whaleNow.ToString('o') } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $DataDir 'follow-state.json') -Encoding utf8
+                            $whaleLastMessage=$whaleMessage; $whaleHeartbeat=$whaleNow
+                        }
+                        $whaleLastSurface=$whaleSurfaceKey
                     }
                 } catch { @{ message=$_.Exception.Message; at=$whaleNow.ToString('o') } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $DataDir 'follow-input-error.json') -Encoding utf8 }
             }
@@ -121,6 +134,7 @@ try {
     [WhaleWindows]::StopFollowing()
     if ($whaleChild) {
         try { [void](Send-WhaleHost @{hostAlive=$false;monitorExit=$true}); $whaleChild.StandardInput.Close(); [void]$whaleChild.WaitForExit(7000) } catch { }
+        if ($whaleSurface) { $whaleSurface.Dispose() }
         $whaleChild.Dispose()
     }
     Remove-Item -LiteralPath $whaleStateFile -ErrorAction SilentlyContinue

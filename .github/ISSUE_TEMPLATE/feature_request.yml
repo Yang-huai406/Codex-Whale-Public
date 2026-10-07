@@ -7,9 +7,9 @@ body:
     attributes:
       value: |
         建议前请查看 [README](https://github.com/Yang-huai406/Codex-Whale-Public/blob/main/README.md)、
-        [fixed 已知问题](https://github.com/Yang-huai406/Codex-Whale-Public/blob/main/docs/KNOWN-ISSUES-FIXED.md) 与
+        [fixixed 已知问题](https://github.com/Yang-huai406/Codex-Whale-Public/blob/main/docs/KNOWN-ISSUES-FIXIXED.md) 与
         [变更记录](https://github.com/Yang-huai406/Codex-Whale-Public/blob/main/CHANGELOG.md)。
-        这些文档说明 Codex-v0.4(fixed)（内部 0.4.1） 的已实现范围与限制；离线也可查看安装包内的同名文件。
+        这些文档说明 Codex-v0.4(fixixed)（内部 0.4.1） 的已实现范围与限制；离线也可查看安装包内的同名文件。
         本仓库提供 Codex 桌面挂件，余额观测、单轮估算和订阅额度分别展示。请说明你的使用场景及期望行为。
   - type: dropdown
     id: area

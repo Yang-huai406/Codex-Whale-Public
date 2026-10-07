@@ -1,5 +1,7 @@
 # 当前净化副本的来源范围
 
+本次发行标签 `codex-v0.4.0(fixixed)`，构建 `surface-audio-fix-20261007`。文中 fixed 标签与迁移数字是历史记录。
+
 原始提交与附件已在私有档案保留。本副本保持作者、日期和开发过程，相关SHA、标签目标与5个原附件字节因元数据清理改变；详见 [净化记录](docs/SANITIZATION.md)。下文的原样迁移描述属于此前档案阶段。媒体分发范围已按提供者回复与维护者确认记录于 [素材分发说明](docs/MATERIALS-PERMISSION.md)。允许 For-Codex 随仓库、安装包与历史版本继续分发提供者有权授权的素材；保留来源署名、可清元数据、不声明为适配者原创、不授予再许可、按 as-is 提供不作担保，收到权利主张时替换或移除。四个 MP3 按维护者确认继续保留。
 
 # 来源、改编范围与许可
@@ -8,7 +10,7 @@
 
 ## 本次范围和协作关系
 
-- 当前代码基线：**Codex-v0.4(fixed)**，内部版本 `0.4.1`，构建 `auto-probe-fixed-20261005`，历史上游标签 `codex-v0.4.0(fixed)`。安装包见[本仓库最新历史发行](https://github.com/Yang-huai406/Codex-Whale-Public/releases/latest)；这些是记录于净化说明的历史副本，不是新的功能版本，完整记录见[发行历史](docs/RELEASE-HISTORY.md)。Windows 已进行回归验证；macOS 保留兼容代码，仍需实机验证。没有独立网页，不修改或注入 Codex 安装文件。
+- 当前发行版本：**Codex-v0.4(fixixed)**，内部版本 `0.4.1`，构建 `surface-audio-fix-20261007`，历史上游标签 `codex-v0.4.0(fixed)`。安装包见 [fixixed Release](https://github.com/Yang-huai406/Codex-Whale-Public/releases/tag/codex-v0.4.0%28fixixed%29)；完整历史记录见[发行历史](https://github.com/Yang-huai406/Codex-Whale-Public/blob/main/docs/RELEASE-HISTORY.md)。Windows 已进行回归验证；macOS 保留兼容代码，仍需实机验证。没有独立网页，不修改或注入 Codex 安装文件。
 - 原项目作者及上游仓库所有者：[@MeteorNOX](https://github.com/MeteorNOX)，原版权与来源声明继续保留。
 - 当前独立仓库：[Yang-huai406/Codex-Whale-Public](https://github.com/Yang-huai406/Codex-Whale-Public)，已于 2026-10-05 经维护者授权公开，默认开发分支 `main`；仓库所有者及 Codex 适配维护者为 [@Yang-huai406](https://github.com/Yang-huai406)。这不改变原上游仓库的所有权。
 - 历史 0.2.4/macOS 成果见 [原始提交](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/tree/8de181abf5593247f32d57995567dd9f4063e049)。历史归档名称 `archive/for-codex-0.2.4` 仅用于来源追溯，不是当前发布版的安装入口；v0.3 系列整合了 PR #128 的兼容路径。
@@ -18,7 +20,7 @@
 
 保留原框架的角色、图片、动图、音效和主要交互。适配层提供 Electron 透明工具窗口、Windows 原生跟随、GUI 启动器、本地 IPC、当前 API 余额/用量、汇率、账本、恢复日志及安装回滚。
 
-当前版本包含费用归属、设置保存、额度窗口合并、音频资源释放、气泡配置保真等修复。详情见 [README](README.md)、[变更记录](CHANGELOG.md) 和 [已知问题](docs/KNOWN-ISSUES-FIXED.md)。
+当前版本包含费用归属、设置保存、额度窗口合并、音频资源释放、气泡配置保真等修复。详情见 [README](README.md)、[变更记录](CHANGELOG.md) 和 [已知问题](docs/KNOWN-ISSUES-FIXIXED.md)。
 
 ## 许可边界
 

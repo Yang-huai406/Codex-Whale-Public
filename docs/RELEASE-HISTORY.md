@@ -31,3 +31,7 @@
 | `v0.2.0-fixed` | `2a7dac2` | [`91e842c`](https://github.com/Yang-huai406/Codex-Whale-Public/commit/91e842c11c73ec4580ca8b170375361b28105d95) |
 
 元数据清理不改变画面或为旧版补做功能测试。上游和原始私有档案未改；macOS来源继续保留 [PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128)。
+
+## 后续新功能发行
+
+2026-10-07：[Codex-v0.4(fixixed)](https://github.com/Yang-huai406/Codex-Whale-Public/releases/tag/codex-v0.4.0%28fixixed%29)，内部0.4.1、构建surface-audio-fix-20261007。新增Windows原生区域保护、连点音效调度与安装就绪核验。这是基于已净化main的正常新提交，不重写上表历史版本、映射或附件。

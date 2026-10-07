@@ -1,5 +1,7 @@
 # Codex-v0.4(fixed)：issue 与反馈状态
 
+> 本文保留 fixed 历史记录；当前 fixixed 版本见 [新版说明](ISSUE-STATUS-FIXIXED.md)。
+
 适用包名：`Codex-v0.4(fixed)`；内部版本：`0.4.1`；构建：`auto-probe-fixed-20261005`。发行标签为 `codex-v0.4.0(fixed)`。本表记录本适配版本覆盖范围，不表示上游 issue 已关闭。
 
 状态按当前 For-Codex 的实际范围划分。“完整”仅指表内明确列出的 Codex 缺陷已实现修复，不等于原讨论的全部平台、设备和功能都完成验收。此前记录保留在 [v0.4 历史状态表](ISSUE-STATUS-0.4.md)。

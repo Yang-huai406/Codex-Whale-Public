@@ -36,3 +36,4 @@ ipcRenderer.on('whale-command', (_event, command) => {
 ipcRenderer.on('whale-desktop-mode', (_event, mode) => window.dispatchEvent(new CustomEvent('whale-desktop-mode', { detail: mode })));
 ipcRenderer.on('whale-desktop-mode-changing', () => window.dispatchEvent(new Event('whale-mode-changing')));
 ipcRenderer.on('whale-shape-request', () => window.dispatchEvent(new Event('whale-shape-request')));
+ipcRenderer.on('whale-input-reset', () => window.dispatchEvent(new Event('whale-input-reset')));

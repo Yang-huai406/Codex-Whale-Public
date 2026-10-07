@@ -97,6 +97,7 @@
     }
   });
   window.addEventListener('whale-mode-changing', cancelInteraction);
+  window.addEventListener('whale-input-reset', () => { cancelInteraction(); interactive = null; update(); });
   window.addEventListener('whale-desktop-mode', cancelInteraction);
   document.addEventListener('visibilitychange', () => { if (document.hidden) cancelInteraction(); });
   window.addEventListener('whale-interaction-geometry', update);

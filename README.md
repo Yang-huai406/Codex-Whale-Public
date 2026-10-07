@@ -1,24 +1,24 @@
-# API 余额小鲸鱼 · Codex-v0.4(fixed)
+# API 余额小鲸鱼 · Codex-v0.4(fixixed)
 
-跟随 Codex 显示 API 余额、密钥额度、已观测消费和本机 token；支持订阅快照、角色音效、气泡、拖动缩放和本地素材工坊。
+跟随 Codex 显示 API 余额、密钥额度、已观测消费和本机 token；也可查看 Codex 订阅额度快照，或作为独立桌面挂件使用。支持角色、动图、气泡、音效、拖动缩放和本地素材工坊。
 
-**这里是已公开的 Codex-Whale-Public 独立维护仓库。** 原始私有档案保持不变；本副本保留开发过程、作者、提交时间和合并关系，清理了旧图片中的非渲染元数据，因此相关提交 SHA 和标签对象已经改变。
-
-7 个历史 Release 保留原始发布时间和开发说明。38 个原附件中 5 个经过图片元数据/校验清单更新，另新增 14 个核验文件；没有新增功能版本，也不冒充原始字节。每个 Release 使用 `SHA256SUMS.sanitized.txt` 校验，差异见 `SANITIZATION.json`。
-
-- [安装包与历史发行](https://github.com/Yang-huai406/Codex-Whale-Public/releases/latest) · [完整时间线](docs/RELEASE-HISTORY.md)
-- [净化范围与验证](docs/SANITIZATION.md) · [提交映射](docs/HISTORY-SANITIZATION.json) · [待办](docs/BACKLOG.md)
-- [素材分发范围与署名](docs/MATERIALS-PERMISSION.md) · [来源核对](docs/MATERIALS-REVIEW.md)：四个 MP3 按维护者确认继续保留；本仓库于 2026-10-05 经维护者授权公开。
+**Codex-v0.4(fixixed) 是本项目的最新稳定修复版。** 构建 `surface-audio-fix-20261007` 增加 Windows 白屏遮挡保护和连点音效修复，详见 [专项说明](docs/SURFACE-AUDIO-FIX-20261007.md)。从[本版 Release](https://github.com/Yang-huai406/Codex-Whale-Public/releases/tag/codex-v0.4.0%28fixixed%29)下载安装包。对外名称中的 `fixixed` 为本次约定拼写；旧 fixed Release 和历史附件保留。运行验证与成品检查分开记录，压缩包的隐私、解压和完整性结果以随包清单为准。
 
 | 标识 | 当前值 |
 | --- | --- |
-| 程序版本 / 构建 | `0.4.1` / `auto-probe-fixed-20261005` |
-| 对外名称 / 标签名 | `Codex-v0.4(fixed)` / `codex-v0.4.0(fixed)` |
-| GitHub 安装包 | `Codex-v0.4.fixed.zip` |
-| GitHub 源码包 | `Codex-v0.4.fixed.-source.zip` |
+| 对外名称 | `Codex-v0.4(fixixed)` |
+| 安装包 / 源码包 | `Codex-v0.4(fixixed).zip` / `Codex-v0.4(fixixed)-source.zip` |
+| 内部程序及插件版本 | `0.4.1` |
+| 构建标识 | `surface-audio-fix-20261007` |
 | 插件 ID | `api-balance-whale` |
+| 发行标签 | `codex-v0.4.0(fixixed)` |
+| 当前维护仓库 / 目标分支 | [Yang-huai406/Codex-Whale-Public](https://github.com/Yang-huai406/Codex-Whale-Public) / `main` |
 
-原项目作者为 [MeteorNOX](https://github.com/MeteorNOX)，Codex 适配维护者为 [Yang-huai406](https://github.com/Yang-huai406)；保留 [1llysviel 的 macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 贡献与来源。许可见 [LICENSE](LICENSE) 与 [第三方声明](THIRD_PARTY_NOTICES.md)。新问题使用[本仓库 Issues](https://github.com/Yang-huai406/Codex-Whale-Public/issues)，安全问题见 [SECURITY.md](SECURITY.md)。
+标签、对外名称与内部版本用途不同，不需要把内部版本改成带括号的字符串。本项目从上游 For-Codex 适配线发展而来，当前在独立仓库 **Codex-Whale-Public** 的 `main` 分支维护。本版作为新仓库 Latest 发行，不覆盖旧 fixed Release、历史标签或附件。
+
+当前维护者与新仓库所有者：[Yang-huai406](https://github.com/Yang-huai406)。原作者与[上游仓库](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)所有者：[MeteorNOX](https://github.com/MeteorNOX)。持续保留 [1llysviel](https://github.com/1llysviel) 的[上游 macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 实现与署名。本文和问题表中的上游 issue 编号继续链接上游，不改写成新仓库同号 issue。
+
+本地安装包名保留括号。GitHub 会规范化附件名中的括号等字符，下载名可能显示为 `Codex-v0.4.fixixed.zip`；以发布页实际名称和对应校验索引为准。附件名称变化不改变 Release 标题、Git 标签或包内容哈希。
 
 ## 1. 安装前准备
 
@@ -38,7 +38,7 @@ Node 主版本应至少为 24。刚安装 Node 后请重新打开终端。不要
 
 ## 2. Windows 安装与成功检查
 
-1. 完整解压 `Codex-v0.4(fixed).zip` 到固定目录，不要在 ZIP 内直接运行，也不要只复制一个脚本。
+1. 完整解压 `Codex-v0.4(fixixed).zip` 到固定目录，不要在 ZIP 内直接运行，也不要只复制一个脚本。
 2. 保留旧版本及备份，双击解压目录里的 **`安装插件.cmd`**。
 3. 等待安装完成。安装器检查依赖、备份旧代码和用户数据、安装桌面运行时、注册本地插件，并配置自动跟随任务。
 4. 保存最后显示的 **Private rollback receipt** 路径。它指向此次安装的 `installation.json`，只保留在本机。
@@ -67,9 +67,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-packag
 node .\scripts\control.mjs status
 ```
 
-核对 `version` 为 `0.4.1`、`buildRevision` 为 `auto-probe-fixed-20261005`，窗口启动后 `rendererReady` 为 `true`。安装器会核查插件已安装且启用；手动查看注册时，用安装器选中的 CLI 执行 `plugin list --json`。状态输出可能含本机路径，不要原样公开。
+核对 `version` 为 `0.4.1`、`buildRevision` 为 `surface-audio-fix-20261007`。Windows 正常显示后，`rendererReady` 与 `surfaceGuard.verified` 应为 `true`，`surfaceGuard.failure` 应为 `null`。缩放或恢复显示时可短暂重新验证；稳定操作下 `surfaceGuard.revocations` 不应持续增长。安装器会核查已启用的插件注册和实际运行构建，避免“代码复制成功但旧进程仍运行”。手动查看注册时，用安装器选中的 CLI 执行 `plugin list --json`。状态输出可能含本机路径，不要原样公开。
 
-此前主动暂停过挂件时，安装保留暂停意图。可双击 **`启动桌面挂件.cmd`**，或执行 `node .\scripts\control.mjs open` 恢复。确实希望安装同时恢复时，安装脚本支持 `-Resume`。安装失败则保留错误和私有回执，按第 10 节核对恢复目标。
+此前主动暂停过挂件时，安装保留暂停意图。可双击 **`启动桌面挂件.cmd`**，或执行 `node .\scripts\control.mjs open` 恢复。确实希望安装同时恢复时，安装脚本支持 `-Resume`。等待 Codex 或保持暂停属于允许的空闲状态，并不等于已验证可见窗口；打开 Codex 并恢复挂件后，再核对上述状态。安装失败则保留错误和私有回执，按第 10 节核对恢复目标。
 
 ## 3. 第一次查看余额：默认自动检测
 
@@ -130,6 +130,10 @@ API 连接的“跟随/固定”与挂件窗口的“跟随 Codex/独立桌面�
 汇率使用公开参考报价，支持缓存、北京时间每日 00:15 检查与唤醒补查，不是交易结算汇率。应先正确设置接口币种/单位，不能靠显示换算修复错误余额。DeepSeek 峰谷提示只用于符合有效规则的官方直连，不套用中转站。
 
 不可见时从托盘选择 **恢复显示小鲸鱼**，或按 Windows `Ctrl+Alt+W` / Mac `Cmd+Option+W`。位置异常可执行 `node .\scripts\control.mjs reset-position`。Windows `Ctrl+Alt+Shift+F10` 可保存诊断现场，公开前须脱敏。退出挂件只停止观察，不取消 Codex 调用。
+
+**本次连点音效行为：** 按下/松开采用 8ms 短交叉淡变；90ms 内过密的按下声音及对应松开合并，实际点击和动画每次照常处理。有效长按松开后及时淡出，不会等待长素材结束；没有排队补叫。超过 250ms 才准备好的交互声音丢弃。慢点、长按仍使用原素材；任务完整音效组和设置试听不受连点合并影响。极密点击不保证每次都有新声音。
+
+**本次 Windows 显示保护：** 只有原生窗口区域通过检查才显示，区域丢失、持续无法验证或渲染异常会撤销显示并有限恢复。保护触发时小鲸鱼可能短暂消失；恢复操作后持续隐藏应按第 8 节排错，不要删除个人数据或反复重装。合法区域内部的显卡合成异常仍可能需要驱动或宿主排查，本修复不承诺根治所有白屏。
 
 ### API 金额、账户消费与订阅不是同一件事
 
@@ -231,13 +235,17 @@ GET 不能带 JSON 请求体。秘密参数使用 `envQuery` / `envHeaders` 把�
 | 401/403、无权限 | 检查变量是否进入挂件进程、服务是否匹配、接口是否要求管理权限。推理可用不代表余额可用，不要把普通 key 当管理凭据试探。 |
 | 429、网络失败、5xx | 等退避后重试并核对网络/服务状态；失败或未知金额不是 0。 |
 | HTML 页面、字段未知、无接口 | 可能填了控制台网页而非 JSON API，或协议未支持。需要服务商接口说明；可选“不查询余额”继续本地功能。 |
-| 接近一亿的巨额余额 | 部分 OneAPI/NewAPI/Veloera 用 100000000 表示不限额。fixed 不把哨兵减用量当账户资金；按协议判断，不把所有大数一律当不限额。 |
+| 接近一亿的巨额余额 | 部分 OneAPI/NewAPI/Veloera 用 100000000 表示不限额。本版沿用 fixed 的哨兵识别，不把它减用量后当账户资金；按协议判断，不把所有大数一律当不限额。 |
 | 换 provider/profile 后 URL 或金额错误 | 核对来源与命名连接，清除或重绑旧手动覆盖。固定模式选正确连接，跟随模式精确匹配 ID/profile；不要用换币种掩盖倍率错误。 |
 | 已有设置显示为空 | 私密规则默认隐藏，点击载入规则。旧字段留空保留，恢复默认才清除。 |
 | 删除固定连接失败 | 先保存切到另一个连接或跟随模式，再删除旧连接。 |
 | 没有消费气泡 | 首样本只建基准；核对金额有效、提示开关开启，并考虑采样/入账延迟。无需模型价格，但共享账户差额不能认定为每轮费用。 |
 | 有订阅却没 API 余额 | 切换“Codex 订阅”；订阅与 API 账单独立。没有快照就等待可用记录，不把 OAuth 令牌填进 API key 字段。 |
 | 挂件没出现/位置异常 | 检查 Codex 窗口、暂停状态、托盘恢复、快捷键及 reset-position；不要先删除全部数据。 |
+| Windows 出现白屏或持续遮挡 | 从托盘隐藏或退出挂件，观察底层内容是否恢复；记录最小化、跨屏、缩放等触发动作与 DPI。隐藏后白块仍在，需区分底层应用重绘。报告脱敏版本、构建与 `surfaceGuard` 字段，不发送整个诊断目录。 |
+| `surfaceGuard.verified` 长时间为 false | 打开 Codex，确认未手动隐藏/暂停，再尝试一次托盘恢复。持续失败时记录 `failure`、`attempts`、`revocations` 和具体操作；不要通过禁用区域保护强行显示。 |
+| 连点时不是每次都有鸭叫 | 90ms 内过密声音会合并，点击和动画仍处理。分别用慢点、快速点和长按测试；松手后不应排队补播。任务提示和试听可独立检查。 |
+| 安装报告运行构建不一致 | 不要把失败当成功。保留错误和本次回执，检查是否启动了另一个旧目录，核对 `buildRevision`；使用本包入口恢复后再次检查，必要时按第 10 节回滚。 |
 
 ## 9. 隐私与本地数据
 
@@ -259,7 +267,7 @@ GET 不能带 JSON 请求体。秘密参数使用 `envQuery` / `envHeaders` 把�
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\path\to\backup\recovery-scripts\rollback-package.ps1" -Receipt "C:\path\to\backup\installation.json" -CheckOnly
 ```
 
-核对安装时间、目标目录、数据目录和 `previousVersion`。**前后都可能为 0.4.1，还要核对备份 `plugin/package.json` 的 `codexBuild`**：之前可能是 `provider-connections-20261005`，当前为 `auto-probe-fixed-20261005`，实际以自己的备份为准。
+核对安装时间、目标目录、数据目录和 `previousVersion`。**前后都可能为 0.4.1，还要核对备份 `plugin/package.json` 的 `codexBuild`**：本版构建为 `surface-audio-fix-20261007`，之前可能是 `auto-probe-fixed-20261005`，也可能是其它构建，实际以自己的备份为准。回滚后执行 `status`，确认运行的是回执对应的旧构建；不要套用维护者的安装日期或私有目录。
 
 恢复目标正确后，用完全相同的脚本与 `-Receipt` 参数去掉 `-CheckOnly` 执行。只撤销最近一次安装时，也可双击 `回滚本次安装.cmd`；如用交付目录脚本，先执行：
 
@@ -285,12 +293,24 @@ Mac 需 Codex、Node.js 24+、Xcode Command Line Tools。解压到新的固定�
 | 自动检测与确认 | 可信协议直接生效，候选可确认，未知字段/单位不造金额；口径变化重建基准。 |
 | 金额 UI | 区分账户、key、自定义、不限额、未确认和不支持；未知不转 0，短标题与金额留在椭圆内。 |
 | 提示、输入和布局 | 保留账户消费去重、连击保护、位置记忆、气泡队列和显示恢复等 v0.4 修复。 |
+| Windows 白屏遮挡保护 | 原生区域、窗口身份与尺寸代次参与显示验证；异常先隐藏，限定恢复次数；修复已证实的保护缺口，不等于用户所有驱动问题已根治。 |
+| 连点音效 | 8ms 平滑切换、90ms 过密声音合并、过期结果不补播；真实点击、任务完整声音和试听保持独立。 |
 | 部分修复/未完成 | #79 是共用拖动取消，不代表 Android 完成；#108 未实现共享台词池；#135 不代表 Mac 睡眠实测；#177 全局空白点击关闭未采用。 |
 
-当前运行构建已通过 **482 项自动测试、9 项独立隐私门禁、真实 Electron 6 组流程、7 个布局样本和 8 张截图验证**，渲染错误为零。测试使用隔离合成服务，不代表全部站点、真实账号、Mac 或所有硬件实测，也不等于本轮最终 ZIP 已验收。成品范围、SHA-256、解压检查以随包 `release-manifest.json`、`verification-report.json` 为准。
+本次运行代码验证包括：**510 项全量自动测试通过**，随后针对最终安装检查改动运行 **15 项针对测试（其中 3 项新增）**。这是两次不同范围的执行，不能写成“513 项全量重跑”。Windows 实机原生验证完成 **8 组场景，缩放比例 150%**；真实小黄鸭素材还在 OfflineAudioContext 中完成每秒 1/5/10/20 次点击的离线波形对照，未播放真实扬声器声音。
 
-[开发历程](docs/DEVELOPMENT-FIXED.md) · [fixed 修复说明](docs/AUTO-PROBE-FIXED.md) · [功能与 issue 状态表](docs/ISSUE-STATUS-FIXED.md) · [已知限制](docs/KNOWN-ISSUES-FIXED.md) · [验收清单](docs/TEST-CHECKLIST-0.4.md) · [并行消费与连击](docs/PARALLEL-CONSUMPTION-AND-CLICKS.md)
+此前 fixed 的 482 项自动测试、9 项隐私门禁、Electron 6 组流程/7 个布局样本/8 张截图属于历史验证，不冒充本轮重跑。上述结果不代表全部站点、真实账号、Mac、所有显卡/驱动或长期稳定性实测，也不等于最终 ZIP 已验收。成品隐私、SHA-256、解压和安装预检以本次 `release-manifest.json`、`verification-report.json` 为准。
 
-早期专题中的构建号、测试数和发布状态只代表当时记录；当前以本 README、[fixed 发布说明](RELEASE_NOTES.md) 和本次成品清单为准。
+[开发历程](docs/DEVELOPMENT-FIXIXED.md) · [本次白屏与音效修复](docs/SURFACE-AUDIO-FIX-20261007.md) · [功能与 issue 状态表](docs/ISSUE-STATUS-FIXIXED.md) · [已知限制](docs/KNOWN-ISSUES-FIXIXED.md) · [fixed 自动检测说明](docs/AUTO-PROBE-FIXED.md) · [早期验收清单](docs/TEST-CHECKLIST-0.4.md) · [并行消费与连击](docs/PARALLEL-CONSUMPTION-AND-CLICKS.md)
 
-代码与文档沿用 [MIT 许可](LICENSE)，原图片、动图和音效保持上游分发条款，不因代码许可扩大素材权利。见 [来源记录](PROVENANCE.md)、[第三方声明](THIRD_PARTY_NOTICES.md) 和 [发布准备](docs/GITHUB_PUBLISHING.md)。
+早期专题中的构建号、测试数和发布状态只代表当时记录；当前以本 README、[本版发行说明](RELEASE_NOTES.md) 和本次成品清单为准。
+
+## 13. 迁移历史、净化记录与素材来源
+
+2026-10-05 的迁移和元数据净化记录继续保留。历史版本的附件变化、原始时间与提交映射属于当时档案，本次功能修复不覆盖这些记录，也不把历史净化当作功能更新。
+
+- [当前安装包](https://github.com/Yang-huai406/Codex-Whale-Public/releases/latest) · [历史发行](https://github.com/Yang-huai406/Codex-Whale-Public/releases) · [完整时间线](docs/RELEASE-HISTORY.md)
+- [净化范围与验证](docs/SANITIZATION.md) · [历史提交映射](docs/HISTORY-SANITIZATION.json) · [历史待办](docs/BACKLOG.md)
+- [素材分发范围与署名](docs/MATERIALS-PERMISSION.md) · [素材来源核对](docs/MATERIALS-REVIEW.md)：四个 MP3 按维护者确认继续保留，素材许可不因代码 MIT 而扩大。
+
+代码与文档沿用 [MIT 许可](LICENSE)，原图片、动图和音效保持上游分发条款，不因代码许可扩大素材权利。见 [来源记录](PROVENANCE.md)、[第三方声明](THIRD_PARTY_NOTICES.md) 和 [发布流程](docs/GITHUB_PUBLISHING.md)。

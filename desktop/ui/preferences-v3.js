@@ -4,10 +4,11 @@
   const defaults = () => ({ feel: 'balanced', events: Object.fromEntries(Object.keys(events).map(k => [k, { preset: k === 'press' || k === 'release' || k === 'success' ? 'original' : 'silent', volume: .8 }])) });
   let settings = defaults();
   try { const saved = JSON.parse(localStorage.getItem(key)); if (saved) { settings.feel = saved.feel || settings.feel; for (const k of Object.keys(events)) if (saved.events?.[k]) settings.events[k] = saved.events[k]; } } catch {}
-  function play(event, url, master = 1, override) {
+  function play(event, url, master = 1, override, preview = false) {
     const cfg = (override || settings).events[event];
     if (!cfg) return false;
-    window.WhaleAudio.play({ channel: event === 'press' || event === 'release' ? 'gesture' : 'notice', url: Array.isArray(url) ? undefined : url, urls: Array.isArray(url) ? url : undefined, preset: cfg.preset, volume: cfg.preset === 'silent' ? 0 : cfg.volume * master });
+    const channel = preview ? 'preview' : event === 'press' || event === 'release' ? 'gesture' : 'notice';
+    window.WhaleAudio.play({ channel, event: channel === 'gesture' ? event : undefined, url: Array.isArray(url) ? undefined : url, urls: Array.isArray(url) ? url : undefined, preset: cfg.preset, volume: cfg.preset === 'silent' ? 0 : cfg.volume * master });
     return true;
   }
   function open() {
@@ -25,7 +26,7 @@
       const volume = document.createElement('input'); volume.type = 'range'; volume.min = '0'; volume.max = '1'; volume.step = '.01'; volume.value = draft.events[event].volume; volume.setAttribute('aria-label', label + '音量');
       const number = document.createElement('output'); number.textContent = Math.round(volume.value * 100) + '%';
       volume.oninput = () => { draft.events[event].volume = Number(volume.value); number.textContent = Math.round(volume.value * 100) + '%'; };
-      const preview = document.createElement('button'); preview.type = 'button'; preview.textContent = '试听'; preview.onclick = () => play(event, window.WhaleFeedbackSources?.[event] || '/dsh-whale/sound/press.mp3?set=duck', 1, draft);
+      const preview = document.createElement('button'); preview.type = 'button'; preview.textContent = '试听'; preview.onclick = () => play(event, window.WhaleFeedbackSources?.[event] || '/dsh-whale/sound/press.mp3?set=duck', 1, draft, true);
       row.append(select, volume, number, preview); dialog.append(row);
     }
     const actions = document.createElement('div'); actions.className = 'dialog-actions';

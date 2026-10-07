@@ -16,7 +16,7 @@
     "uninstall:mac": "node scripts/uninstall-macos.mjs",
     "probe:mac": "node scripts/probe-macos.mjs"
   },
-  "codexBuild": "auto-probe-fixed-20261005",
-  "distributionName": "Codex-v0.4(fixed)",
-  "releaseTag": "codex-v0.4.0(fixed)"
+  "codexBuild": "surface-audio-fix-20261007",
+  "distributionName": "Codex-v0.4(fixixed)",
+  "releaseTag": "codex-v0.4.0(fixixed)"
 }

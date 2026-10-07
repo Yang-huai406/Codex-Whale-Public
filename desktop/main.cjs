@@ -10,6 +10,8 @@ const { acceptsWindowMessage } = require('./ipc-window.cjs');
 const { validateWindowShape, EMPTY_SHAPE } = require('./window-shape.cjs');
 const { createVisibilityController } = require('./visibility.cjs');
 const { createVisibilityRecorder } = require('./visibility-recorder.cjs');
+const { createSurfaceGuard } = require('./surface-guard.cjs');
+const { randomUUID } = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 const root = path.resolve(__dirname, '..');
 const dataDir = process.argv.find(a => a.startsWith('--whale-data='))?.slice(13);
@@ -21,6 +23,7 @@ const markStartup = phase => { if (startup.phases[phase] == null) startup.phases
 markStartup('main');
 const isMac = process.platform === 'darwin';
 const usesWindowShape = process.platform === 'win32';
+const usesSurfaceGuard = usesWindowShape && (!fixture || process.env.WHALE_NATIVE_SURFACE_GUARD === '1');
 let windowShape = null, windowShapeError = null;
 const toDipRect = rect => isMac ? rect : screen.screenToDipRect(null, rect);
 // Windows layered/region-clipped transparent windows can remain logically
@@ -75,6 +78,44 @@ const uiStore = new UiStateStore(stateFile);
 const values = () => uiStore.get();
 const storeValues = input => uiStore.set(input);
 let gpuStatus = null, inputEnabled = false, keyboardFocus = false, testCursor = null, lastCursor = '', presents = 0;
+let surfacePacket = null, surfaceFlushScheduled = false, surfaceLastReport = '', deferredShape = null;
+function publishSurface(packet) {
+  if (!usesSurfaceGuard || !packet) return;
+  surfacePacket = packet;
+  if (surfaceFlushScheduled) return;
+  surfaceFlushScheduled = true;
+  const flush = () => {
+    if (quitting) { surfacePacket = null; surfaceFlushScheduled = false; return; }
+    if (process.stdout.writableNeedDrain) { process.stdout.once('drain', flush); return; }
+    surfaceFlushScheduled = false;
+    const latest = surfacePacket; surfacePacket = null;
+    if (latest) process.stdout.write(JSON.stringify({ surface: latest }) + '\n');
+  };
+  setImmediate(flush);
+}
+const surfaceGuard = createSurfaceGuard({
+  instance: randomUUID(),
+  requireHeartbeat: usesSurfaceGuard,
+  stable: () => { recoveryAttempts = 0; },
+  revoke: reason => {
+    if (!usesSurfaceGuard || !window || window.isDestroyed()) return;
+    if (reason === 'viewport-changed' || reason === 'renderer-loading') deferredShape = null;
+    inputEnabled = false; window.setIgnoreMouseEvents(true); window.hide();
+    if (reason !== surfaceLastReport) { surfaceLastReport = reason; diagnose('surface-' + reason); }
+  },
+  retry: () => {
+    if (!window || window.isDestroyed() || quitting) return;
+    if (rendererReady) { applyWindowShape(windowShape || EMPTY_SHAPE); window.webContents.send('whale-shape-request'); }
+    else recoverRenderer('surface-recovery');
+  },
+  restored: () => {
+    if (!window || window.isDestroyed() || window.webContents.isDestroyed()) return;
+    surfaceLastReport = '';
+    if (deferredShape && window.isVisible()) { const latest = deferredShape; deferredShape = null; applyWindowShape(latest); }
+    window.webContents.send('whale-input-reset'); sendCursor(true);
+  },
+  changed: () => { if (usesSurfaceGuard && window && !window.isDestroyed()) visibility(); },
+});
 const pendingCommands = [];
 let trustedGestureAt = 0;
 app.on('gpu-info-update', () => {
@@ -85,11 +126,15 @@ function invalidate() { if (window && !window.isDestroyed()) { presents++; windo
 function applyWindowShape(rects) {
   if (!usesWindowShape || quitting || !window || window.isDestroyed() || window.webContents.isDestroyed()) return false;
   const shape = validateWindowShape(rects, window.getContentBounds());
-  if (!shape) return false;
+  if (!shape) { if (usesSurfaceGuard) surfaceGuard.fail('invalid-shape'); return false; }
+  // Freeze only the hidden/unverified native request until its ACK arrives.
+  // Continuous animation must not starve startup by making every ACK obsolete.
+  if (usesSurfaceGuard && (!surfaceGuard.canApply() || (surfaceGuard.ready() && !window.isVisible()))) { deferredShape = shape; return true; }
   try {
     window.setShape(shape);
     const recovering = !!windowShapeError;
     windowShape = shape; windowShapeError = null;
+    if (usesSurfaceGuard) publishSurface(surfaceGuard.next(shape, window.getContentBounds(), window.getNativeWindowHandle().readBigUInt64LE(), { retainProof: rendererReady && window.isVisible() }));
     // Changing a native region also changes which transparent compositor pixels
     // may be presented. Submit the existing frame once; never hide/reload it.
     invalidate();
@@ -98,6 +143,7 @@ function applyWindowShape(rects) {
   } catch (error) {
     windowShapeError = String(error?.message || error).slice(0, 350);
     diagnose('window-shape-failed');
+    if (usesSurfaceGuard) surfaceGuard.fail('shape-apply-failed');
     // Keep the last successful region. If even the initial shape failed, stay
     // hidden instead of exposing a full-client-area surface or reload looping.
     if (!windowShape) { inputEnabled = false; window.setIgnoreMouseEvents(true, { forward: !usesWindowShape }); window.hide(); }
@@ -119,7 +165,7 @@ function sendCursor(force = false) {
 function setTestCursor(point) { if (fixture) { testCursor = point; sendCursor(true); } }
 const visibilityController = createVisibilityController({
   getWindow: () => window,
-  getState: () => ({ ready: rendererReady && !modePending && (!usesWindowShape || !!windowShape), host: lastHost, standalone: desktopMode === 'standalone', fixture, manuallyHidden, quitting }),
+  getState: () => ({ ready: rendererReady && !modePending && (!usesWindowShape || !!windowShape) && (!usesSurfaceGuard || surfaceGuard.ready()), host: lastHost, standalone: desktopMode === 'standalone', fixture, manuallyHidden, quitting }),
   onShown: () => {
     if (startup.phases.interactive == null) {
       markStartup('interactive');
@@ -132,6 +178,7 @@ function visibility() {
 }
 function show() {
   manuallyHidden = false;
+  if (usesSurfaceGuard && !surfaceGuard.ready() && !readyTimer && !recoveryTimer) surfaceGuard.manualRecovery();
   // Showing during normal startup must not restart an already loading page.
   if (!rendererReady && !readyTimer && !recoveryTimer && window && !window.isDestroyed() && !window.webContents.isLoading()) {
     recoveryAttempts = 0; recoverRenderer('manual-recovery');
@@ -191,6 +238,7 @@ async function setHost(host) {
   if (!host || typeof host.hostAlive !== 'boolean') return;
   if (Number.isSafeInteger(host.serial)) { if (host.serial <= hostSequence) return; hostSequence = host.serial; }
   hostHeartbeat = Date.now(); lastHost = host;
+  if (usesSurfaceGuard) { surfaceGuard.observeHeartbeat(host.surfaceHeartbeat); if (host.surfaceGuard) surfaceGuard.accept(host.surfaceGuard); }
   // Record the observed state before any lifecycle recovery can change it.
   if (usesWindowShape) { try { visibilityRecorder.sample(); } catch {} }
   if (host.monitorExit) { app.quit(); return; }
@@ -249,7 +297,7 @@ else {
     const { startBridge } = await import(pathToFileURL(path.join(root, 'runtime', 'bridge.mjs')));
     let testOptions = {};
     if (fixture) { const { makeFixture } = await import(pathToFileURL(path.join(root, 'tests', process.env.WHALE_CONNECTIONS_UI_TEST === '1' ? 'connection-ui-fixture.mjs' : 'desktop-fixture.mjs'))); testOptions = await makeFixture(dataDir); }
-    dispatcher = createDispatcher({ dataDir, fetchImpl: (url, options) => net.fetch(url, options), onStop: pauseAndQuit, onShow: show, statusInfo: () => ({ followCodex: desktopMode !== 'standalone', desktopMode, rendererReady, recoveryAttempts, manuallyHidden, platform: process.platform, followMode: lastHost?.followMode || null, hostPid: lastHost?.hostPid || null, visible: !!window?.isVisible(), modePending, windowShape, windowShapeError, windowBounds: window?.getBounds(), visibility: visibilityController.snapshot(), nativeFollowing: !!lastHost?.nativeFollowing, mouseRouting: { forwardedMouseMoves: !usesWindowShape, cursorPollMs: usesWindowShape ? 16 : 50 }, diagnostics: { shortcutRegistered: diagnosticShortcutRegistered, lastReport: lastDiagnosticReport, native: lastHost?.visualDiagnostics || null }, startup, rendering: gpuStatus }), ...testOptions });
+    dispatcher = createDispatcher({ dataDir, fetchImpl: (url, options) => net.fetch(url, options), onStop: pauseAndQuit, onShow: show, statusInfo: () => ({ followCodex: desktopMode !== 'standalone', desktopMode, rendererReady, recoveryAttempts, manuallyHidden, platform: process.platform, followMode: lastHost?.followMode || null, hostPid: lastHost?.hostPid || null, visible: !!window?.isVisible(), modePending, windowShape, windowShapeError, windowBounds: window?.getBounds(), visibility: visibilityController.snapshot(), nativeFollowing: !!lastHost?.nativeFollowing, mouseRouting: { forwardedMouseMoves: !usesWindowShape, cursorPollMs: usesWindowShape ? 16 : 50 }, diagnostics: { shortcutRegistered: diagnosticShortcutRegistered, lastReport: lastDiagnosticReport, native: lastHost?.visualDiagnostics || null }, startup, rendering: gpuStatus, surfaceGuard: usesSurfaceGuard ? surfaceGuard.snapshot() : null }), ...testOptions });
     markStartup('dispatcherReady');
     await importLegacyStorage();
     session.defaultSession.protocol.handle('whale', async request => {
@@ -274,16 +322,34 @@ else {
     }
     window.setAlwaysOnTop(isMac || desktopMode === 'standalone', 'floating');
     if (desktopMode === 'standalone') window.setBounds(screen.getPrimaryDisplay().workArea);
-    window.webContents.on('render-process-gone', (_event, details) => { rendererReady = false; visibility(); recoverRenderer('renderer-' + details.reason); });
+    window.webContents.on('render-process-gone', (_event, details) => { rendererReady = false; if (usesSurfaceGuard) surfaceGuard.fail('renderer-gone'); visibility(); recoverRenderer('renderer-' + details.reason); });
+    window.on('unresponsive', () => {
+      rendererReady = false;
+      if (usesSurfaceGuard) surfaceGuard.fail('renderer-unresponsive');
+      visibility(); recoverRenderer('renderer-unresponsive');
+    });
+    window.on('responsive', () => {
+      if (!rendererReady && !readyTimer && !recoveryTimer) recoverRenderer('renderer-responsive');
+    });
+    app.on('child-process-gone', (_event, details) => {
+      if (!usesSurfaceGuard || details.type !== 'GPU' || quitting) return;
+      rendererReady = false; surfaceGuard.fail('gpu-process-gone'); visibility(); recoverRenderer('gpu-process-gone');
+    });
     window.webContents.on('did-fail-load', (_event, code, _description, _url, isMainFrame) => { if (isMainFrame && code !== -3) recoverRenderer('load-' + code); });
     markStartup('windowCreated');
     window.once('ready-to-show', () => markStartup('frameReady'));
     if (fixture) window.webContents.on('console-message', (_event, ...args) => { const d = args[0]; if (typeof d === 'object' ? d.level === 'error' : d === 3) rendererErrors.push(typeof d === 'object' ? d.message : args[1]); });
-    if (!fixture) process.stdout.write(JSON.stringify({ overlayHandle: window.getNativeWindowHandle().readBigUInt64LE().toString() }) + '\n');
+    if (!fixture || usesSurfaceGuard) process.stdout.write(JSON.stringify({ overlayHandle: window.getNativeWindowHandle().readBigUInt64LE().toString() }) + '\n');
     window.setIgnoreMouseEvents(true, { forward: !usesWindowShape });
-    window.on('show', () => { diagnose('window-shown'); invalidate(); sendCursor(true); });
+    window.on('show', () => {
+      // A recovered owned HWND can have a 40ms delayed show. Keep the verified
+      // request stable through that delay, then resume the coalesced animation.
+      if (usesSurfaceGuard && surfaceGuard.ready() && deferredShape) { const latest = deferredShape; deferredShape = null; applyWindowShape(latest); }
+      diagnose('window-shown'); invalidate(); sendCursor(true);
+    });
     window.on('hide', () => diagnose('window-hidden'));
     window.on('resize', () => {
+      if (usesSurfaceGuard) surfaceGuard.reset('viewport-changed');
       invalidate();
       // Keep the previous region while the renderer lays out the new viewport.
       if (usesWindowShape && !window.webContents.isDestroyed()) window.webContents.send('whale-shape-request');
@@ -291,6 +357,7 @@ else {
     window.webContents.on('did-start-loading', () => {
       if(quitting || !window || window.isDestroyed())return;
       rendererReady = false; inputEnabled = false; clearTimeout(readyTimer); readyTimer = setTimeout(() => { if (!rendererReady) recoverRenderer('ready-timeout'); }, 15000);
+      if (usesSurfaceGuard) surfaceGuard.reset('renderer-loading');
       if (usesWindowShape) applyWindowShape(EMPTY_SHAPE);
       visibility();
       setKeyboardFocus(false);
@@ -325,7 +392,7 @@ else {
       rendererReady = true; diagnose('ready'); window.webContents.send('whale-desktop-mode', desktopMode); visibility(); flushCommands(); invalidate(); sendCursor(true);
     });
     ipcMain.on('whale-interactive', (event, enabled) => {
-      if (!acceptsWindowMessage(window,event,quitting) || (usesWindowShape && !windowShape) || typeof enabled !== 'boolean' || enabled === inputEnabled) return;
+      if (!acceptsWindowMessage(window,event,quitting) || (usesWindowShape && !windowShape) || (usesSurfaceGuard && !surfaceGuard.ready()) || typeof enabled !== 'boolean' || enabled === inputEnabled) return;
       inputEnabled = enabled;
       window.setIgnoreMouseEvents(!enabled, { forward: !usesWindowShape });
     });
@@ -335,6 +402,8 @@ else {
     // Windows uses the native cursor sampler instead of forwarding ignored mouse
     // messages into Chromium, which must not arbitrate the host cursor.
     const cursorPoll = setInterval(sendCursor, usesWindowShape ? 16 : 50);
+    const surfacePoll = usesSurfaceGuard ? setInterval(() => surfaceGuard.tick(), 100) : null;
+    app.once('will-quit', () => { clearInterval(surfacePoll); surfaceGuard.dispose(); });
     app.once('will-quit', () => clearInterval(cursorPoll));
     const icon = nativeImage.createFromPath(path.join(root, 'assets', 'DSniang1.png')).resize({ width: 24, height: 24 });
     tray = new Tray(icon); tray.setToolTip('API 余额小鲸鱼 · 跟随 Codex');
@@ -347,9 +416,9 @@ else {
     markStartup('pageLoaded');
     if (lastHost) await setHost(lastHost);
     if (fixture) {
-      const fixtureModule = process.env.WHALE_CONNECTIONS_UI_TEST === '1' ? 'connection-ui-fixture.mjs' : process.env.WHALE_ACCOUNT_NOTICES === '1' ? 'account-notice-fixture.mjs' : process.env.WHALE_RAPID_CLICK === '1' ? 'rapid-click-fixture.mjs' : process.env.WHALE_ISSUE_LAYOUT === '1' ? 'issue-layout-fixture.mjs' : process.env.WHALE_ROOT_FIXES === '1' ? 'root-fixes-fixture.mjs' : process.env.WHALE_POSITION_MEMORY === '1' ? 'position-memory-fixture.mjs' : process.env.WHALE_VISIBILITY_STRESS === '1' ? 'visibility-stress-fixture.mjs' : process.env.WHALE_DESKTOP_AUDIT === '1' ? 'desktop-audit-fixture.mjs' : 'desktop-fixture.mjs';
+      const fixtureModule = process.env.WHALE_SURFACE_GUARD_TEST === '1' ? 'surface-guard-fixture.mjs' : process.env.WHALE_CONNECTIONS_UI_TEST === '1' ? 'connection-ui-fixture.mjs' : process.env.WHALE_ACCOUNT_NOTICES === '1' ? 'account-notice-fixture.mjs' : process.env.WHALE_RAPID_CLICK === '1' ? 'rapid-click-fixture.mjs' : process.env.WHALE_ISSUE_LAYOUT === '1' ? 'issue-layout-fixture.mjs' : process.env.WHALE_ROOT_FIXES === '1' ? 'root-fixes-fixture.mjs' : process.env.WHALE_POSITION_MEMORY === '1' ? 'position-memory-fixture.mjs' : process.env.WHALE_VISIBILITY_STRESS === '1' ? 'visibility-stress-fixture.mjs' : process.env.WHALE_DESKTOP_AUDIT === '1' ? 'desktop-audit-fixture.mjs' : 'desktop-fixture.mjs';
       const { verifyDesktop } = await import(pathToFileURL(path.join(root, 'tests', fixtureModule)));
-      await verifyDesktop({ app, window, screen, setHost, setTestCursor, dispatcher, dataDir, errors: rendererErrors, openedLinks: fixtureOpenedLinks, renderInfo: () => ({ gpuStatus, presents, inputEnabled, keyboardFocus, windowShape, windowShapeError, visibility: visibilityController.snapshot() }) });
+      await verifyDesktop({ app, window, screen, setHost, setTestCursor, dispatcher, dataDir, errors: rendererErrors, openedLinks: fixtureOpenedLinks, renderInfo: () => ({ gpuStatus, presents, inputEnabled, keyboardFocus, windowShape, windowShapeError, visibility: visibilityController.snapshot(), surfaceGuard: usesSurfaceGuard ? surfaceGuard.snapshot() : null }) });
     }
     else {
       const health=createHeartbeatMonitor({lastSeen:()=>hostHeartbeat,onDelayed:()=>diagnose('monitor-heartbeat-delayed'),onRecovered:()=>diagnose('monitor-heartbeat-restored')});

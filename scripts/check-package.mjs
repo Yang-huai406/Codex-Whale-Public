@@ -7,6 +7,9 @@ for(const name of ['../vendor/smol-toml/dist/index.js','../desktop/main.cjs','..
 }
 if(!fs.existsSync(fileURLToPath(new URL('../desktop/ui/account-view.js',import.meta.url))))throw new Error('Account view module is missing');
 if(!fs.existsSync(fileURLToPath(new URL('../desktop/ui/shape.js',import.meta.url))))throw new Error('Window region module is missing');
+for(const name of ['../desktop/surface-guard.cjs','../desktop/SurfaceGuard.cs']) {
+  if(!fs.existsSync(fileURLToPath(new URL(name,import.meta.url))))throw new Error('Native surface verification dependency is missing');
+}
 if(!fs.existsSync(fileURLToPath(new URL('../desktop/ui/dashboard.js',import.meta.url))))throw new Error('Dashboard module is missing');
 if(!fs.existsSync(fileURLToPath(new URL('../desktop/ui/account-notices.js',import.meta.url))))throw new Error('Account notification UI is missing');
 if(!fs.existsSync(fileURLToPath(new URL('../runtime/account-notices.mjs',import.meta.url))))throw new Error('Account notification ledger is missing');

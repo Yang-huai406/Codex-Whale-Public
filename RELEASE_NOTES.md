@@ -1,48 +1,70 @@
-# Codex-v0.4(fixed)
+# Codex-v0.4(fixixed)
 
-For-Codex 修复发行版。发布标签精确为 `codex-v0.4.0(fixed)`；程序内部版本仍为 `0.4.1`，构建标识为 `auto-probe-fixed-20261005`。此前 `codex-v0.4.0` 发布保持不变。
+**最新稳定修复版发行说明。** 对外名称精确为 `Codex-v0.4(fixixed)`，发行标签为 [`codex-v0.4.0(fixixed)`](https://github.com/Yang-huai406/Codex-Whale-Public/releases/tag/codex-v0.4.0%28fixixed%29)；`fixixed` 是本次约定拼写。内部版本仍为 `0.4.1`，构建标识为 `surface-audio-fix-20261007`。
 
-这是 [MeteorNOX](https://github.com/MeteorNOX) 所有的 [DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget) 独立 For-Codex 适配线，由协作者 [Yang-huai406](https://github.com/Yang-huai406) 维护。保留 [1llysviel](https://github.com/1llysviel) 的 [macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 及已有署名、许可；不替代 DSH 主线 Latest。
+当前维护仓库为 [Yang-huai406/Codex-Whale-Public](https://github.com/Yang-huai406/Codex-Whale-Public)，目标分支 `main`，维护者与新仓库所有者是 [Yang-huai406](https://github.com/Yang-huai406)。项目沿用 [MeteorNOX](https://github.com/MeteorNOX) 原作 [DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget) 的来源与许可，保留其原作者/上游仓库所有者身份，以及 [1llysviel](https://github.com/1llysviel) 的[上游 macOS PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 与已有署名。新仓库现有 fixed Release 保留，不覆盖历史标签或附件；本文上游 issue 编号仍链接上游原 issue。
 
-## 本次 fixed 解决什么
+## 本次修复
 
-- 多提供商与 profile/project 局部配置按表递归合并，未知 provider 明确报错；命名连接绑定来源、地址和认证，防止沿用另一服务的 URL/key。
-- 已保存配置处于自动模式时，普通用户直接点击“重新检测接口”。可信协议直接使用；编辑过的草稿仍须保存，重新检测不会将显式协议切换为自动模式。完整候选显示币种、单位和范围假设，并提供“确认并使用”，不必先编辑 JSON。
-- 确认接受绑定本次来源的一次性预览凭据，五分钟过期；更改来源、重新预览、关闭重开或迟到响应不能复用旧确认。预览不保存、不记账，也不顺带保存未提交的模型价格。
-- 13 个来源注册项包含双请求账单、单位元数据与显式管理接口；不是 13 个品牌，不拿普通推理 key 盲探管理接口。有界探测、命中缓存、单位复核及限流退避减少无效请求。
-- 正确区分 NewAPI 原始 quota、占位累计量与兼容账单不限额哨兵；不把巨额 key 哨兵当账户资金，不把未知变成 0。协议/单位/计数器变化重建基准，不猜测重算历史。
-- 保留独立 GET/POST JSON、专用环境变量认证及自定义字段/单位映射。概览与默认气泡使用简短范围标题，完整解释保留在提示中。
+### Windows 白屏遮挡保护
 
-旧版账户新增消耗去重、任务/token 提示、订阅窗口、角色音效、位置记忆、本地工坊和汇率继续保留。部分 issue 的修复范围及未完成项见 [状态表](docs/ISSUE-STATUS-FIXED.md)，不能全部标为解决。
+此前的区域裁剪只相信调用与缓存；裁剪无效或失效后，窗口仍可能显示。本次独立原生监控核对完整区域、窗口/进程身份和几何代次，显示只接受当前验证；区域失效、持续无法验证、监控失联或渲染异常时先撤销显示，限定恢复次数并重新核验。正常动画更新保留已验证区域，避免确认竞争导致反复闪现。
+
+这是已证实保护缺口的修复。用户录屏无法唯一确定其设备上的触发根因；合法区域内部的显卡合成故障、Electron 主线程永久卡死等仍有边界，不能承诺所有白屏根治。相关 [#121](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/issues/121) 仍属部分覆盖，不据此关闭 issue。
+
+### 小黄鸭连点音效
+
+按下/松开从直接硬停止改为 **8ms 短交叉淡变**。**90ms 内过密按下声音及其配对松开合并**，实际鼠标点击和动画照常处理，没有排队补播；有效长按的松开及时淡出，超过 250ms 才准备好的交互声丢弃。静音、隐藏与退出清理声音和尾音，旧解码不能复活。
+
+任务完成的整组声音、设置试听与交互声音分开调度。单击、长按仍使用原素材；极密点击不要求每次都发出一个新声音。数字波形改善不替代用户在实际耳机/扬声器上的试听。
+
+### 安装结果检查
+
+Windows 安装器核对实际运行构建，避免只看到代码复制成功就误报新版已启动。允许等待 Codex 或保留主动暂停；恢复窗口后还应核对 `rendererReady` 与 `surfaceGuard.verified`。实际版本相同的更新需要同时看 `buildRevision`。
+
+## 沿用功能与 issue 边界
+
+沿用 fixed 的多提供商/profile/project 配置解析、命名余额连接、独立 GET/POST JSON 与专用认证、有界自动探测和候选确认、NewAPI raw quota 单位处理、不限额哨兵识别，以及账户新增消费去重、订阅窗口、本机 token、角色/气泡/音效、本地工坊、位置记忆与汇率。
+
+“OpenAI-compatible”不等于提供标准余额接口；只有明确单位和范围的可靠金额参与统计。自动探测不盲试管理接口、不保证所有中转站可用。并行账户消费不能归给单个聊天，失败或取消也不等于免费。
+
+逐项对应见 [本次 issue 状态表](docs/ISSUE-STATUS-FIXIXED.md)，开发过程见 [开发历程](docs/DEVELOPMENT-FIXIXED.md)。#177 全局空白点击关闭未采用，Mac 等未实测能力不标为完成。
 
 ## 使用与升级
 
-安装包：`Codex-v0.4(fixed).zip`；源码包：`Codex-v0.4(fixed)-source.zip`。配套 SHA-256 与 JSON 清单用于核验成品，不包含 Electron 离线运行时。
+安装包为 `Codex-v0.4(fixixed).zip`，源码包为 `Codex-v0.4(fixixed)-source.zip`；GitHub 材料包用于后续发布准备，不能代替安装包。完整操作见 [README](README.md)。
 
-Windows 需要支持插件注册的 Codex、Node.js 24+（含 npm）及首次下载 Electron 的网络。完整解压后运行 `安装插件.cmd`，保存本次私有回执，再在 API 设置中重新检测。已有暂停意图会保留。安装、成功检查、日常操作和高级示例见完整 [README](README.md)。
+GitHub 会规范化附件名中的括号等字符，安装包下载名可能为 `Codex-v0.4.fixixed.zip`。以发布页实际名称及对应 SHA-256 校验索引为准；附件名规范化不更改包内容、Release 标题或精确标签。
 
-有候选却没有确认按钮，通常缺少单位或范围依据，应按服务商说明自定义，或选“不查询余额”。官方 OpenAI 普通 key 没有本插件已验证的余额接口；ChatGPT 订阅使用单独视图。自动检测不承诺覆盖任意服务商。
+1. Windows 需要支持插件注册的 Codex、Node.js 24+（含 npm）和首次下载 Electron 的网络；ZIP 不是离线 EXE。
+2. 完整解压到固定目录，保留旧版和备份，运行 `安装插件.cmd`，保存输出的私有回执。
+3. 打开 Codex；主动暂停会保留，可用 `启动桌面挂件.cmd` 恢复。
+4. 在插件目录执行 `node .\scripts\control.mjs status`，确认 `version: 0.4.1`、`buildRevision: surface-audio-fix-20261007`；Windows 正常显示后 `rendererReady` 和 `surfaceGuard.verified` 为 true。
+5. API 设置使用“重新检测接口”。候选须核对币种、单位和额度范围；没有可靠依据时保留未确认或选择“不查询余额”，不要盲目把 raw quota 当钱。
 
 ## 验证记录与边界
 
-| 已验证的当前运行构建 | 结果 |
+| 本次实际执行 | 结果与范围 |
 | --- | --- |
-| 自动测试 | 482 项通过 |
-| 独立隐私门禁 | 9 项通过 |
-| 真实 Electron | 6 组流程、7 个布局样本、8 张截图，渲染错误 0 |
+| 全量自动测试 | 510 项通过，执行于最终安装检查改动之前 |
+| 安装检查等针对测试 | 后续 15 项通过，其中 3 项新增；不是全量 513 项重新执行 |
+| Windows 原生场景 | 150% DPI 下 8 组验证，含区域丢失、错误全窗区域、几何变化、渲染无响应与恢复限制 |
+| 真实素材离线音频 | OfflineAudioContext 中每秒 1/5/10/20 次点击对照；20Hz 两秒操作由 80 次音源启动降至 40 次，未出现削波；没有实际播放声音 |
 
-Electron 覆盖原生配额自动验证、普通候选直接确认并保存重载、独立认证 POST、连接方式/单位变化、迟到结果、切换删除和金额语义布局。使用隔离合成服务，不代表全部真实站点或所有设备实测。
+此前 fixed 的 482 项自动测试、9 项隐私门禁及 Electron 6 组流程/7 个布局样本/8 张截图属于历史验证，不冒充本轮重跑。最终 ZIP 的隐私、文件范围、哈希、解压和安装预检结果以本次 `release-manifest.json`、`verification-report.json` 为准。
 
-本轮 ZIP 隐私清理、解压核验、文件范围及哈希以 `release-manifest.json`、`verification-report.json` 为准，成品通过隐私检查、完整性校验和中文空格路径安装预检。Mac 实机、其它硬件、多屏与长期稳定性仍需对应环境验证。
+测试使用隔离服务与专用窗口，不代表全部真实账号、显卡驱动、Mac、多屏和长期稳定性已验收。Windows 原生采样/恢复时间属于调度参数，不是高负载下硬实时承诺。账本仍不是服务商完整流水，不能仅靠余额拆分同时发生的充值、退款与消费，也不自动重算历史错误口径。详见 [已知限制](docs/KNOWN-ISSUES-FIXIXED.md) 和 [白屏/音效专项说明](docs/SURFACE-AUDIO-FIX-20261007.md)。
 
-本地账本不是服务商完整流水，无法仅靠余额拆分并发消费、充值和退款；跨日未观测区间归再次观测日，历史错误口径不自动重算。见 [已知限制](docs/KNOWN-ISSUES-FIXED.md) 和 [fixed 自动检测说明](docs/AUTO-PROBE-FIXED.md)。
+## 用户验证与回滚
 
-## 隐私与回滚
+打开/关闭概览与设置、最小化还原、调整窗口大小和跨屏移动；正文空白区域应可操作，保护撤销计数不应持续增长。仍白屏时先从托盘隐藏/退出挂件，看底层是否恢复，再反馈脱敏构建、DPI、触发步骤及 `surfaceGuard` 字段。
 
-公开包排除个人配置、凭据、账本、会话、原始日志、截图录屏、私有回执、缓存及 Git 历史。每位接收者安装时生成自己的 `installation.json` 和 `recovery-scripts/rollback-package.ps1`；先用本次回执 `-Receipt ... -CheckOnly` 核对恢复目标，再执行回滚。前后可能都是 `0.4.1`，还须核对备份构建标识。
+音效分别测试慢点、连点、长按松开、静音、自定义音组、任务提示与试听。预期硬切/碎裂减少，松手后不排队补叫；最终听感由用户确认。
 
-回滚恢复程序和启动配置，保留最新设置、素材和账本；旧程序可能不理解新连接，恢复后核对实际来源。不要使用别人的回执，也不要删除账本代替回滚。Mac 入口只安装桌面组件/LaunchAgent，不自动注册技能/MCP，见 [macOS 文档](docs/MACOS.md)。
+每位接收者安装时生成自己的 `installation.json` 与 `recovery-scripts/rollback-package.ps1`。使用自己的回执 `-Receipt ... -CheckOnly` 核对恢复目标，再去掉 `-CheckOnly` 执行。前后都可能为 `0.4.1`，须核对备份 `plugin/package.json` 的构建标识；回滚后再次运行 `status`。恢复旧程序和启动配置，保留最新设置、素材和账本。不要使用维护者回执或删除账本代替回滚。
 
-## 发行标识
+公开材料排除私人配置、凭据、账本、会话、日志、截图录屏、回执、缓存和 Git 历史。Mac 桌面组件/LaunchAgent 及署名保留，本次未实机验收，且 Mac 安装入口不自动注册技能/MCP；见 [macOS 文档](docs/MACOS.md)。
 
-目标分支为 For-Codex，标签 **`codex-v0.4.0(fixed)`**，标题 **Codex-v0.4(fixed)**。本发行版设置 `makeLatest: false`，保留 DSH 主线 Latest 与旧发布。
+## 发行标识与历史保留
+
+发行仓库为 **Yang-huai406/Codex-Whale-Public**，分支 **`main`**，标签 **`codex-v0.4.0(fixixed)`**，标题 **Codex-v0.4(fixixed)**。本稳定版设置 `makeLatest: true`，保留旧 fixed Release、历史标签和附件。原迁移、净化与许可记录继续见 [发行时间线](docs/RELEASE-HISTORY.md)、[净化说明](docs/SANITIZATION.md)、[历史提交映射](docs/HISTORY-SANITIZATION.json) 和 [素材分发范围](docs/MATERIALS-PERMISSION.md)。

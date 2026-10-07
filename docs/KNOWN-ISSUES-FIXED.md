@@ -1,5 +1,7 @@
 # Codex-v0.4(fixed)：已知限制与待验证事项
 
+> 本文保留 fixed 历史记录；当前 fixixed 版本见 [新版说明](KNOWN-ISSUES-FIXIXED.md)。
+
 适用包名 `Codex-v0.4(fixed)`，内部版本 `0.4.1`、构建 `auto-probe-fixed-20261005`。发行标签 `codex-v0.4.0(fixed)`。本文记录仍存在的边界，不把历史基线或一次本机成功当作全部验收。
 
 ## 余额接口与配置

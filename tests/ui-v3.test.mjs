@@ -10,17 +10,17 @@ function audioFixture() {
     constructor() { contexts++; }
     resume() { return Promise.resolve(); } close() { this.state = 'closed'; return Promise.resolve(); }
     decodeAudioData() { return Promise.resolve({ duration: 20 }); }
-    createGain() { return { gain: { value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
+    createGain() { return { gain: { value: 0, cancelScheduledValues() {}, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
     createBufferSource() { const source = { connect(gain) { this.gain = gain; }, start(at) { this.started = true; this.at = at; }, stop() { this.stopped = true; } }; sources.push(source); return source; }
   }
   const context = { window: { addEventListener() {} }, AudioContext, fetch: async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(1) }), setTimeout: callback => { idle = callback; return 1; }, clearTimeout() {} };
   vm.runInNewContext(read('audio-engine.js'), context);
   return { api: context.window.WhaleAudio, sources, contexts: () => contexts, idle: () => idle() };
 }
-test('zero volume never opens audio hardware or fetches, release interrupts a 20-second press immediately', async () => {
+test('zero volume never opens audio hardware or fetches, release interrupts a 20-second press without waiting for the clip', async () => {
   const f = audioFixture(); await f.api.play({ url: '/press', volume: 0 }); assert.equal(f.contexts(), 0);
-  await f.api.play({ channel: 'gesture', url: '/press', volume: .5 }); assert.equal(f.sources[0].started, true);
-  await f.api.play({ channel: 'gesture', url: '/release', volume: .5 }); assert.equal(f.sources[0].stopped, true); assert.equal(f.sources[1].started, true);
+  await f.api.play({ channel: 'gesture', event: 'press', url: '/press', volume: .5 }); assert.equal(f.sources[0].started, true);
+  await f.api.play({ channel: 'gesture', event: 'release', url: '/release', volume: .5 }); assert.equal(f.sources[0].stopped, true); assert.equal(f.sources[1].started, true);
   f.idle(); assert.equal(f.sources[1].stopped, true);
 });
 test('gesture presets separate press from rebound without changing root flip', () => {
@@ -55,4 +55,7 @@ test('feedback keeps full group sources, multiplies event/master volumes, and ho
   assert.deepEqual(calls[0].urls, ['/press', '/release']); assert.equal(calls[0].volume, .24);
   window.WhaleFeedback.play('success', ['/press', '/release'], 0); assert.equal(calls[1].volume, 0);
   window.WhaleFeedback.play('cancelled', '', 1); assert.equal(calls[2].volume, 0);
+  window.WhaleFeedback.play('press', '/same', 1); assert.equal(calls[3].channel, 'gesture'); assert.equal(calls[3].event, 'press');
+  window.WhaleFeedback.play('release', '/same', 1); assert.equal(calls[4].event, 'release');
+  window.WhaleFeedback.play('press', '/same', 1, undefined, true); assert.equal(calls[5].channel, 'preview'); assert.equal(calls[5].event, undefined);
 });

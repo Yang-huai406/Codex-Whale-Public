@@ -1,12 +1,13 @@
 import { bridgeRequest } from '../runtime/bridge.mjs';
 import path from 'node:path';
 import { VERSION, ROOT, DATA_HOME, readJson } from '../runtime/paths.mjs';
-const expectedBuild = readJson(path.join(ROOT, '.codex-plugin/plugin.json'), {}).version;
+import { runtimeReady } from './runtime-readiness.mjs';
+const expected = { version: VERSION, revision: readJson(path.join(ROOT, 'package.json'), {}).codexBuild, nativeGuard: process.platform === 'win32' };
 let verified=false;
 // Cold native compilation and Electron startup can exceed eight seconds on
 // a busy Windows host; keep a bounded readiness wait.
 for(let attempt=0;attempt<60;attempt++) {
-  try { const s=await bridgeRequest('/api/status',{timeoutMs:1500}); if(s.ok && s.version===VERSION && s.buildVersion===expectedBuild && s.rendererReady){verified=true;break;} } catch {}
+  try { const s=await bridgeRequest('/api/status',{timeoutMs:1500}); if(runtimeReady(s,expected)){verified=true;break;} } catch {}
   await new Promise(resolve=>setTimeout(resolve,500));
 }
 if(!verified && process.argv.includes('--allow-idle')) {

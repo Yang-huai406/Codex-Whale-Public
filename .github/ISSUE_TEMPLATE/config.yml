@@ -2,9 +2,9 @@ blank_issues_enabled: false
 contact_links:
   - name: 安装 / 使用文档（先看这里）
     url: https://github.com/Yang-huai406/Codex-Whale-Public/blob/main/README.md
-    about: Codex-v0.4(fixed)（内部 0.4.1） 的安装、验证、停用与回滚入口，也可离线查看包内 README.md。
-  - name: fixed 已知问题与验证边界
-    url: https://github.com/Yang-huai406/Codex-Whale-Public/blob/main/docs/KNOWN-ISSUES-FIXED.md
+    about: Codex-v0.4(fixixed)（内部 0.4.1） 的安装、验证、停用与回滚入口，也可离线查看包内 README.md。
+  - name: fixixed 已知问题与验证边界
+    url: https://github.com/Yang-huai406/Codex-Whale-Public/blob/main/docs/KNOWN-ISSUES-FIXIXED.md
     about: 已知限制和仍需实机验证的场景；远端更新前请查看本地包内同名文档。
   - name: 变更记录
     url: https://github.com/Yang-huai406/Codex-Whale-Public/blob/main/CHANGELOG.md

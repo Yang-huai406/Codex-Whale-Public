@@ -8,7 +8,7 @@ const show = source.slice(source.indexOf('function show()'), source.indexOf('fun
 const recover = source.slice(source.indexOf('function recoverRenderer('), source.indexOf('function setMode('));
 function fixture(overrides = {}) {
   const s = { manuallyHidden: true, rendererReady: false, readyTimer: 1, recoveryTimer: null, recoveryAttempts: 0,
-    quitting: false, reloads: 0, shows: 0, loading: true, diagnose() {},
+    quitting: false, usesSurfaceGuard: false, reloads: 0, shows: 0, loading: true, diagnose() {},
     setTimeout(fn) { s.pending = fn; return 2; },
     visibilityController: { requestRecovery() { s.shows++; } },
     window: { isDestroyed: () => false, webContents: { isLoading: () => s.loading, reload() { s.reloads++; } } }, ...overrides };
