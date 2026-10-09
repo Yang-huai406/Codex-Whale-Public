@@ -3253,7 +3253,11 @@
       random: '随机语句',
       custom: '自定义内容'
     };
+    function accountMode() { return window.WhaleAccountView?.mode === 'subscription' ? 'subscription' : 'api'; }
+    function subscriptionModule(type) { return window.WhaleAccountView?.bubbleModules[type]; }
+    function bubbleConfigUrl(mode) { return mode === 'subscription' ? BUBBLE_URL + '?mode=subscription' : BUBBLE_URL; }
     function bubbleDefaultFirstModules() {
+      if (accountMode() === 'subscription') return window.WhaleAccountView.defaultBubbleModules();
       return [{
         type: "text",
         text: "当前 API 余额",
@@ -3904,6 +3908,7 @@
       }
     }
     function bubbleDefaultQueue() {
+      if (accountMode() === 'subscription') return [{ kind: 'custom', modules: bubbleDefaultFirstModules() }];
       return bubbleParseDefaultItems();
       return [{
         kind: 'custom',
@@ -4120,6 +4125,7 @@
     }
     function bubbleModuleSummary(m) {
       m = m || ({});
+      if (subscriptionModule(m.type)) return subscriptionModule(m.type).label;
       if (m.type === 'balance') return '余额数值';
       if (m.type === 'today') return '今日已观测';
       if (m.type === 'image') return '图片/动图';
@@ -4132,6 +4138,7 @@
       if (m.type === 'text') return '文本: ' + (String(m.text || '').slice(0, 24) || '(空)');
       if (m.type === 'link') return '超链接: ' + (String(m.text || '').slice(0, 24) || '打开链接');
       if (m.type === 'random') return m.name || '随机语句';
+      if (subscriptionModule(m.type)) return subscriptionModule(m.type).label;
       if (m.type === 'balance') return '余额数值';
       if (m.type === 'today') return '今日已观测';
       if (m.type === 'image') return '图片/动图';
@@ -4548,13 +4555,17 @@
     function openBubbleEditor() {
       if (bubbleOpening || bubbleMask.style.display === 'flex') return;
       bubbleOpening = true;
-      loadBubbleCfg().then(function () {
+      var mode = accountMode(), modeRevision = bubbleModeRevision;
+      Promise.all([loadBubbleCfg(), mode === 'subscription' ? window.WhaleAccountView.refresh() : null]).then(function () {
+        if (mode !== accountMode() || modeRevision !== bubbleModeRevision) return;
+        bubbleEditorMode = mode;
         bubbleEditorRevision = bubbleRevision;
         buildBubbleEditor();
       }).catch(assetFailure).finally(function () { bubbleOpening = false; });
     }
     function buildBubbleEditor() {
       try {
+        bubbleTitle.textContent = accountMode() === 'subscription' ? '自定义订阅泡泡' : '自定义泡泡';
         closeRolePanel();
         closeAudioGroupPanel();
         bubbleLib = bubbleCfg && bubbleCfg.lib && Array.isArray(bubbleCfg.lib) ? JSON.parse(JSON.stringify(bubbleCfg.lib)) : [];
@@ -4608,7 +4619,7 @@
       bubbleEditorSnap = null;
     }
     function bubbleEditorReset() {
-      showConfirm('恢复为默认序列(首次=余额内容,再次=随机语句)?', function () {
+      showConfirm(accountMode() === 'subscription' ? '恢复为默认订阅额度气泡?' : '恢复为默认序列(首次=余额内容,再次=随机语句)?', function () {
         bubbleEditItems = bubbleDefaultQueue();
         renderBubbleEditor();
       });
@@ -5127,8 +5138,8 @@
         inp.type = 'text';
         inp.className = 'dshwv-qedit-content';
         inp.value = m.tpl || '';
-        inp.placeholder = m.type === 'balance' ? '例: {balance_api}' : m.type === 'today' ? '例: 今日已观测 {expense_api}' : '例: 当前 {status}';
-        inp.title = '可用占位符(英文): ' + (m.type === 'balance' ? '{balance_api}' : '{expense_api}');
+        inp.placeholder = subscriptionModule(m.type) ? '例: ' + subscriptionModule(m.type).tpl : m.type === 'balance' ? '例: {balance_api}' : m.type === 'today' ? '例: 今日已观测 {expense_api}' : '例: 当前 {status}';
+        inp.title = '可用占位符(英文): ' + (subscriptionModule(m.type) ? '{' + subscriptionModule(m.type).token + '}' : m.type === 'balance' ? '{balance_api}' : '{expense_api}');
         inp.addEventListener('input', function () {
           m.tpl = inp.value;
           changed();
@@ -5392,6 +5403,13 @@
           bubblePickImageToAdd();
         }
       }];
+      if (accountMode() === 'subscription') {
+        defs = defs.filter(function (d) { return d.key !== 'balance' && d.key !== 'today'; });
+        Object.keys(window.WhaleAccountView.bubbleModules).forEach(function (type) {
+          defs.splice(defs.length - 1, 0, { key: type, label: subscriptionModule(type).label,
+            cb: function () { bubbleModuleAdd(bubblePaletteModule(type)); } });
+        });
+      }
       for (var i = 0; i < defs.length; i++) {
         (function (d) {
           var chip = document.createElement('div');
@@ -5546,7 +5564,7 @@
           openQuickTextEditor(m);
           return;
         }
-        if (m && (m.type === 'balance' || m.type === 'today')) {
+        if (m && (m.type === 'balance' || m.type === 'today' || subscriptionModule(m.type))) {
           openQuickModuleEditor(m);
           return;
         }
@@ -5673,6 +5691,7 @@
       } catch (err) {}
     }
     function bubblePaletteModule(key) {
+      if (subscriptionModule(key)) return { type: key, size: 6, tpl: subscriptionModule(key).tpl };
       if (key === 'text') return {
         type: 'text',
         text: '新内容',
@@ -6469,6 +6488,7 @@
       return row;
     }
     function moduleTypeName(t, m) {
+      if (subscriptionModule(t)) return subscriptionModule(t).label;
       if (t === 'balance') return '余额数值';
       if (t === 'today') return '今日已观测';
       if (t === 'image') return '图片/动图';
@@ -6502,6 +6522,7 @@
         inp.style.background = '#fff';
         inp.value = m.tpl || '';
         function hintOf() {
+          if (subscriptionModule(m.type)) return '例: ' + subscriptionModule(m.type).tpl;
           if (m.type === 'balance') return '例: {balance_api}';
           if (m.type === 'today') return '例: 今日已观测 {expense_api}';
           return '例: 当前 {status}';
@@ -8006,6 +8027,10 @@
     var bubbleSeqIdx = 0;
     var bubbleRoundOn = false;
     var bubbleCfg = null;
+    var bubbleCfgMode = null;
+    var bubbleClickRevision = 0;
+    var bubbleEditorMode = null;
+    var bubbleModeRevision = 0;
     var bubbleRevision = null;
     var bubbleEditorRevision = null;
     var bubbleOpening = false;
@@ -8085,15 +8110,17 @@
     }
     function loadBubbleCfg() {
         var readSeq = ++bubbleCfgReadSeq;
-        return fetch(BUBBLE_URL, {
+        var mode = accountMode();
+        return fetch(bubbleConfigUrl(mode), {
           cache: 'no-store'
         }).then(function (r) {
           return r.json();
         }).then(function (d) {
           requireSaved(d);
           if (d.config !== null && (!d.config || typeof d.config !== 'object')) throw new Error('气泡配置读取失败，请重试');
-          if (readSeq !== bubbleCfgReadSeq) return d;
+          if (readSeq !== bubbleCfgReadSeq || mode !== accountMode()) return d;
           if (d && d.ok) {
+            bubbleCfgMode = mode;
             bubbleRevision = d.revision;
             bubbleCfg = d.config;
             bubbleLib = d.config && Array.isArray(d.config.lib) ? JSON.parse(JSON.stringify(d.config.lib)) : [];
@@ -8105,7 +8132,8 @@
     }
     function saveBubbleCfg(cfg, okFn) {
       try {
-        fetch(BUBBLE_URL, {
+        var mode = bubbleEditorMode || accountMode(), modeRevision = bubbleModeRevision;
+        fetch(bubbleConfigUrl(mode), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -8115,6 +8143,7 @@
           return r.json();
         }).then(function (d) {
           requireSaved(d);
+          if (mode !== accountMode() || modeRevision !== bubbleModeRevision) return;
           if (d && d.ok && d.config) {
             ++bubbleCfgReadSeq;
             bubbleRevision = d.revision;
@@ -8300,6 +8329,7 @@
       armBubbleDeadline();
     }
     function bubbleRenderDefault() {
+      if (accountMode() === 'subscription') { bubbleRenderModules(bubbleDefaultFirstModules()); return; }
       restoreBubbleLines();
     }
     function bubbleRenderRandom(lines) {
@@ -8406,6 +8436,7 @@
       var values = snapshot || state;
       var v = '';
       var map = {};
+      if (subscriptionModule(m.type)) return window.WhaleAccountView.bubbleValues(snapshot || window.WhaleAccountView.snapshot);
       if (m.type === 'balance') {
         v = balanceText(values);
         map['balance_ds'] = v;
@@ -8426,7 +8457,10 @@
           d: d
         });
       }
-      if (m.type === 'balance') add('balance_ds', '余额数值'); else if (m.type === 'today') add('expense_ds', '今日已观测金额');
+      if (subscriptionModule(m.type)) {
+        Object.entries(window.WhaleAccountView.bubbleModules).forEach(function (entry) { add(entry[1].token, entry[1].label); });
+        add('quota_5h_used', '5 小时已用比例'); add('quota_week_used', '每周已用比例');
+      } else if (m.type === 'balance') add('balance_ds', '余额数值'); else if (m.type === 'today') add('expense_ds', '今日已观测金额');
       return arr;
     }
     var dshwvTplHelpEl = null;
@@ -8513,6 +8547,11 @@
     
     function bubbleRowContentOf(mod) {
       mod = mod || ({});
+      if (subscriptionModule(mod.type)) {
+        var data = window.WhaleAccountView.snapshot;
+        var value = window.WhaleAccountView.bubbleValues(data)[subscriptionModule(mod.type).token];
+        return { txt: bubbleContentText(mod, value, data), line: null };
+      }
       if (mod.type === 'balance' || mod.type === 'today') {
         var captured = { balance: state.balance, balanceStatus: state.balanceStatus, todayUsage: state.todayUsage, currency: state.currency || 'USD' };
         var moneyText = function () {
@@ -8825,10 +8864,17 @@
         bubbleRowsTo(tb, mods || []);
       } catch (err) {}
     }
-    function whaleClick() {
+    function whaleClick(subscriptionReady) {
       try {
         if (!bubbleOn) return;
-        if (window.WhaleAccountView?.mode === 'subscription') { window.WhaleAccountView.toggleBubble(root); return; }
+        var mode = accountMode();
+        if (bubbleCfgMode !== mode || (mode === 'subscription' && !bubbleShown && subscriptionReady !== true)) {
+          var own = ++bubbleClickRevision;
+          Promise.all([loadBubbleCfg(), mode === 'subscription' ? window.WhaleAccountView.refresh() : null]).then(function () {
+            if (own === bubbleClickRevision && accountMode() === mode) whaleClick(true);
+          }).catch(assetFailure);
+          return;
+        }
         if (bubbleScene && (bubbleScene.kind === 'cost' || bubbleScene.kind === 'alert')) return;
         if (!bubbleShown) {
           bubbleRoundOn = true;
@@ -8864,7 +8910,7 @@
       } catch (err) {}
     }
     function showBubble() {
-      if (window.WhaleAccountView?.mode === 'subscription') return;
+      if (accountMode() === 'subscription' || bubbleCfgMode !== accountMode()) { whaleClick(); return; }
       if (!bubbleOn) return;
       if (costBubbleActive) return;
       bubbleRoundOn = true;
@@ -8872,6 +8918,7 @@
       bubbleShowSeqNext();
     }
     function hideBubble() {
+      ++bubbleClickRevision;
       for (var pendingItem of [whaleSysItem].concat(whaleSysQueue || [])) { if (pendingItem && typeof pendingItem.onDiscard === 'function') pendingItem.onDiscard(); }
       bubbleClearAll();
       costBubbleActive = false;
@@ -11377,7 +11424,11 @@
     window.addEventListener('whale-desktop-mode', function () { endDrag(null,false,true); closeMenu(); resetMenuButtonHover(); hideBubble(); applyAnchorPos(); settle(); window.getSelection()?.removeAllRanges(); setWidgetCursor(''); });
     window.addEventListener('whale-account-view', function () {
       // A display-mode switch updates this menu in place, retaining its open state.
-      hideBubble(); refresh(true);
+      ++bubbleModeRevision;
+      hideBubble(); closeBubbleItem(); closeBubbleEditor(); qeditClose();
+      ++bubbleCfgReadSeq; bubbleCfgMode = null; bubbleCfg = null; bubbleLib = [];
+      bubbleSeq = bubbleDefaultQueue();
+      loadBubbleCfg().catch(assetFailure); refresh(true);
       requestAnimationFrame(function () { if (menuOpen) positionMenu(); });
     });
     function endDrag(e, clickAllowed, preserveIntent) {
