@@ -4,8 +4,12 @@
   const buffers = new Map(), pending = new Map(), active = new Map(), epochs = new Map(), tails = new Set();
   // Only interaction audio is coalesced. Pointer/animation events and complete
   // notification/preview sequences are independent of this sound scheduler.
-  const FADE = .008, PRESS_GAP = .09, MAX_GESTURE_AGE = .25;
-  let gesture = {};
+  const FADE = .03, PRESS_GAP = .09, MAX_GESTURE_AGE = .25;
+  let gesture = {}, transition;
+  const durationMs = value => {
+    const n = typeof value === 'number' ? value : typeof value === 'string' && value.trim() !== '' ? Number(value) : NaN;
+    return Number.isFinite(n) ? Math.max(0, Math.min(600, n)) : 180;
+  };
   const clock = () => (typeof performance === 'object' ? performance.now() : Date.now()) / 1000;
   function context() { if (!ctx || ctx.state === 'closed') ctx = new AudioContext(); return ctx; }
   function touch() { clearTimeout(idle); idle = setTimeout(() => { stop(); buffers.clear(); pending.clear(); const old = ctx; ctx = null; old?.close().catch(() => {}); }, 60000); }
@@ -59,6 +63,31 @@
     }
     active.delete('gesture');
   }
+  function cancelTransition() {
+    if (!transition) return;
+    clearTimeout(transition.timer);
+    transition.resolve(false);
+    transition = null;
+  }
+  async function holdGesture() {
+    const voice = active.get('gesture');
+    if (!voice || !ctx) return;
+    const until = Math.min(voice.end, voice.start + voice.minPlayMs / 1000);
+    // Only one pending replacement is kept. A newer pointer event cancels the
+    // wait, and its epoch invalidates the older replacement before it can play.
+    while (active.get('gesture') === voice && ctx.currentTime < until) {
+      const elapsed = await new Promise(resolve => {
+        const waiting = { resolve, timer: null };
+        waiting.timer = setTimeout(() => {
+          if (transition === waiting) transition = null;
+          resolve(true);
+        }, Math.max(1, Math.ceil((until - ctx.currentTime) * 1000 - 1e-7)));
+        transition = waiting;
+      });
+      // Cancellation returns control to play(), which checks the epoch.
+      if (!elapsed) break;
+    }
+  }
   function coalesce(event, now) {
     if (event === 'press') {
       // A repeated down while already held is not another click. In particular
@@ -80,6 +109,7 @@
     return false;
   }
   function stop(channel) {
+    if (!channel || channel === 'gesture') cancelTransition();
     for (const key of channel ? [channel] : [...new Set([...active.keys(), ...epochs.keys(), ...[...tails].map(v => v.channel)])]) {
       epochs.set(key, (epochs.get(key) || 0) + 1);
       for (const voice of new Set([active.get(key), ...[...tails].filter(v => v.channel === key)].filter(Boolean))) silence(voice);
@@ -87,24 +117,31 @@
     }
     if (!channel || channel === 'gesture') gesture = {};
   }
-  async function play({ channel = 'preview', event, url, urls, preset = 'original', volume = .9 } = {}) {
+  async function play({ channel = 'preview', event, url, urls, preset = 'original', volume = .9, minPlayMs = 180 } = {}) {
     if (!(Number(volume) > 0) || preset === 'silent') { stop(channel); return; }
     const interaction = channel === 'gesture', requestedAt = clock();
     if (interaction) {
       if (coalesce(event, requestedAt)) return;
       epochs.set(channel, (epochs.get(channel) || 0) + 1);
-      fadeGesture();
+      cancelTransition();
     } else stop(channel);
     const epoch = epochs.get(channel);
     try {
       const c = context(); touch(); await c.resume();
-      // Decode the complete group before scheduling so release follows the full press.
+      // Decode before replacing the current sound, avoiding a gap on cache misses.
       // A missing slot must not prevent the remaining slots from playing.
       const sequence = preset === 'original' ? (await Promise.all((urls || [url]).filter(Boolean).map(src => warm(src).catch(() => null)))).filter(Boolean) : [];
       if (epochs.get(channel) !== epoch || c !== ctx || interaction && clock() - requestedAt > MAX_GESTURE_AGE) return;
+      if (preset === 'original' && !sequence.length) return;
+      if (interaction) {
+        await holdGesture();
+        if (epochs.get(channel) !== epoch || c !== ctx) return;
+        fadeGesture();
+      }
       const gain = c.createGain(); gain.connect(c.destination);
       const now = c.currentTime, nodes = [];
-      const voice = { channel, gain, nodes, start: now, volume: Math.min(1, Number(volume)), original: preset === 'original' };
+      const voice = { channel, gain, nodes, start: now, volume: Math.min(1, Number(volume)), original: preset === 'original',
+        minPlayMs: durationMs(minPlayMs) };
       if (preset === 'original') {
         if (!sequence.length) { gain.disconnect(); return; }
         voice.end = now + sequence.reduce((length, buffer) => length + buffer.duration, 0);
