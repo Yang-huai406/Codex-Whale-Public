@@ -11,6 +11,7 @@ const { validateWindowShape, EMPTY_SHAPE } = require('./window-shape.cjs');
 const { createVisibilityController } = require('./visibility.cjs');
 const { createVisibilityRecorder } = require('./visibility-recorder.cjs');
 const { createSurfaceGuard } = require('./surface-guard.cjs');
+const { createMacFollower } = require('./macos/follow.cjs');
 const { randomUUID } = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 const root = path.resolve(__dirname, '..');
@@ -56,6 +57,7 @@ const read = (f, fallback = {}) => { try { return JSON.parse(fs.readFileSync(f, 
 const save = (file, value) => { const temp = file + '.' + process.pid + '.tmp'; fs.writeFileSync(temp, JSON.stringify(value, null, 2)); fs.renameSync(temp, file); };
 let desktopMode = read(path.join(dataDir, 'follow-config.json')).mode === 'standalone' ? 'standalone' : 'follow-codex';
 let desktopBoundsApplied = false, modePending = false;
+let macFollower = null, macFollowTimer = null;
 let recoveryAttempts = 0, recoveryTimer = null, readyTimer = null;
 const visibilityHistory = [];
 let diagnosticShortcutRegistered = false, lastDiagnosticReport = null;
@@ -165,7 +167,7 @@ function sendCursor(force = false) {
 function setTestCursor(point) { if (fixture) { testCursor = point; sendCursor(true); } }
 const visibilityController = createVisibilityController({
   getWindow: () => window,
-  getState: () => ({ ready: rendererReady && !modePending && (!usesWindowShape || !!windowShape) && (!usesSurfaceGuard || surfaceGuard.ready()), host: lastHost, standalone: desktopMode === 'standalone', fixture, manuallyHidden, quitting }),
+  getState: () => ({ ready: rendererReady && !modePending && (!usesWindowShape || !!windowShape) && (!usesSurfaceGuard || surfaceGuard.ready()) && (!isMac || fixture || desktopMode === 'standalone' || macFollower?.snapshot().bound), host: lastHost, standalone: desktopMode === 'standalone', fixture, manuallyHidden, quitting }),
   onShown: () => {
     if (startup.phases.interactive == null) {
       markStartup('interactive');
@@ -208,6 +210,7 @@ async function showStatusDialog() {
     '桌面模式：' + desktopMode,
     '素材就绪：' + rendererReady,
     '恢复次数：' + recoveryAttempts,
+    ...(macFollower ? ['Space 绑定：' + (macFollower.snapshot().bound ? '已绑定' : macFollower.snapshot().reason || '等待窗口'), 'Space：' + macFollower.snapshot().spaces.join(', ')] : []),
   ];
   await dialog.showMessageBox({
     type: 'info',
@@ -237,7 +240,14 @@ async function openWebLink(value, gestureRequired = true) {
 async function setHost(host) {
   if (!host || typeof host.hostAlive !== 'boolean') return;
   if (Number.isSafeInteger(host.serial)) { if (host.serial <= hostSequence) return; hostSequence = host.serial; }
-  hostHeartbeat = Date.now(); lastHost = host;
+  hostHeartbeat = Date.now();
+  if (macFollower && desktopMode === 'follow-codex') {
+    if (host.monitorExit || !host.hostAlive) { app.quit(); return; }
+    // The probe may describe an incoming/outgoing Space during a swipe. Keep
+    // the last verified host until the native follower accepts a stable sample.
+    macFollower.observe(host); return;
+  }
+  lastHost = host;
   if (usesSurfaceGuard) { surfaceGuard.observeHeartbeat(host.surfaceHeartbeat); if (host.surfaceGuard) surfaceGuard.accept(host.surfaceGuard); }
   // Record the observed state before any lifecycle recovery can change it.
   if (usesWindowShape) { try { visibilityRecorder.sample(); } catch {} }
@@ -297,7 +307,7 @@ else {
     const { startBridge } = await import(pathToFileURL(path.join(root, 'runtime', 'bridge.mjs')));
     let testOptions = {};
     if (fixture) { const { makeFixture } = await import(pathToFileURL(path.join(root, 'tests', process.env.WHALE_CONNECTIONS_UI_TEST === '1' ? 'connection-ui-fixture.mjs' : 'desktop-fixture.mjs'))); testOptions = await makeFixture(dataDir); }
-    dispatcher = createDispatcher({ dataDir, fetchImpl: (url, options) => net.fetch(url, options), onStop: pauseAndQuit, onShow: show, statusInfo: () => ({ followCodex: desktopMode !== 'standalone', desktopMode, rendererReady, recoveryAttempts, manuallyHidden, platform: process.platform, followMode: lastHost?.followMode || null, hostPid: lastHost?.hostPid || null, visible: !!window?.isVisible(), modePending, windowShape, windowShapeError, windowBounds: window?.getBounds(), visibility: visibilityController.snapshot(), nativeFollowing: !!lastHost?.nativeFollowing, mouseRouting: { forwardedMouseMoves: !usesWindowShape, cursorPollMs: usesWindowShape ? 16 : 50 }, diagnostics: { shortcutRegistered: diagnosticShortcutRegistered, lastReport: lastDiagnosticReport, native: lastHost?.visualDiagnostics || null }, startup, rendering: gpuStatus, surfaceGuard: usesSurfaceGuard ? surfaceGuard.snapshot() : null }), ...testOptions });
+    dispatcher = createDispatcher({ dataDir, fetchImpl: (url, options) => net.fetch(url, options), onStop: pauseAndQuit, onShow: show, statusInfo: () => ({ followCodex: desktopMode !== 'standalone', desktopMode, rendererReady, recoveryAttempts, manuallyHidden, platform: process.platform, followMode: lastHost?.followMode || null, hostPid: lastHost?.hostPid || null, visible: !!window?.isVisible(), modePending, windowShape, windowShapeError, windowBounds: window?.getBounds(), visibility: visibilityController.snapshot(), nativeFollowing: !!lastHost?.nativeFollowing, macSpaceBinding: macFollower?.snapshot() || null, mouseRouting: { forwardedMouseMoves: !usesWindowShape, cursorPollMs: usesWindowShape ? 16 : 50 }, diagnostics: { shortcutRegistered: diagnosticShortcutRegistered, lastReport: lastDiagnosticReport, native: lastHost?.visualDiagnostics || null }, startup, rendering: gpuStatus, surfaceGuard: usesSurfaceGuard ? surfaceGuard.snapshot() : null }), ...testOptions });
     markStartup('dispatcherReady');
     await importLegacyStorage();
     session.defaultSession.protocol.handle('whale', async request => {
@@ -317,8 +327,17 @@ else {
     if (usesWindowShape) applyWindowShape(EMPTY_SHAPE);
     if (isMac) {
       if (app.dock) app.dock.hide();
-      window.setAlwaysOnTop(true, 'floating', 1);
-      window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+      window.setVisibleOnAllWorkspaces(desktopMode === 'standalone', { visibleOnFullScreen: true, skipTransformProcessType: true });
+      if (!fixture) {
+        let native = null;
+        const bindingPath = read(path.join(dataDir, 'follow-config.json')).spaceBindingPath;
+        try { if (typeof bindingPath === 'string' && path.isAbsolute(bindingPath)) native = require(bindingPath); } catch {}
+        macFollower = createMacFollower({ window, native, getMode: () => desktopMode, getHost: () => lastHost,
+          applyHost: host => { lastHost = host; if (host.attached) markStartup('attached'); visibility(); sendCursor(true); },
+          onError: reason => diagnose('mac-' + reason) });
+        if (lastHost) macFollower.observe(lastHost);
+        macFollowTimer = setInterval(() => macFollower.tick(), 16);
+      }
     }
     window.setAlwaysOnTop(isMac || desktopMode === 'standalone', 'floating');
     if (desktopMode === 'standalone') window.setBounds(screen.getPrimaryDisplay().workArea);
@@ -437,6 +456,7 @@ else {
     event.preventDefault();
     if (quitting) return;
     quitting = true;
+    clearInterval(macFollowTimer); macFollower?.dispose();
     visibilityController.dispose();
     // Do not leave an unresponsive input surface over Codex while saving state.
     try { if (window && !window.isDestroyed()) { window.setIgnoreMouseEvents(true); window.hide(); } } catch {}
@@ -486,6 +506,11 @@ function setMode(mode) {
   window.webContents.send('whale-desktop-mode-changing', mode);
   save(path.join(dataDir, 'follow-config.json'), { ...read(path.join(dataDir, 'follow-config.json')), mode }); desktopMode = mode; desktopBoundsApplied = false;
   appliedBounds = ''; appliedNativeSize = '';
+  if (isMac) {
+    window.hide();
+    window.setVisibleOnAllWorkspaces(mode === 'standalone', { visibleOnFullScreen: true, skipTransformProcessType: true });
+    macFollower?.reset();
+  }
   if (!isMac && !fixture) {
     // Native ownership must finish changing before Electron changes geometry.
     modePending = true; manuallyHidden = false; visibility(); return true;

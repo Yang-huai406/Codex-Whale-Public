@@ -26,7 +26,7 @@ root_files = {'.mcp.json', '.gitignore', '.gitattributes', 'package.json', 'pack
 blocked = {'node_modules', '.git', 'dist', 'qa', 'qa-output', 'backups', 'desktop-profile', 'desktop-runtime', '__pycache__', 'archive', 'packages'}
 private_names = {'auth.json', 'config.toml', 'api-settings.json', 'usage-settings.json', 'runtime.json', 'service.lock', 'installation.json', 'ui-state.json', 'follow-state.json', 'last-turn.json', 'turn-journal.json', 'follow-config.json', 'follow-install.json', 'desktop-enabled.json', 'desktop-shutdown.json', '.dshw-size.json', '.dshw-bubble.json', 'display-mode.json'}
 private_ext = {'.log', '.jsonl', '.db', '.sqlite', '.sqlite3', '.pem', '.key', '.pfx', '.bak', '.tmp', '.mp4', '.exe', '.dll', '.zip', '.7z', '.rar', '.tar', '.gz'}
-text_ext = {'.json', '.js', '.mjs', '.cjs', '.md', '.ps1', '.cmd', '.command', '.swift', '.txt', '.html', '.css', '.cs', '.py', '.yml', '.yaml', '.ts', '.toml', '.ini'}
+text_ext = {'.json', '.js', '.mjs', '.cjs', '.md', '.ps1', '.cmd', '.command', '.swift', '.m', '.h', '.txt', '.html', '.css', '.cs', '.py', '.yml', '.yaml', '.ts', '.toml', '.ini'}
 media_ext = {'.png', '.gif', '.mp3', '.wav'}
 patterns = [re.compile(r'[A-Z]:[/\\]+(?:Users[/\\]+[^/\\\s<>"\']+[/\\]|Codex_work(?:place)?(?:[/\\]|\b)|QQ[/\\]+downloads)', re.I),
             re.compile(r'/(?:Users|home)/[^/\s<>"\']+/', re.I),
@@ -119,6 +119,8 @@ files = {}
 for file in sorted(ROOT.rglob('*')):
     if not file.is_file():
         continue
+    if file.name == '.DS_Store':
+        continue
     rel = file.relative_to(ROOT)
     name = rel.as_posix()
     if file.resolve().is_relative_to(output):
@@ -165,7 +167,7 @@ if args.release_tag:
     assert re.fullmatch(r'codex-v\d+\.\d+\.\d+(?:\([a-z0-9.-]+\))?', expected_tag), 'Invalid Codex release tag'
     assert args.release_tag == expected_tag, 'Codex release tag/version mismatch'
 assert manifest['author']['name'] == 'Yang-huai406'
-for name in ['vendor/smol-toml/dist/index.js', 'desktop/ui/dashboard.js', 'desktop/ui/shape.js', 'desktop/macos/window-probe.swift', 'scripts/install-package.ps1', 'scripts/install-macos.mjs']:
+for name in ['vendor/smol-toml/dist/index.js', 'desktop/ui/dashboard.js', 'desktop/ui/shape.js', 'desktop/macos/window-probe.swift', 'desktop/macos/follow.cjs', 'desktop/macos/space-binding.m', 'desktop/macos/napi-abi.h', 'scripts/install-package.ps1', 'scripts/install-macos.mjs']:
     assert name in files, 'Missing runtime dependency: ' + name
 assert b'pull/128' in files['README.md']
 links = 0

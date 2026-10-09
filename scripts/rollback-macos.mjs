@@ -30,6 +30,8 @@ if (!receipt.hadInstall) {
  }
  const probe = path.join(receipt.backupDir, 'window-probe');
  if (previous.probePath && fs.existsSync(probe)) { fs.copyFileSync(probe, previous.probePath); fs.chmodSync(previous.probePath, 0o755); }
+ const binding = path.join(receipt.backupDir, 'space-binding.node');
+ if (previous.spaceBindingPath && fs.existsSync(binding)) fs.copyFileSync(binding, previous.spaceBindingPath);
  const plist = path.join(receipt.backupDir, 'LaunchAgent.plist');
  if (!fs.existsSync(plist)) throw new Error('Previous LaunchAgent backup is missing');
  fs.copyFileSync(plist, receipt.plistPath);

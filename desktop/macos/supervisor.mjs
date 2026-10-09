@@ -106,7 +106,7 @@ let probeBuffer = '';
 let probeGeneration = 0;
 let probeRestartTimer = null;
 let lastProbeAt = Date.now();
-let hostState = { hostAlive: false, hostPid: 0, hostSession: '', window: '0', visible: false, attached: false, nativeFollowing: false, followMode: 'macos-cgwindow-poll' };
+let hostState = { hostAlive: false, hostPid: 0, hostSession: '', window: '0', visible: false, attached: false, nativeFollowing: false, followMode: 'macos-space-probe' };
 let sequence = 0;
 let pendingState = null;
 let sending = false;
@@ -114,7 +114,7 @@ let heartbeat = null;
 const startedAt = new Date().toISOString();
 
 function unavailableHostState() {
-  return { hostAlive: false, hostPid: 0, hostSession: '', window: '0', visible: false, attached: false, nativeFollowing: false, followMode: 'macos-cgwindow-poll' };
+  return { hostAlive: false, hostPid: 0, hostSession: '', window: '0', visible: false, attached: false, nativeFollowing: false, followMode: 'macos-space-probe' };
 }
 
 function queueHostState(state) {
@@ -232,7 +232,7 @@ async function handleHostState(state) {
   writeJson(followStateFile, {
     childPid: child?.pid || null,
     state: hostState,
-    native: { enabled: false, mode: 'CGWindowList polling' },
+    native: { mode: 'macos-space-bound (Electron)', statusSource: '/api/status macSpaceBinding' },
     at: new Date().toISOString(),
   });
   queueHostState(hostState);
