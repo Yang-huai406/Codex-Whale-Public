@@ -35,6 +35,7 @@
     const finite=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0;
     const token=value=>finite(value)?value.toLocaleString()+' token':'暂无记录';
     const date=value=>value&&Number.isFinite(new Date(value).getTime())?new Date(value).toLocaleString():'重置时间未知';
+    const observed=value=>value&&Number.isFinite(new Date(value).getTime())?new Date(value).toLocaleString():'观测时间未知';
     const money=(value,currency=balance?.currency||'USD')=>{
       if(typeof value!=='number'||!Number.isFinite(value))return '暂不可用';
       const converted=window.WhaleMoney.convert(value,currency);
@@ -50,9 +51,10 @@
           const w=(sub.windows||[]).find(w=>w.windowDurationMins===minutes),box=el(grid,'section','','whale-quota-box');
           el(box,'span',label);el(box,'strong',w&&finite(w.usedPercent)?'剩余 '+Math.max(0,100-w.usedPercent).toFixed(1)+'%':'未观测');
           if(w&&finite(w.usedPercent)){const progress=el(box,'progress');progress.max=100;progress.value=Math.max(0,100-w.usedPercent);progress.setAttribute('aria-label',label+'剩余');}
-          el(box,'small',w?'重置：'+date(w.resetsAt):'等待官方额度快照');if(w?.stale)el(box,'small','快照已过期，请刷新');
+          el(box,'small',w?'重置：'+date(w.resetsAt):'等待官方额度快照');
+          if(w?.stale){el(box,'small','快照待更新：请在 Codex 完成一轮对话后刷新');if(finite(w.observedAt))el(box,'small','最近观测：'+observed(w.observedAt));}
         }
-        if(!sub.available)el(overviewData,'p',sub.reason||'正在读取订阅额度…','whale-dashboard-note');
+        if(!sub.available||(sub.windows||[]).some(w=>w.stale))el(overviewData,'p',sub.reason||'正在读取订阅额度…','whale-dashboard-note');
         metric(overviewData,'本轮已观测消耗',token(lastNotice?.tokens));
         el(overviewData,'p','额度来自官方快照；token 来自本机记录，两者分别统计。','whale-dashboard-note');
         el(tokenUsage,'h3','本机 token 用量');
@@ -77,11 +79,26 @@
     async function refresh(manual=false){
       const own=++generation,mode=account.mode;refreshButton.disabled=true;
       try{
-        const response=await fetch(mode==='subscription'?'/api/insights':'/dsh-whale/balance.json'+(manual?'?refresh=1':''),{cache:'no-store'});
-        if(!response.ok)throw Error('刷新失败');const data=await response.json();
+        let data;
+        if(mode==='subscription')data=await account.refresh({force:manual});
+        else{
+          const response=await fetch('/dsh-whale/balance.json'+(manual?'?refresh=1':''),{cache:'no-store'});
+          if(!response.ok)throw Error('刷新失败，请重试');data=await response.json();
+        }
         if(own!==generation||account.mode!==mode)return;
-        if(mode==='subscription')insights=data;else balance=data;render();
-      }catch{if(own===generation){if(mode==='api')balance={ok:false};render();}}
+        if(mode==='subscription'){
+          if(!data||data.ok===false||data.error)throw Error('刷新失败，请重试');
+          insights=data;
+          if(manual)window.whaleToast?.(account.refreshMessage(data));
+        }else balance=data;render();
+      }catch{
+        if(own!==generation)return;
+        if(mode==='subscription'){
+          // A failed refresh must not leave the previous snapshot on screen looking current.
+          insights={ok:false,subscription:{available:false,windows:[],reason:'刷新失败，请重试'}};render();
+          if(manual)window.whaleToast?.('订阅额度刷新失败，请重试');
+        }else{balance={ok:false};render();}
+      }
       finally{if(own===generation)refreshButton.disabled=false;}
     }
     function select(next){

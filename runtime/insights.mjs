@@ -16,11 +16,11 @@ export function createInsightsService(config) {
       monitored,subscribed,auth.auth_mode||'',authChangedAt,authSize])).digest('hex');
     return {c,monitored,subscribed,authChangedAt,key};
   }
-  async function get() {
+  async function get({force=false}={}) {
     const now=Date.now(), {c,monitored,subscribed,authChangedAt,key}=view(), pricing=pricingSchedule(c,now);
     if(lastKey!==key){cache=null;lastKey=key;}
     if(!monitored || closed)return {ok:true,pricing,subscription:{available:false,windows:[],reason:'本机会话观测已关闭'},tokens:null};
-    if(!cache || now-cache.at>30000){
+    if(force || !cache || now-cache.at>30000){
       if(!pending || pending.key!==key) {
         void worker?.terminate();
         const job={key,promise:null};
@@ -43,7 +43,7 @@ export function createInsightsService(config) {
       .map(w=>({...w,stale:at-w.observedAt>15*60000 || !Number.isFinite(w.resetsAt) || w.resetsAt<=at})) : [];
     const observedAt=windows.length ? Math.max(...windows.map(w=>w.observedAt)) : null;
     return {ok:true,pricing,tokens:data.tokens||null,subscription:{available:windows.length>0,windows,observedAt,
-      reason:!subscribed?'当前连接不是可识别的 ChatGPT 订阅登录':windows.length?'来自本机会话的官方额度快照；不能换算为固定 token 配额':'尚未观测到订阅额度快照，请在订阅登录下使用 Codex 后刷新'},error:data.error||null};
+      reason:!subscribed?'当前连接不是可识别的 ChatGPT 订阅登录':data.error?'本机记录读取失败，请重试':windows.some(w=>w.stale)?'已读取本机记录，额度快照待更新；请在 Codex 完成一轮对话后刷新。快照待更新不代表订阅到期。':windows.length?'来自本机会话的官方额度快照；不能换算为固定 token 配额':'尚未观测到订阅额度快照，请在订阅登录下使用 Codex 后刷新'},error:data.error||null};
   }
   return {get,close(){closed=true;void worker?.terminate();worker=null;cache=null;}};
 }
