@@ -87,17 +87,33 @@ func matchingProcessIDs(_ options: Options) -> [pid_t] {
     }
 }
 
+// Ordered-in includes windows on inactive Spaces, unlike kCGWindowIsOnscreen.
+// It excludes hidden helper windows that optionAll also enumerates.
+private let skyLight = dlopen("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight", RTLD_LAZY | RTLD_LOCAL)
+private typealias MainConnection = @convention(c) () -> Int32
+private typealias IsOrderedIn = @convention(c) (Int32, UInt32, UnsafeMutablePointer<UInt8>) -> Int32
+private let mainConnection = skyLight.flatMap { dlsym($0, "SLSMainConnectionID") }.map { unsafeBitCast($0, to: MainConnection.self) }
+private let isOrderedIn = skyLight.flatMap { dlsym($0, "SLSWindowIsOrderedIn") }.map { unsafeBitCast($0, to: IsOrderedIn.self) }
+
+func windowOrderedIn(_ window: UInt32) -> Bool {
+    guard let mainConnection, let isOrderedIn else { return false }
+    var ordered: UInt8 = 0
+    return isOrderedIn(mainConnection(), window, &ordered) == 0 && ordered != 0
+}
+
 struct HostWindow {
     let windowNumber: UInt32
     let ownerPID: pid_t
     let bounds: CGRect
+    let onScreen: Bool
+    let orderedIn: Bool
 }
 
-func hostWindow(for processIDs: [pid_t]) -> HostWindow? {
+func hostWindow(for processIDs: [pid_t], previousWindow: UInt32) -> HostWindow? {
     let processIDs = Set(processIDs)
     guard !processIDs.isEmpty,
           let rawWindows = CGWindowListCopyWindowInfo(
-              [.optionOnScreenOnly, .excludeDesktopElements],
+              [.optionAll, .excludeDesktopElements],
               kCGNullWindowID
           ) as? [[String: Any]]
     else { return nil }
@@ -115,15 +131,24 @@ func hostWindow(for processIDs: [pid_t]) -> HostWindow? {
         let bounds = CGRect(x: x, y: y, width: width, height: height)
         let layer = info[kCGWindowLayer as String] as? Int ?? 0
         let alpha = info[kCGWindowAlpha as String] as? Double ?? 1
-        let onscreen = info[kCGWindowIsOnscreen as String] as? Bool ?? true
-        guard layer == 0, alpha > 0.01, onscreen,
+        // Off-screen entries may omit the flag entirely in optionAll results.
+        let onscreen = info[kCGWindowIsOnscreen as String] as? Bool ?? false
+        guard layer == 0, alpha > 0.01,
               bounds.width >= 320, bounds.height >= 200
         else { return nil }
-        return HostWindow(windowNumber: windowNumber, ownerPID: ownerPID, bounds: bounds)
+        return HostWindow(windowNumber: windowNumber, ownerPID: ownerPID, bounds: bounds, onScreen: onscreen, orderedIn: windowOrderedIn(windowNumber))
     }
 
     let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
-    return candidates.first(where: { $0.ownerPID == frontmostPID }) ?? candidates.first
+    // Keep an identity even on an inactive Space. A bound companion stays in
+    // that Space so it can participate in both directions of the swipe.
+    let onScreen = candidates.filter { $0.onScreen }
+    return onScreen.first(where: { $0.ownerPID == frontmostPID })
+        ?? onScreen.first
+        ?? candidates.first(where: { $0.orderedIn && $0.windowNumber == previousWindow })
+        ?? candidates.first(where: { $0.orderedIn })
+        ?? candidates.first(where: { $0.windowNumber == previousWindow })
+        ?? candidates.first
 }
 
 func emit(_ state: [String: Any]) throws {
@@ -148,7 +173,7 @@ while true {
             lastProcessScan = Date()
         }
         let processIDs = cachedProcessIDs
-        let window = hostWindow(for: processIDs)
+        let window = hostWindow(for: processIDs, previousWindow: lastWindowNumber)
         if let window {
             lastWindowNumber = window.windowNumber
             lastOwnerPID = window.ownerPID
@@ -156,7 +181,7 @@ while true {
         }
 
         let hostAlive = !processIDs.isEmpty
-        let visible = hostAlive && window != nil
+        let visible = hostAlive && window?.onScreen == true
         let bounds = window?.bounds ?? lastBounds
         let scale = window.flatMap { _ in NSScreen.main?.backingScaleFactor } ?? NSScreen.main?.backingScaleFactor ?? 1
         var state: [String: Any] = [
@@ -164,9 +189,9 @@ while true {
             "hostPid": window?.ownerPID ?? lastOwnerPID,
             "window": String(window?.windowNumber ?? lastWindowNumber),
             "visible": visible,
-            "attached": visible,
+            "attached": false,
             "nativeFollowing": false,
-            "followMode": "macos-cgwindow-poll",
+            "followMode": "macos-space-probe",
             "dpi": 72.0 * scale,
             "bounds": [
                 "x": Double(bounds.origin.x),

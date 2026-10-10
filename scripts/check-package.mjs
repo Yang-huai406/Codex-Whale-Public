@@ -13,6 +13,9 @@ for(const name of ['../desktop/surface-guard.cjs','../desktop/SurfaceGuard.cs'])
 if(!fs.existsSync(fileURLToPath(new URL('../desktop/ui/dashboard.js',import.meta.url))))throw new Error('Dashboard module is missing');
 if(!fs.existsSync(fileURLToPath(new URL('../desktop/ui/account-notices.js',import.meta.url))))throw new Error('Account notification UI is missing');
 if(!fs.existsSync(fileURLToPath(new URL('../runtime/account-notices.mjs',import.meta.url))))throw new Error('Account notification ledger is missing');
+for(const name of ['../desktop/macos/follow.cjs','../desktop/macos/space-binding.m','../desktop/macos/napi-abi.h']) {
+  if(!fs.existsSync(fileURLToPath(new URL(name,import.meta.url))))throw new Error('macOS Space binding dependency is missing');
+}
 await import('../runtime/dispatcher.mjs');
 await import('../runtime/process.mjs');
 process.stdout.write('Package v' + version + ' metadata and dependency graph are complete.\n');

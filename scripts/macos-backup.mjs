@@ -10,6 +10,7 @@ export function backupMacInstall({ dataDir, pluginRoot, plistPath, installId }) 
   const oldPlist = previous?.launchAgentPath || plistPath;
   if (fs.existsSync(oldPlist)) fs.copyFileSync(oldPlist, path.join(backupDir, 'LaunchAgent.plist'));
   if (previous?.probePath && fs.existsSync(previous.probePath)) fs.copyFileSync(previous.probePath, path.join(backupDir, 'window-probe'));
+  if (previous?.spaceBindingPath && fs.existsSync(previous.spaceBindingPath)) fs.copyFileSync(previous.spaceBindingPath, path.join(backupDir, 'space-binding.node'));
   let sourceBackup = null;
   if (previous?.pluginRoot && path.resolve(previous.pluginRoot) !== path.resolve(pluginRoot) && fs.existsSync(previous.pluginRoot)) {
     sourceBackup = path.join(backupDir, 'previous-plugin');
