@@ -18,11 +18,14 @@
     text(dialog, 'h2', window.WhaleAccountView?.mode==='subscription'?'会员额度详情':'DeepSeek 峰谷'); const content = document.createElement('div'); dialog.append(content);
     const actions = document.createElement('div'); actions.className = 'dialog-actions'; const refresh = text(actions, 'button', '刷新'), close = text(actions, 'button', '关闭'); dialog.append(actions);
     let generation = 0;
-    async function load() {
+    async function load(manual = false) {
       const own = ++generation; refresh.disabled = true; content.replaceChildren(); text(content, 'p', '正在读取…');
       try {
-        const response = await fetch('/api/insights', { cache: 'no-store' }); if (!response.ok) throw Error('暂时无法读取额度'); const data = await response.json();
-        if (own !== generation || !dialog.isConnected) return; content.replaceChildren(); const sub = data.subscription || {};
+        const response = await fetch('/api/insights' + (manual ? '?refresh=1' : ''), { cache: 'no-store' }); if (!response.ok) throw Error('暂时无法读取额度'); const data = await response.json();
+        if (data.ok === false || data.error) throw Error('刷新失败，请重试');
+        if (own !== generation || !dialog.isConnected) return;
+        if (manual) window.whaleToast?.(window.WhaleAccountView?.mode === 'subscription' ? window.WhaleAccountView.refreshMessage(data) : '时段规则已刷新');
+        content.replaceChildren(); const sub = data.subscription || {};
         if(window.WhaleAccountView?.mode!=='subscription') {
           const p=data.pricing||{};
           if(p.visible){text(content,'p',p.phase==='peak'?'当前为高峰期':p.phase==='off-peak'?'当前为谷期':'规则待更新');text(content,'p','下次切换：'+time(p.nextChangeAt));text(content,'p',p.note||'');}
@@ -35,9 +38,14 @@
           const box = document.createElement('section'); content.append(box);
           const valid = item.usedPercent !== null && item.usedPercent !== undefined && Number.isFinite(Number(item.usedPercent));
           text(box, 'strong', window.WhaleAccountView.quotaLabel(item));
-          text(box, 'p', valid ? `已用 ${Number(item.usedPercent).toFixed(1)}% · 剩余 ${Math.max(0, 100 - Number(item.usedPercent)).toFixed(1)}%${item.stale ? '（数据已过期）' : ''}` : '额度比例未知');
+          text(box, 'p', valid ? `已用 ${Number(item.usedPercent).toFixed(1)}% · 剩余 ${Math.max(0, 100 - Number(item.usedPercent)).toFixed(1)}%${item.stale ? '（快照待更新）' : ''}` : '额度比例未知');
           if (valid) { const progress = document.createElement('progress'); progress.max = 100; progress.value = Math.max(0, Math.min(100, item.usedPercent)); progress.setAttribute('aria-label', item.label || '额度'); box.append(progress); }
           text(box, 'p', '重置时间：' + time(item.resetsAt));
+          // stale 只说明本机观测到的官方快照待更新，不伪造新的观测时间。
+          if (item.stale) {
+            text(box, 'small', '官方额度快照尚未更新，这里显示的是本机最近观测到的旧快照：请在 Codex 完成一轮对话后再刷新。');
+            if (typeof item.observedAt === 'number' && Number.isFinite(item.observedAt) && item.observedAt > 0) text(box, 'p', '最近观测：' + time(item.observedAt));
+          }
         }
         text(content, 'h3', '本机已观测 token（近 7 天）'); const tokens = sub.tokens || data.tokens || {};
         for (const [key, label] of Object.entries({ total: '总量', input: '输入', output: '输出', cachedInput: '缓存输入', reasoningOutput: '推理输出' })) text(content, 'p', `${label}：${Number.isFinite(tokens[key]) ? tokens[key].toLocaleString() : '暂无记录'}`);
@@ -45,10 +53,10 @@
         if (tokens.complete === false) text(content, 'p', '扫描结果不完整，目前显示部分已观测记录。' + (tokens.note || ''));
         text(content, 'small', '本机观测不包含其他设备的全部用量。缓存输入、推理输出可能为输入/输出的子集；不要重复相加。官方百分比不能换算为固定的剩余 token。');
         const pricing = data.pricing || {};
-      } catch (error) { if (own === generation) { content.replaceChildren(); text(content, 'p', error.message || '读取失败，请稍后重试'); } }
+      } catch (error) { if (own === generation) { content.replaceChildren(); text(content, 'p', error.message || '读取失败，请稍后重试'); if (manual) window.whaleToast?.(error.message || '刷新失败，请重试'); } }
       finally { if (own === generation) refresh.disabled = false; }
     }
-    refresh.onclick = load; close.onclick = () => dialog.close(); dialog.onclose = () => { generation++; dialog.remove(); }; document.body.append(dialog); dialog.showModal(); load();
+    refresh.onclick = () => load(true); close.onclick = () => dialog.close(); dialog.onclose = () => { generation++; dialog.remove(); }; document.body.append(dialog); dialog.showModal(); load();
   }
   const menu = document.querySelector('.dshwv-menu');
   if (menu) {

@@ -4,7 +4,7 @@
   const number = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
   function windowText(item) {
     const used = number(item.usedPercent);
-    return used === null ? '额度比例未知' : `已用 ${used.toFixed(1)}% · 剩余 ${Math.max(0, 100 - used).toFixed(1)}%${item.stale ? '（快照已过期）' : ''}`;
+    return used === null ? '额度比例未知' : `已用 ${used.toFixed(1)}% · 剩余 ${Math.max(0, 100 - used).toFixed(1)}%${item.stale ? '（快照待更新）' : ''}`;
   }
   function tokenText(value) { const n = number(value); return n === null ? '暂无记录' : n.toLocaleString() + ' token'; }
   function quotaLabel(item) { return item.windowDurationMins === 300 ? '5 小时额度' : item.windowDurationMins === 10080 ? '每周额度' : item.label || '额度窗口'; }
@@ -13,15 +13,23 @@
     if (value.failureKind === 'high-demand') return '挤不进去...';
     return number(value.tokens) === null ? '本轮 token 暂无记录' : '本轮本机已观测：' + tokenText(value.tokens);
   }
-  if (typeof module !== 'undefined' && module.exports) module.exports = { validMode, windowText, tokenText, noticeText, quotaLabel };
+  function refreshMessage(data) {
+    const sub = data?.subscription;
+    if (data?.error || data?.ok === false) return '订阅额度读取失败，请重试';
+    if (!sub?.available) return sub?.reason || '尚未观测到订阅额度快照，请在 Codex 完成一轮对话后刷新';
+    return (sub.windows || []).some(w => w.stale)
+      ? '已重新读取本机记录，仍有额度快照待更新；请在 Codex 完成一轮对话后再刷新'
+      : '订阅额度已刷新';
+  }
+  if (typeof module !== 'undefined' && module.exports) module.exports = { validMode, windowText, tokenText, noticeText, quotaLabel, refreshMessage };
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   const key = 'dshw-account-view';
-  let mode = 'api', card = null, content = null, root = null, generation = 0, switching = false, latestNotice = null;
+  let mode = 'api', card = null, content = null, root = null, generation = 0, switching = false, latestNotice = null, snapshot = null, pending = null;
   let modeButtons = [], status = null, modeRevision = 0;
   try { const saved = localStorage.getItem(key); if (validMode(saved)) mode = saved; } catch {}
   function text(parent, tag, value) { const el = document.createElement(tag); el.textContent = value; parent.append(el); return el; }
   function date(value) { if (!value) return '未知'; const d = new Date(typeof value === 'number' && value < 1e12 ? value * 1000 : value); return Number.isFinite(d.getTime()) ? d.toLocaleString() : '未知'; }
-  function close() { generation++; card?.remove(); card = content = null; }
+  function close() { generation++; pending?.controller.abort(); pending = null; card?.remove(); card = content = null; }
   function position() {
     if (!card) return;
     const anchor = (root || document).querySelector('.dshwv-img') || document.querySelector('.dshwv-img');
@@ -43,7 +51,7 @@
   }
   function commit(next) {
     mode = next; try { localStorage.setItem(key, mode); } catch {}
-    close(); latestNotice = null; updateButtons();
+    close(); latestNotice = null; snapshot = null; updateButtons();
     window.dispatchEvent(new CustomEvent('whale-account-view', { detail: { mode } }));
   }
   async function setMode(next) {
@@ -58,29 +66,53 @@
     } catch (e) { if (status) status.textContent = e.message || '切换失败，请重试'; return false; }
     finally { switching = false; updateButtons(); }
   }
-  async function refresh() {
-    if (mode !== 'subscription' || !card) return;
-    const own = ++generation; content.replaceChildren(); text(content, 'p', '正在读取订阅快照…'); position();
-    try {
-      const response = await fetch('/api/insights', { cache: 'no-store' }); if (!response.ok) throw Error('暂时无法读取订阅快照');
-      const data = await response.json(); if (own !== generation || !card) return;
-      content.replaceChildren(); const sub = data.subscription || {};
-      if (!sub.available) text(content, 'p', sub.reason || '暂无可用订阅额度快照。使用订阅账号完成 Codex 请求后刷新。');
-      else {
-        if (!(sub.windows || []).length) text(content, 'p', '暂无可用额度窗口');
-        for (const item of sub.windows || []) {
-          const section = text(content, 'section', ''); text(section, 'strong', quotaLabel(item)); text(section, 'p', windowText(item));
-          const used = number(item.usedPercent);
-          if (used !== null) { const meter = document.createElement('progress'); meter.max = 100; meter.value = Math.min(100, used); meter.setAttribute('aria-label', item.label || '已用额度'); section.append(meter); }
-          text(section, 'small', '重置：' + date(item.resetsAt));
-        }
+  function renderSnapshot(data) {
+    if (!content) return;
+    content.replaceChildren(); const sub = data.subscription || {};
+    if (!sub.available) text(content, 'p', sub.reason || '暂无可用订阅额度快照。使用订阅账号完成 Codex 请求后刷新。');
+    else {
+      if (!(sub.windows || []).length) text(content, 'p', '暂无可用额度窗口');
+      for (const item of sub.windows || []) {
+        const section = text(content, 'section', ''); text(section, 'strong', quotaLabel(item)); text(section, 'p', windowText(item));
+        const used = number(item.usedPercent);
+        if (used !== null) { const meter = document.createElement('progress'); meter.max = 100; meter.value = Math.min(100, used); meter.setAttribute('aria-label', item.label || '已用额度'); section.append(meter); }
+        text(section, 'small', '重置：' + date(item.resetsAt));
+        if (item.stale) { text(section, 'small', '快照待更新：请在 Codex 完成一轮对话后刷新'); text(section, 'small', '最近观测：' + date(item.observedAt)); }
       }
-      const tokens = sub.tokens || data.tokens || {};
-      text(content, 'p', '本机近 7 天：' + tokenText(tokens.total)); text(content, 'p', '本机滚动 5 小时：' + tokenText(tokens.last5Hours));
-      if (tokens.complete === false) text(content, 'small', '扫描尚不完整，仅显示部分记录。');
-      text(content, 'small', 'token 是本机观测，非官方订阅剩余额度；不包含其他设备，不能用百分比换算剩余 token。');
-      const notice = noticeText(latestNotice); if (notice) text(content, 'p', notice); position();
-    } catch (e) { if (own === generation && content) { content.replaceChildren(); text(content, 'p', e.message || '读取失败，请稍后重试'); position(); } }
+    }
+    const tokens = sub.tokens || data.tokens || {};
+    text(content, 'p', '本机近 7 天：' + tokenText(tokens.total)); text(content, 'p', '本机滚动 5 小时：' + tokenText(tokens.last5Hours));
+    if (tokens.complete === false) text(content, 'small', '扫描尚不完整，仅显示部分记录。');
+    text(content, 'small', 'token 是本机观测，非官方订阅剩余额度；不包含其他设备，不能用百分比换算剩余 token。');
+    const notice = noticeText(latestNotice); if (notice) text(content, 'p', notice); position();
+  }
+  async function refresh({ force = false } = {}) {
+    if (mode !== 'subscription') return null;
+    if (pending) return pending.promise;
+    if (content) { content.replaceChildren(); text(content, 'p', '正在读取订阅快照…'); position(); }
+    const own = generation, controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    const job = { controller, promise: null };
+    job.promise = (async () => {
+      try {
+        const response = await fetch('/api/insights' + (force ? '?refresh=1' : ''), { cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw Error('暂时无法读取订阅快照');
+        const data = await response.json();
+        if (data.ok === false || data.error) throw Error('暂时无法读取订阅快照');
+        if (own !== generation || mode !== 'subscription') return null;
+        snapshot = data; renderSnapshot(snapshot);
+      } catch {
+        if (own !== generation || mode !== 'subscription') return null;
+        // A failed refresh cannot leave an old snapshot looking current.
+        snapshot = { ok: false, subscription: { available: false, windows: [], reason: '暂时无法读取订阅快照' }, tokens: null }; renderSnapshot(snapshot);
+      } finally {
+        clearTimeout(timer);
+        if (pending === job) pending = null;
+      }
+      return snapshot;
+    })();
+    pending = job;
+    return job.promise;
   }
   function toggleBubble(anchorRoot) {
     if (mode !== 'subscription') return false;
@@ -89,7 +121,7 @@
     card = document.createElement('section'); card.className = 'whale-account-card'; card.setAttribute('aria-label', '会员订阅额度');
     const header = text(card, 'div', ''); header.className = 'whale-account-header'; text(header, 'strong', '会员订阅额度');
     const closeButton = text(header, 'button', '关闭'); closeButton.onclick = close;
-    content = text(card, 'div', ''); const refreshButton = text(card, 'button', '刷新'); refreshButton.onclick = refresh;
+    content = text(card, 'div', ''); const refreshButton = text(card, 'button', '刷新'); refreshButton.onclick = async () => { refreshButton.disabled = true; try { const data = await refresh({force:true}); if (data) window.whaleToast?.(refreshMessage(data)); } finally { refreshButton.disabled = false; } };
     document.body.append(card); followCard(card); refresh(); return true;
   }
   function notice(value) {
@@ -130,7 +162,7 @@
     window.addEventListener('resize', position);
     window.addEventListener('whale-mode-changing', close);
   }
-  window.WhaleAccountView = { get mode() { return mode; }, toggleBubble, refresh, notice, close, setMode, quotaLabel };
+  window.WhaleAccountView = { get mode() { return mode; }, get snapshot() { return snapshot; }, refreshMessage, toggleBubble, refresh, notice, close, setMode, quotaLabel };
   // Deferred scripts run at readyState=interactive before the widget creates its menu.
   if (document.readyState !== 'complete') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();

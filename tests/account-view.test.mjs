@@ -17,7 +17,7 @@ test('missing snapshot values never become zero quota or tokens', () => {
     assert.equal(windowText({ usedPercent: value }), '额度比例未知');
     assert.equal(tokenText(value), '暂无记录');
   }
-  assert.match(windowText({ usedPercent: 25.5, stale: true }), /已用 25.5% · 剩余 74.5%（快照已过期）/);
+  assert.match(windowText({ usedPercent: 25.5, stale: true }), /已用 25.5% · 剩余 74.5%（快照待更新）/);
   assert.equal(tokenText(0), '0 token');
 });
 test('subscription failure consumption displays tokens without API money or fun failure text', () => {
