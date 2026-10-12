@@ -24,6 +24,9 @@ const probeSource = path.join(ROOT, 'desktop', 'macos', 'window-probe.swift');
 const homebrewNode = ['/opt/homebrew/bin/node', '/usr/local/bin/node'].find(file => fs.existsSync(file));
 const nodePath = homebrewNode || process.execPath;
 const installId = randomUUID();
+// Keep each native binding build at its own path so rollback configurations
+// can continue loading their original module without replacing a live binary.
+const spaceBindingPath = path.join(nativeDir, 'whale-space-binding-' + installId + '.node');
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { stdio: 'inherit', ...options });
@@ -67,6 +70,16 @@ function compileProbe() {
   run('/usr/bin/codesign', ['--force', '--sign', '-', temporary]);
   fs.renameSync(temporary, probePath);
   fs.chmodSync(probePath, 0o755);
+}
+
+function compileSpaceBinding() {
+  fs.mkdirSync(nativeDir, { recursive: true });
+  const temporary = spaceBindingPath + '.tmp';
+  run('/usr/bin/xcrun', ['clang', '-bundle', '-undefined', 'dynamic_lookup', '-fobjc-arc', '-O2', '-Wall', '-Wextra', '-Werror',
+    '-arch', 'arm64', '-arch', 'x86_64', '-mmacosx-version-min=11.0', '-framework', 'AppKit', '-framework', 'CoreGraphics',
+    '-o', temporary, path.join(ROOT, 'desktop', 'macos', 'space-binding.m')]);
+  run('/usr/bin/codesign', ['--force', '--sign', '-', temporary]);
+  fs.renameSync(temporary, spaceBindingPath);
 }
 
 function xml(value) {
@@ -155,6 +168,7 @@ if (launchctl(['print', oldService], { allowFailure: true }).status === 0) {
 installDesktopIfNeeded();
 prepareElectronBundle();
 compileProbe();
+compileSpaceBinding();
 writeLaunchAgent();
 
 const config = {
@@ -169,6 +183,7 @@ const config = {
   nodePath,
   electronPath,
   probePath,
+  spaceBindingPath,
   launchAgentPath: plistPath,
   bundleId: process.env.WHALE_CODEX_BUNDLE_ID || 'com.openai.codex',
 };

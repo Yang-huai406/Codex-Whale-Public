@@ -3,14 +3,38 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const { createVisibilityController } = createRequire(import.meta.url)('../desktop/visibility.cjs');
 
-function fixture() {
+function fixture({ nativeVisibility = false } = {}) {
   let state = { ready: true, host: { hostAlive: true, hostPid: 1, window: '1', visible: true, attached: true, visibilityRevision: 0 } };
   let visible = false, destroyed = false, id = 0, time = 0;
   const calls = [], timers = new Map(), cancelled = [];
   const window = { isDestroyed: () => destroyed, isVisible: () => visible, hide() { visible = false; calls.push('hide'); }, showInactive() { visible = true; calls.push('show'); } };
-  const controller = createVisibilityController({ getWindow: () => window, getState: () => state, now: () => time, schedule: fn => { timers.set(++id, fn); return id; }, cancel: n => { cancelled.push(timers.get(n)); timers.delete(n); } });
-  return { controller, calls, timers, cancelled, advance: ms => { time += ms; }, set: value => { state = { ...state, ...value, host: { ...state.host, ...value.host } }; }, destroy: () => { destroyed = true; }, visible: () => visible, pretendVisible: () => { visible = true; }, flush: () => { const batch = [...timers.values()]; timers.clear(); batch.forEach(fn => fn()); } };
+  const controller = createVisibilityController({ getWindow: () => window, getState: () => state,
+    ...(nativeVisibility ? { isVisible: () => visible } : {}),
+    now: () => time, schedule: fn => { timers.set(++id, fn); return id; }, cancel: n => { cancelled.push(timers.get(n)); timers.delete(n); } });
+  return { controller, window, calls, timers, cancelled, advance: ms => { time += ms; }, set: value => { state = { ...state, ...value, host: { ...state.host, ...value.host } }; }, destroy: () => { destroyed = true; }, visible: () => visible, pretendVisible: () => { visible = true; }, flush: () => { const batch = [...timers.values()]; timers.clear(); batch.forEach(fn => fn()); } };
 }
+
+for (const standalone of [false, true]) test('native mapping prevents occlusion-driven remap loops in ' + (standalone ? 'desktop' : 'follow'), () => {
+  const f = fixture({ nativeVisibility: true });
+  f.set({ standalone }); f.controller.update();
+  // Focus loss / return from a Space can disagree with Electron's visibility.
+  for (let i = 0; i < 1000; i++) {
+    f.window.isVisible = () => i % 2 === 0;
+    f.controller.update(); f.flush();
+  }
+  assert.deepEqual(f.calls, ['show']);
+  assert.equal(f.controller.snapshot().remaps, 0);
+  f.set({ manuallyHidden: true }); f.controller.update();
+  assert.equal(f.visible(), false);
+  f.set({ manuallyHidden: false }); f.controller.update(); f.flush();
+  assert.equal(f.visible(), true);
+  assert.equal(f.controller.snapshot().remaps, 1);
+  // An actual orderOut still recovers, regardless of Electron's cached value.
+  f.window.hide(); f.window.isVisible = () => true;
+  f.controller.update(); f.flush();
+  assert.equal(f.visible(), true);
+  assert.equal(f.controller.snapshot().remaps, 2);
+});
 
 test('late native hidden samples from our remap cannot feed another recovery', () => {
   const f = fixture(); f.controller.update(); f.advance(2000);
