@@ -68,7 +68,7 @@ export function createDispatcher({ dataDir = DATA_HOME, service = null, monitor 
         writeJson(displayModeFile,{version:1,mode:input.mode});
         return jsonResult(200,{ok:true,mode:input.mode});
       }
-      if (url.pathname === '/api/insights' && method === 'GET') return jsonResult(200, await insights.get());
+      if (url.pathname === '/api/insights' && method === 'GET') return jsonResult(200, await insights.get({force:url.searchParams.get('refresh')==='1'}));
       if (url.pathname === '/api/usage-scopes' && method === 'GET') return jsonResult(200, whale.usageScopes());
       if (url.pathname === '/api/account-notices') return method === 'GET' ? jsonResult(200, whale.accountNotices()) : jsonResult(405, {ok:false});
       if (url.pathname === '/api/account-notices/ack') return method === 'POST' ? jsonResult(200, whale.ackAccountNotices(parsed().ids)) : jsonResult(405, {ok:false});
