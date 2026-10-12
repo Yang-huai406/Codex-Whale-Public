@@ -1,0 +1,22 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import assert from 'node:assert/strict';
+import { DATA_HOME, ROOT, readJson } from '../runtime/paths.mjs';
+
+const output = path.resolve(process.argv[2] || '/private/tmp/whale-compact-click');
+fs.mkdirSync(output, { recursive: true });
+const config = readJson(path.join(DATA_HOME, 'follow-config.json'), {});
+assert.equal(process.platform, 'darwin');
+assert.ok(config.electronPath && fs.existsSync(config.electronPath), 'installed Electron is required');
+const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
+const child = spawn(config.electronPath, [path.join(ROOT, 'tests/macos-compact-click-fixture.cjs'), '--output=' + output], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+child.stdout.resume(); let diagnostic = '';
+child.stderr.on('data', data => { diagnostic = (diagnostic + data).slice(-2000); });
+const timeout = setTimeout(() => child.kill('SIGTERM'), 25000);
+const [code] = await once(child, 'close'); clearTimeout(timeout);
+const report = readJson(path.join(output, 'compact-click.json'), {});
+assert.equal(code, 0, report.error || diagnostic);
+assert.equal(report.ok, true, report.error || diagnostic);
+console.log(JSON.stringify({ ok: true, clicks: report.clicks.length, clickBoundsChanges: report.clickBoundsChanges, drag: report.drag, report: path.join(output, 'compact-click.json') }));

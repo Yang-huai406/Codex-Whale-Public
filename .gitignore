@@ -28,4 +28,5 @@ service.lock
 *.pfx
 *.mp4
 *.zip
+*.node
 __pycache__/

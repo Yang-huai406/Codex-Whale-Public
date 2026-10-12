@@ -21,6 +21,7 @@
 .dshwv-menu,.dshwv-menu *,.whale-account-card,.whale-account-card *{user-select:none;-webkit-user-select:none}
 .dshwv-menu input:not([type=range]):not([type=checkbox]),.dshwv-menu textarea,.whale-v3-dialog input:not([type=range]),.whale-v3-dialog textarea{user-select:text;-webkit-user-select:text}
 html[data-whale-cursor=grab]{cursor:grab}html[data-whale-cursor=grabbing],html[data-whale-cursor=grabbing] *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}
+html.whale-compact .dshwv-root{--dshw-base:clamp(122px,calc(min(250px,min(var(--whale-host-width),var(--whale-host-height)) * .28) * var(--dshw-scale)),625px)}
 .whale-v3-dialog .dialog-actions{position:sticky;bottom:-20px;background:white;padding:12px 0;margin-top:12px;z-index:2}
 
 /* Compact native companion surfaces. No viewport-sized dimming or blur. */

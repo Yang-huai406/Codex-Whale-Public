@@ -6,7 +6,7 @@ const source=fs.readFileSync(new URL('../assets/whale-widget.js',import.meta.url
 function real(name){const start=source.indexOf(`    function ${name}(`);assert.ok(start>=0);const end=source.indexOf('\n    }',start);return source.slice(start,end+6);}
 function setup(){
  let committed=0,saved=0,clicked=0;const state={left:330,top:340,flip:false};
- const h=vm.createContext({Number,WhaleRendering:{},state,drag:{active:true,moved:true,origLeft:300,origTop:300,startX:350,startY:350,vp:{w:1000,h:700},w:200,h:200},
+ const h=vm.createContext({Number,window:{},WhaleRendering:{},state,drag:{active:true,moved:true,origLeft:300,origTop:300,startX:350,startY:350,vp:{w:1000,h:700},w:200,h:200},
  root:{hasPointerCapture:()=>false,classList:{remove(){}}},document:{removeEventListener(){}},positioner:{style:{}},pressUp(){},isWhaleHit:()=>false,setWidgetCursor(){},onDocPointerMove(){},onDocPointerUp(){},
  applyAnchorPos(){state.left=300;state.top=300;},settle(){},whaleClick(){clicked++;},refresh(){},commitPosition(){committed++;},saveConfig(){saved++;},
  clamp:(x,a,b)=>Math.max(a,Math.min(b,x)),artCenterAt:(x,y,w,h)=>({cx:x+w/2,cy:y+h/2}),snapZones:()=>({zH:null,zV:null,flip:false})});

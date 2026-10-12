@@ -4772,7 +4772,7 @@
     }
     function qeditPlace(anchorRect, widthPx, preferAbove) {
       try {
-        var vp = viewport();
+        var vp = windowViewport();
         var box = qeditEl;
         var w = Math.max(180, Math.min(widthPx || 320, vp.w - 16));
         box.style.width = w + 'px';
@@ -6235,7 +6235,7 @@
         menuEl.style.top = '0px';
         menuEl.classList.add('dshwv-rgbopen');
         var r = anchorEl.getBoundingClientRect();
-        var vp = viewport();
+        var vp = windowViewport();
         var w = Math.max(20, Math.round(r.width));
         if (menuEl.classList && menuEl.classList.contains('dshwv-qcolmenu')) {
           try {
@@ -8466,7 +8466,7 @@
           width: 100
         };
         var w = 252;
-        var vp = viewport();
+        var vp = windowViewport();
         var left = Math.max(4, Math.min(r.right - w, vp.w - w - 4));
         var top = r.bottom + 4;
         var h = dshwvTplHelpEl.offsetHeight || 120;
@@ -9014,10 +9014,16 @@
       return v < lo ? lo : v > hi ? hi : v;
     }
     function viewport() {
+      var host = window.whaleCompact && window.whaleCompact.hostViewport();
+      if (host) return host;
       return {
         w: window.innerWidth || document.documentElement.clientWidth || 1280,
         h: window.innerHeight || document.documentElement.clientHeight || 800
       };
+    }
+    function windowViewport() {
+      return { w: window.innerWidth || document.documentElement.clientWidth || 1280,
+        h: window.innerHeight || document.documentElement.clientHeight || 800 };
     }
     function rightGap() {
       if (!scrollGapOn) return 0;
@@ -9041,7 +9047,8 @@
       WhaleMoney.bind(hintEl, function () { return captured.status === 'error' ? (captured.message || '获取失败 · 点击重试').slice(0, 20) : ['unconfirmed', 'unsupported'].includes(captured.balanceStatus) ? '设置中配置余额接口' : !captured.balanceStatus && captured.balance === null ? '加载中…' : '今日已观测 ' + (captured.canObserve && captured.todayUsage != null ? fmt(captured.todayUsage, captured.currency) : '--'); });
     }
     function express() {
-      positioner.style.transform = 'translate3d(' + state.left + 'px,' + state.top + 'px,0)';
+      var local = window.whaleCompact ? window.whaleCompact.localPoint(state.left, state.top) : { x: state.left, y: state.top };
+      positioner.style.transform = 'translate3d(' + local.x + 'px,' + local.y + 'px,0)';
       root.classList.toggle('dshwv-left', !!state.flip);
       WhaleRendering.presentFor(drag && drag.active ? 0 : 200);
     }
@@ -9382,6 +9389,7 @@
       }
       state.top = Math.min(Math.max(fy - r2.height, 0), Math.max(0, vp.h - r2.height));
       express();
+      if (menuOpen) positionMenu();
       commitPosition();
       saveConfig();
       requestAnimationFrame(function () {
@@ -9545,7 +9553,7 @@
       try {
         var r = positioner.getBoundingClientRect();
         var b = menuBtn.getBoundingClientRect();
-        var vp = viewport();
+        var vp = windowViewport();
         var onLeft = r.left + root.offsetWidth / 2 < vp.w / 2;
         var width = menuBox.offsetWidth, height = menuBox.offsetHeight;
         var assetTop = r.top + root.offsetHeight * (1 - 0.5945);
@@ -9759,7 +9767,7 @@
       }
       try {
         var b = roleBtn.getBoundingClientRect();
-        var vp = viewport();
+        var vp = windowViewport();
         var panelW = Math.max(200, Math.round(b.width));
         rolePanel.style.width = panelW + 'px';
         rolePanel.style.left = Math.max(4, Math.min(b.left, vp.w - panelW - 4)) + 'px';
@@ -10203,7 +10211,7 @@
       try {
         renderAudioGroupPanel();
         var b = audioGroupBtn.getBoundingClientRect();
-        var vp = viewport();
+        var vp = windowViewport();
         var panelW = Math.max(200, Math.round(b.width));
         audioGroupPanel.style.width = panelW + 'px';
         audioGroupPanel.style.left = Math.max(4, Math.min(b.left, vp.w - panelW - 4)) + 'px';
@@ -10367,7 +10375,7 @@
       renderAudioSlotPanel(slot);
       try {
         var b = btn.getBoundingClientRect();
-        var vp = viewport();
+        var vp = windowViewport();
         var panelW = Math.max(120, Math.round(b.width));
         panel.style.width = panelW + 'px';
         panel.style.left = Math.max(4, Math.min(b.left, vp.w - panelW - 4)) + 'px';
@@ -11244,17 +11252,19 @@
       // A new user grab takes ownership of the currently painted position,
       // including a previous snap animation that has not reached its target.
       var rect = positioner.getBoundingClientRect();
+      var hostPoint = window.whaleCompact ? window.whaleCompact.hostPoint(rect.left, rect.top) : { x: rect.left, y: rect.top };
+      var pressPoint = window.whaleCompact ? window.whaleCompact.hostPoint(e.clientX, e.clientY) : { x: e.clientX, y: e.clientY };
       positioner.style.transition = 'none';
-      state.left = rect.left;
-      state.top = rect.top;
+      state.left = hostPoint.x;
+      state.top = hostPoint.y;
       express();
       try { root.setPointerCapture(e.pointerId); } catch (err) {}
     drag = {
         active: true,
-        startX: e.clientX,
-        startY: e.clientY,
-        origLeft: rect.left,
-        origTop: rect.top,
+        startX: pressPoint.x,
+        startY: pressPoint.y,
+        origLeft: hostPoint.x,
+        origTop: hostPoint.y,
         w: root.offsetWidth,
         h: root.offsetHeight,
         moved: false,
@@ -11270,9 +11280,18 @@
     }
     function onDocPointerMove(e) {
       if (!drag || !drag.active) return;
-      var dx = e.clientX - drag.startX;
-      var dy = e.clientY - drag.startY;
-      if (dx * dx + dy * dy >= CLICK_SQ) drag.moved = true;
+      // The gesture was started by the primary mouse button, so every move it
+      // owns still has that button held. Relocating a compact native window
+      // under a stationary cursor makes macOS deliver moves for this same
+      // pointer with buttons: 0; they must never promote a press into a drag.
+      if (e.pointerType === 'mouse' && (e.buttons & 1) !== 1) return;
+      var point = window.whaleCompact ? window.whaleCompact.hostPoint(e.clientX, e.clientY) : { x: e.clientX, y: e.clientY };
+      var dx = point.x - drag.startX;
+      var dy = point.y - drag.startY;
+      if (dx * dx + dy * dy >= CLICK_SQ) {
+        drag.moved = true;
+        root.classList.add('dshwv-drag-moved');
+      }
       state.left = clamp(drag.origLeft + dx, 0, Math.max(0, drag.vp.w - drag.w));
       state.top = clamp(drag.origTop + dy, 0, Math.max(0, drag.vp.h - drag.h));
       express();
@@ -11398,7 +11417,7 @@
       document.removeEventListener('pointerup', onDocPointerUp, true);
       document.removeEventListener('pointercancel', onDocPointerCancel, true);
       pressUp();
-      root.classList.remove('dshwv-dragging');
+      root.classList.remove('dshwv-dragging', 'dshwv-drag-moved');
       positioner.style.transition = '';
       setWidgetCursor(isWhaleHit(e) ? 'grab' : '');
       // pointercancel/lost capture/blur never commit an unfinished gesture.
@@ -11408,8 +11427,9 @@
         if (clickAllowed && validEnd && !drag.moved) { whaleClick(); refresh(true); }
         return;
       }
-      var dx = e.clientX - drag.startX;
-      var dy = e.clientY - drag.startY;
+      var point = window.whaleCompact ? window.whaleCompact.hostPoint(e.clientX, e.clientY) : { x: e.clientX, y: e.clientY };
+      var dx = point.x - drag.startX;
+      var dy = point.y - drag.startY;
       var left = clamp(drag.origLeft + dx, 0, Math.max(0, drag.vp.w - drag.w));
       var top = clamp(drag.origTop + dy, 0, Math.max(0, drag.vp.h - drag.h));
       var ac = artCenterAt(left, top, drag.w, drag.h, !!state.flip);
@@ -11468,10 +11488,23 @@
         return false;
       }
     }
+    var lastCompactViewport = viewport();
+    window.addEventListener('whale-compact-geometry', function () {
+      var next = viewport();
+      positioner.style.transition = 'none';
+      if (drag && drag.active) express();
+      else if (next.w !== lastCompactViewport.w || next.h !== lastCompactViewport.h) {
+        applyAnchorPos(); settle();
+      } else express();
+      lastCompactViewport = next;
+      if (menuOpen) positionMenu();
+      requestAnimationFrame(function () { positioner.style.transition = ''; });
+    });
     window.addEventListener('resize', function () {
       // A shrinking viewport can put the old position wholly outside its new
       // region. Commit the clamped location directly, without interpolating
       // through invisible coordinates during desktop/follow or DPI changes.
+      if (drag && drag.active && window.whaleCompact && window.whaleCompact.hostViewport()) { express(); return; }
       if (drag && drag.active) endDrag(null, false, true);
       positioner.style.transition = 'none';
       applyAnchorPos(); settle();

@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 const saved = ipcRenderer.sendSync('whale-storage');
 try { for (const [key, value] of Object.entries(saved)) if (localStorage.getItem(key) == null) localStorage.setItem(key, value); } catch {}
 let trustedClickAt = 0;
+let lastHostGeometry = null;
 for (const eventName of ['click', 'auxclick']) document.addEventListener(eventName, event => {
   if (!event.isTrusted || (event.button !== 0 && event.button !== 1)) return;
   trustedClickAt = Date.now(); ipcRenderer.send('whale-user-gesture');
@@ -13,6 +14,14 @@ contextBridge.exposeInMainWorld('whaleDesktop', {
   interactive: value => ipcRenderer.send('whale-interactive', !!value),
   shape: rects => ipcRenderer.send('whale-shape', rects),
   onCursor: callback => ipcRenderer.on('whale-cursor', (_event, point) => callback(point)),
+  onHostGeometry: callback => {
+    ipcRenderer.on('whale-host-geometry', (_event, geometry) => {
+      lastHostGeometry = geometry;
+      callback(geometry);
+    });
+    if (lastHostGeometry) callback(lastHostGeometry);
+  },
+  compactLayout: layout => ipcRenderer.send('whale-compact-layout', layout),
   save: values => ipcRenderer.send('whale-save-storage', values),
   command: command => ipcRenderer.invoke('whale-command', command),
   openExternal: value => {

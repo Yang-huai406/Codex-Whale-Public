@@ -38,6 +38,11 @@ test('media policy and the guarded script are served locally before widget start
   const html = (await server.dispatch('/widget.html')).body.toString();
   assert.ok(html.indexOf('src="/media-guard.js"') >= 0 && html.indexOf('src="/media-guard.js"') < html.indexOf('src="/dsh-whale/widget.js"'));
   assert.ok(html.indexOf('src="/turn-notice.js"') >= 0 && html.indexOf('src="/turn-notice.js"') < html.indexOf('src="/dsh-whale/widget.js"'));
+  assert.ok(html.indexOf('src="/compact.js"') >= 0 && html.indexOf('src="/compact.js"') < html.indexOf('src="/dsh-whale/widget.js"'));
+  const compact = await server.dispatch('/compact.js');
+  assert.equal(compact.status, 200);
+  assert.match(compact.headers['content-type'], /javascript/);
+  assert.match(compact.body.toString(), /whaleCompact/);
 });
 
 test('FX refresh=1 performs one deliberate fetch beyond a valid cache and preserves cooldown', async t => {

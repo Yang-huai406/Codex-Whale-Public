@@ -1,5 +1,10 @@
 # 变更记录
 
+## macOS 跟随稳定性修复
+
+- 在已验证的 Codex 宿主位于前台时维持普通层级加 1，避免激活宿主时挂件闪动；其他应用前置时恢复普通层级。
+- 使用 AppKit 实际可见性和窗口顺序避免错误恢复及重复重排，保留 Space 动画、隐藏和独立模式边界。
+
 ## Codex-v0.4(fixixed) — 2026-10-08
 
 内部版本0.4.1，构建 `surface-audio-fix-20261007`，发行标签 `codex-v0.4.0(fixixed)`。目标为独立仓库 Codex-Whale-Public 的 main，保留旧版 Release。

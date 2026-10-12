@@ -17,12 +17,15 @@ function productionFunction(name) {
 }
 
 function harness() {
-  const stored = new Map(), writes = [], requests = [];
+  const stored = new Map(), writes = [], requests = [], classes = new Set();
   const state = { left: 350, top: 150, scale: 1, flip: false, h: null, v: null };
   const context = vm.createContext({
     state, positionIntent: null, drag: null, CLICK_SQ: 16,
     viewport: () => ({ w: 1000, h: 800 }),
-    root: { offsetWidth: 100, offsetHeight: 120, classList: { add() {}, toggle() {} }, setPointerCapture() {} },
+    root: { offsetWidth: 100, offsetHeight: 120, classList: {
+      add(...names) { names.forEach(name => classes.add(name)); },
+      toggle(name, on) { if (on) classes.add(name); else classes.delete(name); },
+    }, setPointerCapture() {} },
     positioner: { style: {}, getBoundingClientRect: () => ({ left: 120, top: 90, width: 100, height: 120 }) },
     WhaleRendering: { presentFor() {} },
     snapConfig: { mode: 'ratio', ratio: { L: 5, R: 5, T: 5, B: 5, F: 20 } },
@@ -43,7 +46,7 @@ function harness() {
   vm.runInContext(names.map(productionFunction).join('\n'), context);
   const writerStart = source.indexOf('    var settingsWriter ='), writerEnd = source.indexOf('    function saveConfig()', writerStart);
   vm.runInContext(source.slice(writerStart, writerEnd), context);
-  return { context, state, stored, writes, requests, run: code => vm.runInContext(code, context) };
+  return { context, state, stored, writes, requests, classes, run: code => vm.runInContext(code, context) };
 }
 
 test('committing free positions respects custom flip lines on either side', () => {
@@ -71,10 +74,54 @@ test('grabbing an unfinished snap animation continues from its painted rectangle
   assert.equal(h.state.left, 120);
   assert.equal(h.state.top, 90);
   assert.equal(h.context.positioner.style.transition, 'none');
-  h.run('onDocPointerMove({ clientX: 175, clientY: 160 });');
+  h.run('onDocPointerMove({ pointerType: "mouse", buttons: 1, clientX: 175, clientY: 160 });');
   assert.equal(h.state.left, 135);
   assert.equal(h.state.top, 110);
   assert.equal(h.writes.length, 0);
+});
+
+test('a click and small pointer jitter never request the expanded drag surface', () => {
+  const h = harness();
+  h.run('onDocPointerDown({ button: 0, pointerType: "mouse", pointerId: 1, clientX: 160, clientY: 140, preventDefault() {}, stopPropagation() {} });');
+  assert.equal(h.classes.has('dshwv-dragging'), true);
+  assert.equal(h.classes.has('dshwv-drag-moved'), false);
+  h.run('onDocPointerMove({ pointerType: "mouse", buttons: 1, clientX: 161, clientY: 141 });');
+  assert.equal(h.context.drag.moved, false);
+  assert.equal(h.classes.has('dshwv-drag-moved'), false);
+  h.run('onDocPointerMove({ pointerType: "mouse", buttons: 1, clientX: 175, clientY: 160 });');
+  assert.equal(h.context.drag.moved, true);
+  assert.equal(h.classes.has('dshwv-drag-moved'), true);
+});
+
+test('a released pointer cannot carry a press into a drag', () => {
+  const h = harness();
+  h.run('onDocPointerDown({ button: 0, pointerType: "mouse", pointerId: 1, clientX: 160, clientY: 140, preventDefault() {}, stopPropagation() {} });');
+  // Relocating a compact native window under a stationary cursor makes macOS
+  // deliver moves for this same pointer with no button held.
+  h.run('onDocPointerMove({ pointerType: "mouse", buttons: 0, clientX: 90, clientY: 40 });');
+  assert.equal(h.context.drag.moved, false);
+  assert.equal(h.classes.has('dshwv-drag-moved'), false);
+  assert.deepEqual([h.state.left, h.state.top], [120, 90]);
+  h.run('onDocPointerMove({ pointerType: "mouse", buttons: 0, clientX: 900, clientY: 700 });');
+  assert.equal(h.classes.has('dshwv-drag-moved'), false);
+  assert.deepEqual([h.state.left, h.state.top], [120, 90]);
+});
+
+test('dragging keeps host coordinates when the compact native window expands', () => {
+  const h = harness();
+  let offset = { x: 600, y: 200 };
+  h.context.window.whaleCompact = {
+    hostViewport: () => ({ w: 1000, h: 800 }),
+    hostPoint: (x, y) => ({ x: x + offset.x, y: y + offset.y }),
+    localPoint: (x, y) => ({ x: x - offset.x, y: y - offset.y }),
+  };
+  h.run('onDocPointerDown({ button: 0, pointerType: "mouse", pointerId: 1, clientX: 160, clientY: 140, preventDefault() {}, stopPropagation() {} });');
+  assert.deepEqual([h.context.drag.origLeft, h.context.drag.origTop], [720, 290]);
+  h.run('onDocPointerMove({ pointerType: "mouse", buttons: 1, clientX: 175, clientY: 160 });');
+  assert.deepEqual([h.state.left, h.state.top], [735, 310]);
+  offset = { x: 0, y: 0 };
+  h.run('onDocPointerMove({ pointerType: "mouse", buttons: 1, clientX: 775, clientY: 360 });');
+  assert.deepEqual([h.state.left, h.state.top], [735, 310]);
 });
 
 test('changing volume while temporarily clamped does not overwrite position memory', async () => {
@@ -95,4 +142,29 @@ test('changing volume while temporarily clamped does not overwrite position memo
   h.run('applyAnchorPos(); settle();');
   assert.equal(h.state.left, 350);
   assert.equal(h.state.top, 150);
+});
+
+test('changing whale size keeps the Codex edge lock across native surface and host resizes', () => {
+  const h = harness();
+  h.state.left = 870;
+  h.state.top = 668;
+  h.run('commitPosition();');
+  h.context.MIN_SCALE = 0.6;
+  h.context.MAX_SCALE = 2.5;
+  h.context.scaleInput = {};
+  h.context.scaleNumber = {};
+  h.context.requestAnimationFrame = callback => callback();
+  h.context.root.style = { setProperty(_name, value) {
+    h.context.root.offsetWidth = Math.round(100 * Number(value));
+    h.context.root.offsetHeight = Math.round(120 * Number(value));
+  } };
+  h.run([productionFunction('whaleLayoutRect'), productionFunction('scaleToDisplay'), productionFunction('setScale'), 'saveConfig = function () {};'].join('\n'));
+  h.run('setScale(2);');
+  assert.deepEqual([h.state.left, h.state.top], [770, 548]);
+  const saved = JSON.parse(h.stored.get('dshw-pos'));
+  assert.deepEqual([saved.hAnchor, saved.hDist, saved.vAnchor, saved.vDist], ['right', 30, 'bottom', 12]);
+  h.context.viewport = () => ({ w: 1200, h: 900 });
+  h.run('applyAnchorPos(); settle();');
+  assert.deepEqual([h.state.left, h.state.top], [970, 648]);
+  assert.equal(h.stored.get('dshw-pos'), JSON.stringify(saved));
 });
