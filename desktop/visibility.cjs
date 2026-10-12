@@ -1,7 +1,7 @@
 // Windows can hide/remap an owned HWND without changing Chromium's cached
 // visibility. Recover only for explicit show requests or lifecycle boundaries,
 // never on a normal heartbeat or move. Injected timers make cancellation testable.
-function createVisibilityController({ getWindow, getState, onShown = () => {}, schedule = setTimeout, cancel = clearTimeout, delayMs = 40, now = Date.now }) {
+function createVisibilityController({ getWindow, getState, isVisible = () => getWindow().isVisible(), onShown = () => {}, schedule = setTimeout, cancel = clearTimeout, delayMs = 40, now = Date.now }) {
   let pending = null, generation = 0, disposed = false, desired = null;
   let shown = false, recover = false, hostKey = null, revision = null, remaps = 0;
   let shownAt = -Infinity, hiddenSince = null, nativeAttempts = 0;
@@ -22,7 +22,7 @@ function createVisibilityController({ getWindow, getState, onShown = () => {}, s
     if (changed && shown) { recover = true; clear(); }
     if (!next) {
       clear();
-      if (desired !== false || window.isVisible()) window.hide();
+      if (desired !== false || isVisible()) window.hide();
       if (shown) recover = true;
       desired = false;
       return;
@@ -30,7 +30,7 @@ function createVisibilityController({ getWindow, getState, onShown = () => {}, s
     if (desired === false && shown) recover = true;
     desired = true;
     if (pending !== null) return;
-    if (shown && !window.isVisible()) recover = true;
+    if (shown && !isVisible()) recover = true;
     if (recover) {
       window.hide();
       const ticket = ++generation, targetKey = hostKey, targetRevision = revision;
@@ -45,7 +45,7 @@ function createVisibilityController({ getWindow, getState, onShown = () => {}, s
         shownAt = now(); hiddenSince = null;
         window.showInactive(); onShown();
       }, delayMs);
-    } else if (!shown || !window.isVisible()) {
+    } else if (!shown || !isVisible()) {
       shown = true; shownAt = now(); hiddenSince = null; window.showInactive(); onShown();
     }
   }

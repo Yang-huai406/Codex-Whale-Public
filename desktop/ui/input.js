@@ -4,7 +4,7 @@
   if (!bridge || !rendering) return;
   const pet = document.querySelector('.dshwv-img'), root = document.querySelector('.dshwv-root');
   const failedRoleSources = new Set();
-  let pointerEventAt=0, nativeButtonsAt=0, releasedPointer=null;
+  let pointerEventAt=0, nativeButtonsAt=0, releasedPointer=null, lastInputState='';
   let point = { x: -1, y: -1 }, heldPointer = null, releaseEpoch = 0, interactive = false, keyboardFocus = false, ready = false, lastStorage = '', externalDrag = false;
   const surfaces = '.whale-account-card,dialog[open],.dshwv-menu-open,.dshwv-menu-btn-visible:not(.dshwv-menu-btn-hidden),.dshwv-rolelist,.dshwv-audiolist,.dshwv-qedit,.dshwv-usagepanel,.dshwv-custmenu,.dshwv-custbtn,.dshwv-tplhelp,.dshwv-fx-info,#toast:not([hidden])';
   const keyboardSurfaces = 'dialog[open],.dshwv-menu-open,.dshwv-rolelist,.dshwv-audiolist,[class*="mask"],.dshwv-qedit,.dshwv-usagepanel,.dshwv-custmenu,.dshwv-fx-info';
@@ -33,8 +33,12 @@
   }
   function update() {
     rendering.petInteraction?.move(point);
-    const next = heldPointer !== null || rendering.petInteraction?.holding() || !externalDrag && hit(point);
+    const pointHit = hit(point);
+    const next = heldPointer !== null || rendering.petInteraction?.holding() || !externalDrag && pointHit;
+    const state = { held: heldPointer !== null, externalDrag, hit: pointHit, hidden: document.hidden };
+    const encoded = JSON.stringify(state);
     if (next !== interactive) { interactive = next; bridge.interactive(next); }
+    if (encoded !== lastInputState) { lastInputState = encoded; bridge.inputState?.(state); }
   }
   function updateKeyboardFocus() {
     // Menu fades start at opacity 0 and end without a DOM mutation. Use whether
@@ -44,7 +48,7 @@
     if (next !== keyboardFocus) { keyboardFocus = next; bridge.keyboardFocus(next); }
   }
   function track(e) { pointerEventAt=Date.now(); point = { x: e.clientX, y: e.clientY }; externalDrag = heldPointer === null && Number(e.buttons) > 0; update(); }
-  // Real movement events are handled while interactive. Ignored Windows areas
+  // Real movement events are handled while interactive. Ignored native areas
   // use bridge.onCursor below and do not forward host mouse events to Chromium.
   document.addEventListener('mousemove', track, true);
   document.addEventListener('pointermove', track, true);

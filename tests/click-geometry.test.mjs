@@ -131,6 +131,20 @@ test('old or equal-time native button samples cannot override real pointerup; ne
   h.cursor({ x: 250, y: 250, buttons: 0, sampledAt: 1070 }); assert.equal(h.api.status().externalDrag, false); assert.equal(h.api.status().interactive, true);
 });
 
+test('outside click release restores a hit surface without pointerup, blur or a Space switch', () => {
+  const g = geometry(), h = input(g);
+  h.event('mousemove', { clientX: 250, clientY: 250, buttons: 1 });
+  assert.equal(h.api.hit({ x: 250, y: 250 }), true);
+  assert.equal(h.api.status().externalDrag, true);
+  assert.equal(h.api.status().interactive, false);
+  // The release belongs to the underlying app, so no DOM pointerup arrives.
+  // A new native button sample at the same point must restore input.
+  g.setNow(1016); h.cursor({ x: 250, y: 250, buttons: 0, sampledAt: 1016 });
+  assert.equal(h.api.status().externalDrag, false);
+  assert.equal(h.api.status().interactive, true);
+  assert.equal(h.api.status().heldPointer, null);
+});
+
 test('unexpected lost capture and pointercancel clear the gesture, but stale release RAF cannot clear a newer press', () => {
   const g = geometry(), h = input(g), p = { clientX: 250, clientY: 250, pointerId: 1, buttons: 0 };
   g.api.begin(g.img, g.root, 1); h.event('pointerdown', p); h.event('lostpointercapture', p);

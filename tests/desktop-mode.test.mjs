@@ -26,13 +26,13 @@ test('standalone cannot bypass renderer readiness and switching to follow applie
  f.set({ standalone: false }); f.flush(); assert.equal(f.visible(), false);
 });
 
-function mainModeFixture() {
+function mainModeFixture(isMac = false) {
  const source = fs.readFileSync(new URL('../desktop/main.cjs', import.meta.url), 'utf8');
  const calls = [], area = { x: 0, y: 0, width: 1920, height: 1080 };
- const state = { quitting:false, desktopMode: 'follow-codex', desktopBoundsApplied: false, modePending: false, appliedBounds: '', appliedNativeSize: '', dataDir: '/test', path, isMac: false, fixture: false, manuallyHidden: false, hostSequence: -1, hostHeartbeat: 0, lastHost: null, owner: '',
+ const state = { quitting:false, desktopMode: 'follow-codex', desktopBoundsApplied: false, modePending: false, appliedBounds: '', appliedNativeSize: '', dataDir: '/test', path, isMac, macFollower: null, fixture: false, manuallyHidden: false, hostSequence: -1, hostHeartbeat: 0, lastHost: null, owner: '',
   Number, Date, usesWindowShape: true, usesSurfaceGuard: false, visibilityRecorder: { sample() {} }, save: () => calls.push('save'), read: () => ({}), sendCursor: () => {}, updateTray: () => {}, markStartup: () => {}, diagnose: () => {}, toDipRect: x => x,
   screen: { getPrimaryDisplay: () => ({ workArea: area }) },
-  window: { isDestroyed:()=>false, setBounds: () => calls.push('bounds'), setPosition: () => calls.push('position'), getBounds: () => area, setAlwaysOnTop: () => calls.push('top'), webContents: { send: event => calls.push(event) } },
+  window: { isDestroyed:()=>false, hide: () => calls.push('hide'), setVisibleOnAllWorkspaces: value => calls.push(['workspaces', value]), setBounds: () => calls.push('bounds'), setPosition: () => calls.push('position'), getBounds: () => area, setAlwaysOnTop: (value, level) => calls.push(['top', value, level]), webContents: { send: event => calls.push(event) } },
   app: { quit: () => calls.push('quit') }, syncNativeViewport: () => '',
   visibility: () => calls.push(state.modePending ? 'hidden-pending' : 'visibility'), show: () => calls.push('show'),
   visibilityController: { requestRecovery: () => calls.push('recover'), observeNativeVisibility: () => false }
@@ -45,6 +45,19 @@ function mainModeFixture() {
 test('reselecting the active mode closes UI without changing geometry or remapping', () => {
  const f = mainModeFixture(); f.state.setMode('follow-codex');
  assert.deepEqual(f.calls, ['whale-desktop-mode']);
+});
+
+test('macOS mode switching preserves standalone floating level and clears it on return to follow', () => {
+ const f = mainModeFixture(true);
+ f.state.macFollower = { reset: () => f.calls.push('reset') };
+ f.state.setMode('standalone');
+ assert.equal(f.state.modePending, false);
+ assert.deepEqual(f.calls.filter(call => Array.isArray(call)), [['workspaces', true], ['top', true, 'floating']]);
+ assert.ok(f.calls.includes('reset'));
+ f.calls.length = 0;
+ f.state.setMode('follow-codex');
+ assert.deepEqual(f.calls.filter(call => Array.isArray(call)), [['workspaces', false], ['top', false, 'floating']]);
+ assert.ok(f.calls.includes('reset'));
 });
 
 test('standalone waits for native detach and follow waits for fresh attachment', async () => {
