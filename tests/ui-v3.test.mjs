@@ -24,7 +24,7 @@ test('zero volume never opens audio hardware or fetches, release interrupts a 20
   f.idle(); assert.equal(f.sources[1].stopped, true);
 });
 test('gesture presets separate press from rebound without changing root flip', () => {
-  const window = {}; vm.runInNewContext(read('gesture.js'), { window }); const body = { style: {} };
+  const window = {}; vm.runInNewContext(read('gesture.js'), { window, performance: { now: () => 0 } }); const body = { style: {} };
   window.WhaleGesture.apply(body, true, 'crisp'); assert.match(body.style.transition, /65ms/); assert.match(body.style.transform, /0.9/);
   window.WhaleGesture.apply(body, false, 'crisp'); assert.match(body.style.transition, /125ms/); assert.equal(body.style.transform, 'scaleY(1) scaleX(1)');
 });
