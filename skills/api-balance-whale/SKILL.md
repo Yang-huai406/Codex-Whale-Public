@@ -41,7 +41,7 @@ ChatGPT 订阅额度不是 API 余额。没有余额接口时报告不可查询�
 
 订阅额度来自本机官方窗口快照；本机滚动 token 统计不等于官方剩余 token。非订阅登录不显示旧订阅窗口。DeepSeek 峰谷只对已识别的官方端点展示，不能把中转服务当作官方计价。
 
-macOS兼容必须保留原PR及平台分支：https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128 。当前Windows环境的测试不能声称Mac实机通过。Windows回滚用scripts/rollback-package.ps1的本次私有回执，Mac用scripts/rollback-macos.mjs。
+macOS兼容必须保留原PR及平台分支：https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128 。Mac完整安装用scripts/install-macos.mjs（含插件注册，--check-only预检），仅桌面组件加--desktop-only。Mac实机记录只覆盖Apple Silicon，不能声称Intel通过。Windows回滚用scripts/rollback-package.ps1的本次私有回执，Mac用备份中recovery-scripts/rollback-macos.mjs与对应receipt.json。
 
 ## Codex-v0.4(fixed) 自动检测
 

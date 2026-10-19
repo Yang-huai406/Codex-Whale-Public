@@ -280,11 +280,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\rollback-packa
 
 ## 11. macOS 范围
 
-保留 PR #128 的 Swift 窗口探针、LaunchAgent、透明浮窗与 Unix socket。本轮在 Windows x64 验证，**没有 Mac 实机验收**。
+保留 PR #128 的 Swift 窗口探针、LaunchAgent、透明浮窗与 Unix socket。2026-10-19 在一台 Apple Silicon Mac 上完成安装、插件注册、主动退出、重启与回滚实测，见 [Mac 实机记录](docs/MACOS-VERIFICATION-20261019.md)；**Intel Mac 尚未验收**。
 
-Mac 需 Codex、Node.js 24+、Xcode Command Line Tools。解压到新的固定目录并保留旧目录，运行 `安装 Mac 自动跟随.command`；丢失执行位时在该目录执行 `node scripts/install-macos.mjs`。它安装桌面组件和 LaunchAgent，**不自动完成插件市场技能/MCP 注册**。检查用 `node scripts/probe-macos.mjs` 与 `node scripts/control.mjs status`。
+Mac 需 Codex、Node.js 24+、Xcode Command Line Tools。完整解压后双击 **`安装插件.command`**（丢失执行位时执行 `node scripts/install-macos.mjs`）：与 Windows 相同，代码复制到 `~/plugins/api-balance-whale`，旧代码移入私有备份，写入个人插件市场并用 Codex CLI（优先桌面应用随附版本）`plugin add`，以 `plugin list --json` 确认已启用，再安装桌面组件与 LaunchAgent。可先加 `--check-only` 预检，或用 `--codex-cli <路径>` 指定 CLI。只要桌面挂件、不注册技能/MCP 时运行 `安装 Mac 自动跟随.command`（`--desktop-only`，原地运行）。检查用 `node scripts/probe-macos.mjs` 与 `node scripts/control.mjs status`；注册后新建 Codex 聊天加载技能与 MCP。
 
-回滚运行 `回滚 Mac 更新.command` 或 `node scripts/rollback-macos.mjs`，使用对应 Mac 回执。暂停方式和操作详见 [macOS 文档](docs/MACOS.md)；Spaces、全屏、多屏、睡眠及长期运行仍需当地实测。
+回滚运行 `回滚 Mac 更新.command` 或备份目录中的 `recovery-scripts/rollback-macos.mjs <receipt.json>`，可先加 `--check-only`；会注销插件、还原市场条目与旧代码。暂停方式和操作详见 [macOS 文档](docs/MACOS.md)；Spaces、全屏、多屏、睡眠及长期运行仍需当地实测。
 
 ## 12. 修复范围、验证与来源
 

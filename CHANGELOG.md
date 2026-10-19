@@ -1,5 +1,16 @@
 # 变更记录
 
+## 未发布 — macOS 调度中心（Issue #24）
+
+- macOS 挂件窗口在调度中心（Mission Control）和 App Exposé 中隐藏，不再显示为与 Codex 分开的独立窗口；退出调度中心后照常跟随。小鲸鱼与 Codex 是不同进程，调度中心按应用归组，无法合并为同一窗口。仅改 macOS 分支，Windows 不受影响。
+- Apple Silicon 实机目测确认：调度中心不再出现小鲸鱼窗口，退出后恢复显示在 Codex 窗口上。
+
+## 未发布 — macOS 插件注册（Issue #3）
+
+- `安装插件.command` / `install-macos.mjs` 与 Windows 一致：代码复制到 `~/plugins/api-balance-whale`，旧目录移入私有备份，写入个人市场并 `codex plugin add`，以 `plugin list --json` 确认；支持 `--check-only`、`--codex-cli`，`--desktop-only` 保留原有仅桌面方式。
+- Mac 回执升为第 2 版并记录阶段；回滚注销插件、还原市场条目和被替换的代码（之前已注册时重新注册），备份内附可独立运行的回滚脚本，支持 `--check-only`。回执只能回滚一次，完成后指针恢复到上一次安装。回滚逻辑可注入 launchd/CLI 依赖并有分支测试。Electron 运行时按固定版本而非是否存在判断。
+- Apple Silicon 实机完成两轮安装、注册（Codex 新聊天中调用 `whale_status` 成功）、主动退出、重启与回滚（含覆盖已注册版本后回滚），见 [实机记录](docs/MACOS-VERIFICATION-20261019.md)；Intel 未验收。
+
 ## Codex-v0.4(fixixed) — 2026-10-08
 
 内部版本0.4.1，构建 `surface-audio-fix-20261007`，发行标签 `codex-v0.4.0(fixixed)`。目标为独立仓库 Codex-Whale-Public 的 main，保留旧版 Release。

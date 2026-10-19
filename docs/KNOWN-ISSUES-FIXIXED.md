@@ -71,7 +71,7 @@
 
 ## 桌面、平台及未提供的功能
 
-Windows 原生验证不替代其它鼠标、触控板、触屏和长期稳定性测试。macOS 兼容代码及 [1llysviel 的 PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 保留；本次没有 Mac 实机验收，不将 Windows 原生区域监控套到 Mac。Apple Silicon/Intel、Spaces、全屏、多屏及睡眠唤醒仍需对应设备验证，Mac 安装入口也不等于技能/MCP 自动注册完成。
+Windows 原生验证不替代其它鼠标、触控板、触屏和长期稳定性测试。macOS 兼容代码及 [1llysviel 的 PR #128](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/pull/128) 保留；不将 Windows 原生区域监控套到 Mac。2026-10-19 已在 Apple Silicon 实机完成安装、技能/MCP 插件注册、主动退出、重启与回滚（[记录](MACOS-VERIFICATION-20261019.md)）；Intel、系统重启后自启、Spaces、全屏、多屏及睡眠唤醒仍需对应设备验证。
 
 安全区排版可能缩小过长文字；极小挂件或复杂素材仍不适合长文阅读。独立桌面模式是透明浮窗，不是壁纸层。以下需求保持原状态：
 

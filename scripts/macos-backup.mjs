@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-export function backupMacInstall({ dataDir, pluginRoot, plistPath, installId }) {
+export function writeMacReceipt(dataDir, receipt) {
+  fs.writeFileSync(path.join(receipt.backupDir, 'receipt.json'), JSON.stringify(receipt, null, 2), { mode: 0o600 });
+  fs.writeFileSync(path.join(dataDir, 'macos-rollback-receipt.json'), JSON.stringify(receipt, null, 2), { mode: 0o600 });
+}
+export function backupMacInstall({ dataDir, pluginRoot, plistPath, installId, plugin = null }) {
   const backupDir = path.join(dataDir, 'backups', 'macos-' + installId);
   fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
   const operational = ['follow-config.json', 'follow-install.json', 'pause-until-host-exit.json'];
@@ -16,8 +20,13 @@ export function backupMacInstall({ dataDir, pluginRoot, plistPath, installId }) 
     const excluded = new Set(['node_modules', '.git', 'qa', 'references']);
     fs.cpSync(previous.pluginRoot, sourceBackup, { recursive: true, filter: source => !excluded.has(path.basename(source)) });
   }
-  const receipt = { version: 1, installId, createdAt: new Date().toISOString(), backupDir, previous, sourceBackup, plistPath: oldPlist, operational, hadInstall: !!previous };
-  fs.writeFileSync(path.join(backupDir, 'receipt.json'), JSON.stringify(receipt, null, 2), { mode: 0o600 });
-  fs.writeFileSync(path.join(dataDir, 'macos-rollback-receipt.json'), JSON.stringify(receipt, null, 2), { mode: 0o600 });
+  // Rollback restores the pointer so the earlier installation stays reachable.
+  const pointer = path.join(dataDir, 'macos-rollback-receipt.json');
+  let previousReceipt = null;
+  if (fs.existsSync(pointer)) { previousReceipt = path.join(backupDir, 'previous-rollback-receipt.json'); fs.copyFileSync(pointer, previousReceipt); }
+  // version 2 adds Codex plugin registration; desktop-only installs leave plugin null.
+  const receipt = { version: 2, installId, createdAt: new Date().toISOString(), backupDir, previous, sourceBackup, plistPath: oldPlist, operational, hadInstall: !!previous,
+    stage: 'backup', pluginRoot, plugin, previousReceipt };
+  writeMacReceipt(dataDir, receipt);
   return receipt;
 }

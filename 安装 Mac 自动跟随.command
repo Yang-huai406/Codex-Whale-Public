@@ -10,4 +10,4 @@ if [[ -z "$NODE_BIN" ]]; then
   read -k 1 "?按任意键退出..."
   exit 1
 fi
-exec "$NODE_BIN" scripts/install-macos.mjs
+exec "$NODE_BIN" scripts/install-macos.mjs --desktop-only

@@ -319,6 +319,9 @@ else {
       if (app.dock) app.dock.hide();
       window.setAlwaysOnTop(true, 'floating', 1);
       window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+      // Mission Control groups windows by process, so this overlay can never
+      // join the Codex window there; hide it instead of showing a separate tile.
+      window.setHiddenInMissionControl(true);
     }
     window.setAlwaysOnTop(isMac || desktopMode === 'standalone', 'floating');
     if (desktopMode === 'standalone') window.setBounds(screen.getPrimaryDisplay().workArea);
