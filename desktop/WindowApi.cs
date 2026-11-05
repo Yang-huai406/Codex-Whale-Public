@@ -45,6 +45,7 @@ public static class WhaleWindows {
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool Process32FirstW(IntPtr h, ref ProcessEntry p);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool Process32NextW(IntPtr h, ref ProcessEntry p);
     [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
+    [DllImport("kernel32.dll", SetLastError = true)] static extern bool ProcessIdToSessionId(uint pid, out uint session);
     [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool QueryFullProcessImageNameW(IntPtr process, uint flags, System.Text.StringBuilder name, ref int size);
     static string Image(int pid) {
@@ -56,6 +57,8 @@ public static class WhaleWindows {
     static bool CodexImage(string p) { return p.IndexOf(@"\WindowsApps\OpenAI.Codex_", StringComparison.OrdinalIgnoreCase) >= 0 && (p.EndsWith(@"\app\ChatGPT.exe", StringComparison.OrdinalIgnoreCase) || p.EndsWith(@"\app\Codex.exe", StringComparison.OrdinalIgnoreCase)); }
     static int[] Roots() {
         var parents = new Dictionary<int, int>(); var candidates = new HashSet<int>();
+        uint currentSession;
+        if (!ProcessIdToSessionId((uint)Process.GetCurrentProcess().Id, out currentSession)) return new int[0];
         var snapshot = CreateToolhelp32Snapshot(2, 0);
         if (snapshot == new IntPtr(-1)) return new int[0];
         try {
@@ -64,7 +67,9 @@ public static class WhaleWindows {
                 if (string.Equals(entry.Name, "ChatGPT.exe", StringComparison.OrdinalIgnoreCase) || string.Equals(entry.Name, "Codex.exe", StringComparison.OrdinalIgnoreCase)) {
                     int pid = (int)entry.Id;
                     if (!CodexImage(Image(pid))) continue;
-                    try { using (var process = Process.GetProcessById(pid)) { if (process.SessionId != Process.GetCurrentProcess().SessionId) continue; } } catch { continue; }
+                    // Process.SessionId repeatedly enumerates process metadata on .NET Framework.
+                    uint session;
+                    if (!ProcessIdToSessionId((uint)pid, out session) || session != currentSession) continue;
                     candidates.Add(pid); parents[pid] = (int)entry.Parent;
                 }
             } while (Process32NextW(snapshot, ref entry));
