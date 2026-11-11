@@ -25,6 +25,18 @@ function fixture(t) {
   return {home,write,auth};
 }
 
+test('today token total follows local midnight and excludes future events', t => {
+  const f = fixture(t);
+  const now = new Date(2026, 9, 4, 12).getTime();
+  const midnight = new Date(2026, 9, 4).getTime();
+  const usage = (time, input) => ({type:'event_msg', timestamp:new Date(time).toISOString(),
+    payload:{type:'token_count', info:{total_token_usage:{input_tokens:input,output_tokens:0}, last_token_usage:{input_tokens:input,output_tokens:0}}}});
+  f.write('sessions/rollout-a.jsonl', [meta('day'), usage(midnight-1000, 10), usage(midnight, 30), usage(now+1000, 40)], now);
+  const result = collectInsights({codexHome:f.home, now});
+  assert.equal(result.tokens.today, 20);
+  assert.equal(result.tokens.total, 40);
+});
+
 test('quota identity excludes explicitly unrelated buckets and cautiously accepts legacy',()=>{
   for(const limit_id of ['codex_other','codex_bengalfox','',42,'CODEX']) assert.deepEqual(quotaWindows({limit_id,primary:win(300)},at,at),[]);
   assert.deepEqual(quotaWindows({limit_name:'Other quota',primary:win(300)},at,at),[]);

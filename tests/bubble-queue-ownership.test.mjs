@@ -22,7 +22,7 @@ function harness() {
     bubbleScene: null, bubbleShown: false, bubbleSceneEpoch: 0, bubbleTtlTimer: null,
     costBubbleActive: false, bubbleRandomActive: false, bubbleRandomLines: null,
     whaleSysItem: null, whaleSysQueue: [], whaleSysTimer: null, turnCostCloseMs: 5000, USAGE_ALERT_TTL: 6500,
-    bubbleRoundOn: false, bubbleSeqIdx: 0, bubbleBuilding: false,
+    bubbleRoundOn: false, bubbleSeqIdx: 0, bubbleBuilding: false, hunger: null,
     bindBubbleParts() {}, menuBox: {}, WhaleMoney: { applyLatestQuote() {}, refreshBindings() {} }, WhaleRendering: { presentFor() {} },
     bubbleRenderCost(amount) { rendered.push(amount); }, bubbleRenderModules(mods) { rendered.push(mods); },
     bubbleFrames: { front: {}, cancel() {}, close() {}, open(build, ready) {

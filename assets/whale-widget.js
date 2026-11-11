@@ -7716,6 +7716,7 @@
     var body = document.createElement('div');
     body.className = 'dshwv-body';
     body.appendChild(img);
+    var hunger = window.WhaleHunger && window.WhaleHunger.create({body: body, original: img, menu: menuRootView, alertSettings: function () { return usageSet && usageSet.alert; }});
     body.appendChild(bubbleBox);
     root.appendChild(body);
     root.appendChild(menuBtn);
@@ -8252,6 +8253,12 @@
         try {
           WhaleMoney.applyLatestQuote({ refreshBindings: false });
           renderFn();
+          if (hunger && hunger.active && ['normal', 'random', 'custom', 'subscription'].includes(kind)) {
+            var rows = bubbleTarget.querySelectorAll('.dshwv-trow');
+            var lastRow = rows.length ? rows[rows.length - 1] : null;
+            if (lastRow) lastRow.appendChild(document.createTextNode(' 咕～'));
+            else if (hintEl && hintEl.style.display !== 'none') hintEl.appendChild(document.createTextNode(' 咕～'));
+          }
         }
         finally { bubbleBuilding = false; bindBubbleParts(bubbleFrames.front); }
       }, function () {
@@ -8827,8 +8834,13 @@
     }
     function whaleClick() {
       try {
+        if (hunger && hunger.active) { hunger.click(); if (soundOn && window.WhaleFeedback?.playHunger) window.WhaleFeedback.playHunger(soundVol); }
         if (!bubbleOn) return;
-        if (window.WhaleAccountView?.mode === 'subscription') { window.WhaleAccountView.toggleBubble(root); return; }
+        if (window.WhaleAccountView?.mode === 'subscription') {
+          if (bubbleShown) { hideBubble(); return; }
+          showSubscriptionBubble();
+          return;
+        }
         if (bubbleScene && (bubbleScene.kind === 'cost' || bubbleScene.kind === 'alert')) return;
         if (!bubbleShown) {
           bubbleRoundOn = true;
@@ -8844,6 +8856,36 @@
         bubbleSeqIdx = 0;
         bubbleShowSeqNext();
       } catch (err) {}
+    }
+    var subscriptionLastTurn = null;
+    async function showSubscriptionBubble() {
+      var entry = bubbleSceneEpoch;
+      var lines = ['订阅额度暂不可用'];
+      try {
+        var response = await fetch('/api/insights', { cache: 'no-store' });
+        if (!response.ok) throw new Error('unavailable');
+        var data = await response.json();
+        var subscription = data.subscription || {};
+        if (subscription.available && Array.isArray(subscription.windows) && subscription.windows.length) {
+          lines = subscription.windows.map(function (item) {
+            var label = window.WhaleAccountView.quotaLabel(item);
+            var used = item.usedPercent;
+            return label + '：' + (typeof used === 'number' && isFinite(used) && used >= 0
+              ? '剩余 ' + Math.max(0, 100 - used).toFixed(1) + '%' : '比例未知') + (item.stale ? '（快照过期）' : '');
+          });
+        } else if (subscription.reason) lines = [subscription.reason];
+        var tokens = data.tokens;
+        lines.push(tokens && Number.isSafeInteger(tokens.today) && tokens.today >= 0
+          ? '今日本机 ' + tokens.today.toLocaleString() + ' token' + (tokens.complete === false ? '（部分）' : '')
+          : '今日 token 暂无记录');
+        lines.push(subscriptionLastTurn && Number.isFinite(subscriptionLastTurn.tokens)
+          ? '最近一轮 ' + subscriptionLastTurn.tokens.toLocaleString() + ' token'
+          : '最近一轮 token 暂无记录');
+      } catch (error) {}
+      if (entry !== bubbleSceneEpoch || !bubbleOn || window.WhaleAccountView?.mode !== 'subscription') return;
+      sceneOpen('subscription', function () {
+        bubbleRenderModules(lines.map(function (line) { return { type: 'text', text: line, size: 7 }; }));
+      }, BUBBLE_MS);
     }
     function bubbleNext() {
       try {
@@ -9209,6 +9251,7 @@
       }).catch(function () {
         state.status = 'error';
         state.message = '获取失败';
+        window.dispatchEvent(new CustomEvent('whale-balance', { detail: { ok: false } }));
       }).finally(function () {
         busy = false;
         if (timer) clearTimeout(timer);
@@ -9460,12 +9503,12 @@
     function pressDown() {
       if (window.WhaleGesture) window.WhaleGesture.apply(body, true, window.WhaleFeedback && window.WhaleFeedback.feel);
       else { body.style.transitionDuration = '75ms'; body.style.transform = SQUISH; }
-      pressing = true; playPress();
+      pressing = true; if (!hunger || !hunger.active) playPress();
     }
     function pressUp() {
       if (window.WhaleGesture) window.WhaleGesture.apply(body, false, window.WhaleFeedback && window.WhaleFeedback.feel);
       else { body.style.transitionDuration = '140ms'; body.style.transform = 'scaleY(1) scaleX(1)'; }
-      pressing = false; playRelease();
+      pressing = false; if (!hunger || !hunger.active) playRelease();
     }    var menuOpen = false;
     var menuPositionFrame = 0;
     new ResizeObserver(function () {
@@ -11654,7 +11697,11 @@
           window.dispatchEvent(new CustomEvent('whale-turn-notice', {detail:notice}));
           if (notice.completionKind === 'success') playTaskEndSound();
           else if ((notice.completionKind === 'cancelled' || notice.failureKind === 'high-demand') && usageSet && usageSet.taskEnd && usageSet.taskEnd.on && soundOn && typeof window !== 'undefined' && window.WhaleFeedback) window.WhaleFeedback.play(notice.completionKind, '', soundVol);
-          if (typeof window !== 'undefined' && window.WhaleAccountView?.mode === 'subscription') { if(turnCostOn)window.WhaleAccountView.notice(notice); return; }
+          if (typeof window !== 'undefined' && window.WhaleAccountView?.mode === 'subscription') {
+            subscriptionLastTurn = notice;
+            if (turnCostOn) window.WhaleAccountView.notice(notice);
+            return;
+          }
           showCostBubble(notice.amount, notice);
         }).catch(function () {}).finally(function () { lastCostPending = false; });
       } catch (err) { lastCostPending = false; }
