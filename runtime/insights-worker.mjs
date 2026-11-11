@@ -107,7 +107,8 @@ export function collectInsights({codexHome,now=Date.now(),maxFiles=256,maxBytes=
   };
   walk(path.join(codexHome,'sessions'));walk(path.join(codexHome,'archived_sessions'));
   files.sort((a,b)=>b.mtime-a.mtime); if(files.length>maxFiles)complete=false;
-  const totals={total:0,input:0,output:0,cachedInput:0,reasoningOutput:0,last5Hours:0,last7Days:0};
+  const totals={total:0,input:0,output:0,cachedInput:0,reasoningOutput:0,last5Hours:0,last7Days:0,today:0};
+  const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
   let quota=null, scannedFiles=0; const seen=new Set();
   for(const {f} of files.slice(0,maxFiles)) {
     if(scannedBytes>=maxBytes){complete=false;break;}
@@ -132,7 +133,7 @@ export function collectInsights({codexHome,now=Date.now(),maxFiles=256,maxBytes=
     if (parser.id && seen.has(parser.id)) continue;
     if (parser.id) seen.add(parser.id);
     if (parser.partial) complete=false;
-    for(const e of parser.events){const total=e.input_tokens+e.output_tokens;totals.input+=e.input_tokens;totals.output+=e.output_tokens;totals.cachedInput+=e.cached_input_tokens;totals.reasoningOutput+=e.reasoning_output_tokens;totals.total+=total;if(e.at>=now-5*3600000)totals.last5Hours+=total;}
+    for(const e of parser.events){const total=e.input_tokens+e.output_tokens;totals.input+=e.input_tokens;totals.output+=e.output_tokens;totals.cachedInput+=e.cached_input_tokens;totals.reasoningOutput+=e.reasoning_output_tokens;totals.total+=total;if(e.at>=now-5*3600000)totals.last5Hours+=total;if(e.at>=dayStart.getTime() && e.at<=now)totals.today+=total;}
   }
   totals.last7Days=totals.total;
   return {tokens:{...totals,period:'rolling-7-days',complete,scannedFiles,note:'本机近 7 天已观测 token；缓存输入已含在输入内，推理输出已含在输出内。近 5 小时是滚动统计，不是官方额度窗口。'},windows:quota?.windows||[],observedAt:quota?.at||null};

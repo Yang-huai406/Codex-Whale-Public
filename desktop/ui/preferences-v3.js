@@ -34,5 +34,10 @@
     const save = document.createElement('button'); save.textContent = '保存'; save.className = 'primary'; save.onclick = () => { try { localStorage.setItem(key, JSON.stringify(draft)); settings = draft; dialog.close(); } catch { window.whaleToast?.('设置未能保存，请检查存储空间。'); } };
     actions.append(cancel, save); dialog.append(actions); dialog.addEventListener('close', () => { window.WhaleAudio.stop(); dialog.remove(); }); document.body.append(dialog); dialog.showModal();
   }
-  window.WhaleFeedback = { play, open, get feel() { return settings.feel; } };
+  function playHunger(master = 1) {
+    const cfg = settings.events.press;
+    if (!cfg || cfg.preset === 'silent') return;
+    window.WhaleAudio.play({channel:'hunger', url:'/assets/whale-rumble.wav', preset:'original', volume:cfg.volume * master});
+  }
+  window.WhaleFeedback = { play, playHunger, open, get feel() { return settings.feel; } };
 })();
