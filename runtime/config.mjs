@@ -11,7 +11,7 @@ export const DEFAULT_CONFIG = {
   balancePath: '', balanceField: 'data.balance', usedField: '', balanceScale: 1,
   billingUsageDivisor: 100, quotaPerUnit: 500000,
   dashboardUrl: '', monitorSessions: true, refreshSeconds: 60,
-  models: {},
+  models: {}, balanceProviderId: '',
   connectionMode: 'follow', selectedConnection: '', connections: [], legacyConnectionBinding: null,
 };
 
@@ -33,6 +33,7 @@ export function validateConfig(input) {
   c.baseUrl = cleanUrl(String(c.baseUrl || ''), { allowEmpty: true });
   c.dashboardUrl = cleanUrl(String(c.dashboardUrl || ''), { allowEmpty: true });
   c.keyEnv = environmentName(c.keyEnv);
+  c.balanceProviderId = textValue(c.balanceProviderId, 128, '余额服务商 ID');
   c.profile = textValue(c.profile, 128, '配置档案');
   c.projectDir = textValue(c.projectDir, 4096, '项目目录');
   c.currency = String(c.currency || 'USD').toUpperCase();
@@ -160,6 +161,13 @@ export class ConfigStore {
       try { trusted = parse(fs.readFileSync(file, 'utf8')); }
       catch { throw new Error('Codex config.toml 无法解析，请检查配置文件'); }
     }
+    if (setting.balanceProviderId) {
+      const id = setting.balanceProviderId;
+      if (!Object.hasOwn(trusted.model_providers ?? {}, id)) throw new Error('找不到余额查询所选的全局 Codex 服务商');
+      const provider = trusted.model_providers[id];
+      return { id, profileName: '', effective: trusted, trustedProvider: provider,
+        originalBase: this.providerBase(provider, id), projectLoaded: false, destinationChanged: false, authChanged: false };
+    }
     let config = mergeTables({}, trusted);
     let projectLoaded = false;
     if (setting.projectDir) {
@@ -198,8 +206,33 @@ export class ConfigStore {
   }
   sourceBinding(source) { return { providerId: source.id, profile: source.profileName, sourceBaseUrl: source.originalBase }; }
   sameBinding(a, b) { return a.providerId === b.providerId && a.profile === b.profile && a.sourceBaseUrl === b.sourceBaseUrl; }
-  resolve() { return this.resolveSetting(this.load()); }
-  resolveSetting(setting) {
+  resolve({ forSession = false } = {}) {
+    const setting = this.load();
+    const fixedDisplay = setting.connectionMode === 'fixed';
+    if (!forSession || (!setting.balanceProviderId && !fixedDisplay)) return this.resolveSetting(setting);
+    // Display-only settings cannot follow a switch to a different session provider.
+    const sessionSetting = { ...setting, balanceProviderId: '', connectionMode: 'follow', selectedConnection: '' };
+    const source = this.readSource(sessionSetting);
+    if (source.id !== setting.balanceProviderId || fixedDisplay ||
+        (setting.legacyConnectionBinding && !this.sameBinding(setting.legacyConnectionBinding, this.sourceBinding(source)))) {
+      for (const field of ['baseUrl', 'keyEnv', 'legacyConnectionBinding', 'dashboardUrl', 'provider',
+        'balancePath', 'balanceField', 'usedField', 'balanceScale', 'billingUsageDivisor', 'quotaPerUnit']) {
+        sessionSetting[field] = DEFAULT_CONFIG[field];
+      }
+    }
+    if (fixedDisplay) {
+      const wallet = setting.connections.find(item => item.id === setting.selectedConnection);
+      // A fixed wallet may still have an old provider match from follow mode.
+      // Only an independently configured follow connection can sample a turn.
+      sessionSetting.connections = wallet?.balance.adapter === 'none' ? []
+        : setting.connections.filter(item => item.id !== setting.selectedConnection);
+      sessionSetting.provider = 'none';
+    } else if (setting.provider === 'none') {
+      sessionSetting.provider = 'none';
+    }
+    return this.resolveSetting(sessionSetting, source);
+  }
+  resolveSetting(setting, sessionSource) {
     let selected, source, baseUrl, id, profileName, effective = {}, authHeaders = {};
     if (setting.connectionMode === 'fixed') {
       selected = setting.connections.find(item => item.id === setting.selectedConnection);
@@ -207,7 +240,7 @@ export class ConfigStore {
       if (!selected.baseUrl) throw new Error('固定连接须明确填写 API 地址');
       baseUrl = selected.baseUrl; id = selected.match.providerId || 'fixed'; profileName = selected.match.profile;
     } else {
-      source = this.readSource(setting);
+      source = sessionSource || this.readSource(setting);
       ({ id, profileName, effective } = source);
       const matches = setting.connections.filter(item => item.match.providerId === id && item.match.profile === profileName);
       if (matches.length > 1) throw new Error('多个余额连接匹配当前 Codex 来源，请保留一个或选择固定连接');
@@ -258,7 +291,8 @@ export class ConfigStore {
     const connectionInfo = { mode: setting.connectionMode, id: selected?.id || '', name: selected?.name || 'Codex 配置连接',
       adapter: balanceConnection?.adapter || setting.provider, confirmed: balanceConnection?.mapping.confirmed === true,
       source: selected && setting.connectionMode === 'fixed' ? 'fixed' : 'codex-config',
-      sourceLabel: setting.connectionMode === 'fixed' ? '固定余额连接' : '仅已读取的 Codex 配置；不含 CLI 临时覆盖',
+      sourceLabel: setting.connectionMode === 'fixed' ? '固定余额连接' : setting.balanceProviderId
+        ? '固定读取全局 Codex 服务商 ' + setting.balanceProviderId : '仅已读取的 Codex 配置；不含 CLI 临时覆盖',
       projectLoaded: source?.projectLoaded || false, legacyOverride: !selected && !!(setting.baseUrl || setting.keyEnv) };
     const resolvedSetting = selected ? { ...setting, provider: balanceConnection.adapter, currency: balanceConnection.mapping.currency } : setting;
     return { setting: resolvedSetting, id, model: effective.model || '', profileName, providerName, baseUrl, key, keySource, accountId, dashboardUrl,

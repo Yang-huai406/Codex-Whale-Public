@@ -219,7 +219,7 @@ export class SessionMonitor {
   start() {
     if (this.worker) return;
     let c;
-    try { c = this.service.config.resolve(); }
+    try { c = this.service.config.resolve({ forSession: true }); }
     catch { c = { model: '', setting: { monitorSessions: false } }; }
     this.worker = new Worker(new URL('./session-worker.mjs', import.meta.url), { workerData: {
       root: path.join(this.service.config.codexHome, 'sessions'), defaultModel: c.model,
@@ -240,7 +240,7 @@ export class SessionMonitor {
     this.worker.on('exit', code => { if (!this.stopped && code) this.snapshot.error = '会话监测线程退出'; });
     this.worker.unref();
     this.timer = setInterval(() => {
-      try { const current = this.service.config.resolve(); this.worker.postMessage({ enabled: current.setting.monitorSessions, defaultModel: current.model }); } catch {}
+      try { const current = this.service.config.resolve({ forSession: true }); this.worker.postMessage({ enabled: current.setting.monitorSessions, defaultModel: current.model }); } catch {}
     }, 3000); this.timer.unref();
   }
   async stop({ timeoutMs = 1200 } = {}) {

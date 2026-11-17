@@ -268,7 +268,7 @@ export class WhaleService {
   }
   lastTurn() {
     const last = readJson(this.lastFile, { ok: true, seq: 0, turn: null, amount: null, tokens: null, ts: null });
-    const c = this.config.resolve();
+    const c = this.config.resolve({ forSession: true });
     if (last.accountId && last.accountId !== c.accountId) return { ok: true, seq: last.seq, turn: null, amount: null, tokens: null, ts: null };
     return normalizeTurnCost(last);
   }
@@ -276,7 +276,7 @@ export class WhaleService {
     if (this.closed || this.settling.has(meta.id)) return;
     if (this.turns.has(meta.id)) { this.updateTurn(meta); return; }
     let context;
-    try { context = this.config.resolve(); } catch { return; }
+    try { context = this.config.resolve({ forSession: true }); } catch { return; }
     if (!meta.isSubagent) {
       const session = meta.sessionId || meta.id;
       this.latestStarts.set(session, meta.id);
@@ -315,7 +315,7 @@ export class WhaleService {
     if (this.restored) return [...this.recoveryActive];
     this.restored = true;
     let current;
-    try { current = this.config.resolve(); } catch {}
+    try { current = this.config.resolve({ forSession: true }); } catch {}
     const waiting = [];
     for (const saved of this.journal.list()) {
       const matches = current?.accountId === saved.accountId && current.setting.currency === saved.currency;
@@ -510,7 +510,7 @@ export class WhaleService {
     const event = this.ledger.find(scope, { id });
     if (!event || event.noticePublished || !event.notify || this.closed) return;
     let config;
-    try { config = this.config.resolve(); } catch { return; }
+    try { config = this.config.resolve({ forSession: true }); } catch { return; }
     if (config.accountId !== event.accountId) return;
     if (!['success','cancelled','failed'].includes(event.completionKind)) return;
     const seq = Number(readJson(this.lastFile, { seq: 0 }).seq || 0) + 1;
